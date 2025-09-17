@@ -22,17 +22,27 @@ app.use(helmet({
 app.use(cors());
 app.use(express.json({ limit: '10kb' }));
 
-// Rate limiting
+// Rate limiting with JSON responses
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // limit each IP to 100 requests per windowMs
-  message: 'Too many API requests, please try again later.'
+  message: {
+    error: 'Rate limit exceeded',
+    message: 'Too many API requests, please try again later.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false
 });
 
 const scoreSubmissionLimiter = rateLimit({
   windowMs: 5 * 60 * 1000, // 5 minutes
-  max: 10, // limit each IP to 10 score submissions per 5 minutes
-  message: 'Too many score submissions, please slow down.'
+  max: 15, // increased from 10 to 15 for better gameplay experience
+  message: {
+    error: 'Rate limit exceeded', 
+    message: 'Too many score submissions, please slow down.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false
 });
 
 app.use('/api/', apiLimiter);
@@ -91,15 +101,10 @@ const validatePlayerName = [
     .withMessage('Invalid player name format')
 ];
 
-// Helper functions
-function calculateMinimumGameTime(score) {
-  // Minimum reasonable time based on score (anti-cheat measure)
-  return Math.max(5, Math.floor(score / 50)); // At least 1 second per 50 points
-}
-
-function isReasonableScore(score, duration) {
-  const maxPointsPerSecond = 15; // Maximum reasonable points per second
-  return score <= (duration * maxPointsPerSecond);
+// Helper functions - simplified validation
+function isValidGameDuration(duration) {
+  // Just ensure reasonable time range
+  return duration >= 5 && duration <= 7200; // 5 seconds to 2 hours
 }
 
 // API Routes
@@ -121,19 +126,11 @@ app.post('/api/scores', scoreSubmissionLimiter, validateScoreSubmission, async (
     const clientIp = req.ip || req.connection.remoteAddress;
     const userAgent = req.get('User-Agent') || '';
 
-    // Anti-cheat validations
-    const minGameTime = calculateMinimumGameTime(score);
-    if (gameDuration < minGameTime) {
+    // Basic validation - just ensure reasonable game duration
+    if (!isValidGameDuration(gameDuration)) {
       return res.status(400).json({ 
-        error: 'Invalid game duration for score achieved',
-        message: 'Game completed too quickly for the score reported'
-      });
-    }
-
-    if (!isReasonableScore(score, gameDuration)) {
-      return res.status(400).json({ 
-        error: 'Unreasonable score',
-        message: 'Score is too high for the game duration'
+        error: 'Invalid game duration',
+        message: 'Game duration must be between 5 seconds and 2 hours'
       });
     }
 
