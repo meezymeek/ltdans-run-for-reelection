@@ -180,17 +180,11 @@ class LtDanRunner {
             gravity: 0.8,
             jumpPower: -15,
             groundLevel: 0.8,
-            crouchHeight: 0.3,
             gameSpeed: 4,
             obstacleSpawnRate: 120, // frames between obstacles (fixed interval)
             obstacleSpeed: 4,
             scoreMultiplier: 1
         };
-        
-        // Touch handling
-        this.touchStartY = 0;
-        this.touchStartTime = 0;
-        this.isSwipeDetected = false;
         
         // Game state
         this.gameState = 'start'; // 'start', 'playing', 'gameOver'
@@ -205,9 +199,7 @@ class LtDanRunner {
             height: 60,
             velocityY: 0,
             isJumping: false,
-            isCrouching: false,
             groundY: 0,
-            crouchY: 0,
             color: '#ff6b6b'
         };
         
@@ -243,7 +235,6 @@ class LtDanRunner {
     calculatePositions() {
         // Calculate positions based on canvas size
         this.player.groundY = this.canvas.height * this.config.groundLevel;
-        this.player.crouchY = this.canvas.height * (this.config.groundLevel + this.config.crouchHeight);
         this.player.y = this.player.groundY - this.player.height;
     }
     
@@ -275,10 +266,8 @@ class LtDanRunner {
             }
         });
         
-        // Touch event listeners for mobile controls
+        // Touch event listeners for mobile controls - just for jumping
         this.canvas.addEventListener('touchstart', (e) => this.handleTouchStart(e), { passive: false });
-        this.canvas.addEventListener('touchmove', (e) => this.handleTouchMove(e), { passive: false });
-        this.canvas.addEventListener('touchend', (e) => this.handleTouchEnd(e), { passive: false });
         
         // Mouse events for desktop testing
         this.canvas.addEventListener('click', () => this.handleJump());
@@ -297,55 +286,19 @@ class LtDanRunner {
     
     handleTouchStart(e) {
         e.preventDefault();
-        const touch = e.touches[0];
-        this.touchStartY = touch.clientY;
-        this.touchStartTime = Date.now();
-        this.isSwipeDetected = false;
         
         if (this.gameState === 'playing') {
-            // Initial jump on touch
+            // Jump on touch
             this.handleJump();
-        }
-    }
-    
-    handleTouchMove(e) {
-        e.preventDefault();
-        if (this.gameState !== 'playing') return;
-        
-        const touch = e.touches[0];
-        const deltaY = touch.clientY - this.touchStartY;
-        const deltaTime = Date.now() - this.touchStartTime;
-        
-        // Detect swipe down (crouch)
-        if (deltaY > 30 && deltaTime < 300 && !this.isSwipeDetected) {
-            this.isSwipeDetected = true;
-            this.handleCrouch();
-        }
-    }
-    
-    handleTouchEnd(e) {
-        e.preventDefault();
-        if (this.gameState === 'playing' && this.player.isCrouching) {
-            // Stop crouching when touch ends
-            this.player.isCrouching = false;
         }
     }
     
     handleJump() {
         if (this.gameState !== 'playing') return;
         
-        if (!this.player.isJumping && !this.player.isCrouching) {
+        if (!this.player.isJumping) {
             this.player.velocityY = this.config.jumpPower;
             this.player.isJumping = true;
-        }
-    }
-    
-    handleCrouch() {
-        if (this.gameState !== 'playing') return;
-        
-        if (!this.player.isJumping) {
-            this.player.isCrouching = true;
-            this.player.height = 30; // Reduced height when crouching
         }
     }
     
@@ -373,7 +326,6 @@ class LtDanRunner {
         this.player.y = this.player.groundY - this.player.height;
         this.player.velocityY = 0;
         this.player.isJumping = false;
-        this.player.isCrouching = false;
         this.player.height = 60;
         
         // Reset game speed
@@ -660,35 +612,26 @@ class LtDanRunner {
         this.player.y += this.player.velocityY;
         
         // Ground collision
-        const groundY = this.player.isCrouching ? 
-            this.player.crouchY - this.player.height :
-            this.player.groundY - this.player.height;
+        const groundY = this.player.groundY - this.player.height;
             
         if (this.player.y >= groundY) {
             this.player.y = groundY;
             this.player.velocityY = 0;
             this.player.isJumping = false;
         }
-        
-        // Reset height when not crouching
-        if (!this.player.isCrouching && this.player.height !== 60) {
-            this.player.height = 60;
-        }
     }
     
     spawnObstacle() {
         if (this.gameFrame % this.config.obstacleSpawnRate === 0) {
-            const obstacleType = Math.random() > 0.5 ? 'low' : 'high';
+            // Only spawn low obstacles that can be jumped over
             const obstacle = {
                 x: this.canvas.width + 50,
-                y: obstacleType === 'low' ? 
-                    this.player.groundY - 40 : 
-                    this.player.groundY - 80,
+                y: this.player.groundY - 40,
                 width: 30,
-                height: obstacleType === 'low' ? 40 : 80,
+                height: 40,
                 speed: this.config.obstacleSpeed,
-                type: obstacleType,
-                color: obstacleType === 'low' ? '#8B4513' : '#228B22'
+                type: 'low',
+                color: '#8B4513'
             };
             this.obstacles.push(obstacle);
         }
@@ -792,7 +735,7 @@ class LtDanRunner {
             this.ctx.font = `${Math.max(12, this.canvas.width * 0.02)}px Arial`;
             this.ctx.textAlign = 'center';
             this.ctx.fillText(
-                'TAP: Jump | SWIPE DOWN: Crouch', 
+                'TAP TO JUMP', 
                 this.canvas.width / 2, 
                 50
             );
