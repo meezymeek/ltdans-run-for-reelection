@@ -1,0 +1,502 @@
+/* Mobile-first CSS for Lt. Dan's Run for Re-Election */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    overflow: hidden;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.game-container {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.game-header {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    z-index: 100;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.game-header h1 {
+    color: white;
+    font-size: clamp(0.8rem, 4vw, 1.5rem);
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    font-weight: bold;
+}
+
+.score {
+    color: #ffd700;
+    font-size: clamp(0.9rem, 4vw, 1.2rem);
+    font-weight: bold;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+}
+
+#gameCanvas {
+    border: 3px solid #ffd700;
+    border-radius: 10px;
+    background: linear-gradient(to bottom, #87CEEB 0%, #98FB98 100%);
+    max-width: 95vw;
+    max-height: 70vh;
+    width: auto;
+    height: auto;
+    touch-action: none;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+
+.game-ui {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 50;
+}
+
+.screen {
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 2rem;
+    border-radius: 15px;
+    text-align: center;
+    max-width: 90vw;
+    pointer-events: auto;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+}
+
+.screen h2 {
+    font-size: clamp(1.5rem, 8vw, 3rem);
+    margin-bottom: 1rem;
+    color: #ffd700;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+
+.screen p {
+    font-size: clamp(0.9rem, 4vw, 1.2rem);
+    margin-bottom: 1rem;
+    line-height: 1.4;
+}
+
+.controls-info {
+    margin: 1.5rem 0;
+    padding: 1rem;
+    background: rgba(255, 215, 0, 0.1);
+    border-radius: 10px;
+    border: 1px solid #ffd700;
+}
+
+.controls-info p {
+    margin: 0.5rem 0;
+    font-size: clamp(0.8rem, 3.5vw, 1rem);
+}
+
+button {
+    background: linear-gradient(45deg, #ff6b6b, #ffd93d);
+    color: white;
+    border: none;
+    padding: 1rem 2rem;
+    font-size: clamp(1rem, 4vw, 1.3rem);
+    font-weight: bold;
+    border-radius: 25px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    min-height: 50px;
+    min-width: 150px;
+}
+
+button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+}
+
+button:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+}
+
+.hidden {
+    display: none !important;
+}
+
+.touch-controls {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+}
+
+.control-hint {
+    color: white;
+    font-size: clamp(0.7rem, 3vw, 0.9rem);
+    text-align: center;
+    background: rgba(0,0,0,0.5);
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 0.7; }
+    50% { opacity: 1; }
+}
+
+/* Landscape mode adjustments */
+@media (orientation: landscape) and (max-height: 500px) {
+    .game-header h1 {
+        font-size: clamp(0.7rem, 3vw, 1.2rem);
+    }
+    
+    .score {
+        font-size: clamp(0.8rem, 3vw, 1rem);
+    }
+    
+    .screen {
+        padding: 1rem;
+        max-height: 80vh;
+        overflow-y: auto;
+    }
+    
+    .controls-info {
+        margin: 0.5rem 0;
+        padding: 0.5rem;
+    }
+}
+
+/* Very small screens */
+@media (max-width: 320px) {
+    .game-header {
+        top: 5px;
+        left: 5px;
+        right: 5px;
+    }
+    
+    .screen {
+        padding: 1rem;
+        margin: 0.5rem;
+    }
+}
+
+/* Leaderboard and Menu Button Styles */
+.menu-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    align-items: center;
+}
+
+.secondary-button {
+    background: linear-gradient(45deg, #4a4a4a, #6a6a6a) !important;
+    font-size: clamp(0.9rem, 3.5vw, 1.1rem) !important;
+    padding: 0.8rem 1.5rem !important;
+    min-width: 120px !important;
+}
+
+.game-over-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    align-items: center;
+    margin-top: 1rem;
+}
+
+/* Score Submission Form */
+.score-form {
+    background: rgba(255, 215, 0, 0.1);
+    border: 2px solid #ffd700;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin: 1rem 0;
+}
+
+.score-form p {
+    color: #ffd700;
+    font-weight: bold;
+    margin-bottom: 1rem;
+}
+
+#playerNameInput {
+    width: 100%;
+    max-width: 250px;
+    padding: 0.8rem;
+    font-size: 1rem;
+    border: 2px solid #ffd700;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.9);
+    color: #333;
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+#playerNameInput:focus {
+    outline: none;
+    border-color: #ff6b6b;
+    box-shadow: 0 0 10px rgba(255, 107, 107, 0.3);
+}
+
+.form-buttons {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.form-buttons button {
+    min-width: 100px;
+    padding: 0.8rem 1.2rem;
+    font-size: 0.9rem;
+}
+
+/* Score Result Display */
+.score-result {
+    background: rgba(0, 255, 0, 0.1);
+    border: 2px solid #00ff00;
+    border-radius: 10px;
+    padding: 1rem;
+    margin: 1rem 0;
+    color: #00ff00;
+    font-weight: bold;
+}
+
+.score-result.error {
+    background: rgba(255, 0, 0, 0.1);
+    border-color: #ff0000;
+    color: #ff6666;
+}
+
+/* Leaderboard Screen */
+.leaderboard-tabs {
+    display: flex;
+    margin-bottom: 1.5rem;
+    border-bottom: 2px solid #ffd700;
+}
+
+.tab-button {
+    background: transparent !important;
+    border: none !important;
+    border-bottom: 3px solid transparent !important;
+    border-radius: 0 !important;
+    padding: 0.8rem 1rem !important;
+    font-size: clamp(0.8rem, 3vw, 1rem) !important;
+    color: #ccc !important;
+    min-width: auto !important;
+    min-height: auto !important;
+    box-shadow: none !important;
+    transition: all 0.3s ease !important;
+}
+
+.tab-button:hover {
+    transform: none !important;
+    color: #ffd700 !important;
+}
+
+.tab-button.active {
+    color: #ffd700 !important;
+    border-bottom-color: #ffd700 !important;
+}
+
+.leaderboard-content {
+    min-height: 300px;
+    max-height: 60vh;
+    overflow-y: auto;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.leaderboard-table {
+    width: 100%;
+    color: white;
+}
+
+.leaderboard-entry {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.8rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: clamp(0.8rem, 3vw, 0.9rem);
+}
+
+.leaderboard-entry:last-child {
+    border-bottom: none;
+}
+
+.leaderboard-rank {
+    font-weight: bold;
+    color: #ffd700;
+    min-width: 40px;
+    text-align: left;
+}
+
+.leaderboard-name {
+    flex: 1;
+    text-align: left;
+    margin-left: 1rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.leaderboard-score {
+    font-weight: bold;
+    color: #ff6b6b;
+    min-width: 60px;
+    text-align: right;
+}
+
+.leaderboard-date {
+    font-size: 0.7em;
+    color: #aaa;
+    min-width: 80px;
+    text-align: right;
+    margin-left: 0.5rem;
+}
+
+/* Top 3 special styling */
+.leaderboard-entry:nth-child(1) .leaderboard-rank { color: #FFD700; }
+.leaderboard-entry:nth-child(2) .leaderboard-rank { color: #C0C0C0; }
+.leaderboard-entry:nth-child(3) .leaderboard-rank { color: #CD7F32; }
+
+.leaderboard-entry:nth-child(1) .leaderboard-name,
+.leaderboard-entry:nth-child(2) .leaderboard-name,
+.leaderboard-entry:nth-child(3) .leaderboard-name {
+    font-weight: bold;
+}
+
+/* Loading State */
+.loading {
+    text-align: center;
+    color: #ffd700;
+    padding: 2rem;
+    font-style: italic;
+}
+
+.loading::after {
+    content: '...';
+    animation: dots 1.5s steps(4, end) infinite;
+}
+
+@keyframes dots {
+    0%, 20% { content: ''; }
+    40% { content: '.'; }
+    60% { content: '..'; }
+    80%, 100% { content: '...'; }
+}
+
+/* Player Stats Screen */
+.stats-content {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.stat-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.8rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: clamp(0.9rem, 3.5vw, 1rem);
+}
+
+.stat-item:last-child {
+    border-bottom: none;
+}
+
+.stat-label {
+    color: #ffd700;
+    font-weight: bold;
+}
+
+.stat-value {
+    color: white;
+    font-weight: bold;
+}
+
+/* Action Buttons */
+.leaderboard-actions,
+.stats-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+/* Responsive adjustments for leaderboard */
+@media (max-width: 480px) {
+    .leaderboard-entry {
+        font-size: 0.8rem;
+    }
+    
+    .leaderboard-date {
+        display: none;
+    }
+    
+    .menu-buttons {
+        gap: 0.8rem;
+    }
+    
+    .form-buttons {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .leaderboard-actions,
+    .stats-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+}
+
+/* Landscape mode adjustments for leaderboard */
+@media (orientation: landscape) and (max-height: 500px) {
+    .leaderboard-content {
+        max-height: 40vh;
+    }
+    
+    .score-form {
+        padding: 1rem;
+    }
+    
+    .menu-buttons {
+        flex-direction: row;
+        justify-content: center;
+        gap: 1rem;
+    }
+}
+
+/* Prevent zoom on double tap */
+@media (pointer: coarse) {
+    button {
+        touch-action: manipulation;
+    }
+}

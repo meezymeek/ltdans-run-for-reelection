@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Lt. Dan's Run for Re-Election</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <h1>Lt. Dan's Run for Re-Election</h1>
+            <div class="score">Score: <span id="score">0</span></div>
+        </div>
+        
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        
+        <div class="game-ui">
+            <div id="startScreen" class="screen">
+                <h2>Re-Run</h2>
+                <p>Help Lt. Dan win the election!</p>
+                <div class="controls-info">
+                    <p>📱 Tap to JUMP</p>
+                    <p>👇 Swipe down to CROUCH</p>
+                </div>
+                <div class="menu-buttons">
+                    <button id="startButton">Start Campaign!</button>
+                    <button id="leaderboardButton" class="secondary-button">🏆 Leaderboard</button>
+                </div>
+            </div>
+            
+            <div id="gameOverScreen" class="screen hidden">
+                <h2>Campaign Over!</h2>
+                <p>Final Score: <span id="finalScore">0</span></p>
+                <div id="scoreSubmissionForm" class="score-form hidden">
+                    <p>🎉 New High Score! Submit to Leaderboard:</p>
+                    <input type="text" id="playerNameInput" placeholder="Enter your name" maxlength="50" />
+                    <div class="form-buttons">
+                        <button id="submitScoreButton">Submit Score</button>
+                        <button id="skipSubmissionButton" class="secondary-button">Skip</button>
+                    </div>
+                </div>
+                <div id="scoreResult" class="score-result hidden"></div>
+                <div class="game-over-buttons">
+                    <button id="restartButton">Re-Run Campaign</button>
+                    <button id="viewLeaderboardButton" class="secondary-button">View Leaderboard</button>
+                </div>
+            </div>
+
+            <div id="leaderboardScreen" class="screen hidden">
+                <h2>🏆 Campaign Leaderboard</h2>
+                <div class="leaderboard-tabs">
+                    <button id="globalTabButton" class="tab-button active">Global Top 100</button>
+                    <button id="recentTabButton" class="tab-button">Recent Scores</button>
+                </div>
+                
+                <div id="leaderboardContent" class="leaderboard-content">
+                    <div class="loading">Loading leaderboard...</div>
+                </div>
+                
+                <div class="leaderboard-actions">
+                    <button id="refreshLeaderboardButton" class="secondary-button">🔄 Refresh</button>
+                    <button id="backToMenuButton">Back to Menu</button>
+                </div>
+            </div>
+
+            <div id="playerStatsScreen" class="screen hidden">
+                <h2>📊 Player Stats</h2>
+                <div id="playerStatsContent" class="stats-content">
+                    <div class="loading">Loading stats...</div>
+                </div>
+                <div class="stats-actions">
+                    <button id="backToLeaderboardButton">Back to Leaderboard</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="touch-controls">
+            <div class="control-hint">Tap anywhere to play</div>
+        </div>
+    </div>
+    
+    <script src="game.js"></script>
+</body>
+</html>
