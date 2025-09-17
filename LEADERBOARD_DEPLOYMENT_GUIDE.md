@@ -123,9 +123,11 @@ CREATE INDEX idx_scores_player ON player_scores (player_name, score DESC);
 - [x] Anti-cheat measures active
 
 ### 🎯 Live URLs:
-- **Game**: `https://rerun.delta8denton.com`
-- **API**: `https://leaderboard-api-production-87f9.up.railway.app`
-- **Health Check**: `https://leaderboard-api-production-87f9.up.railway.app/api/health`
+- **Game with Leaderboard**: `https://lt-dans-game-with-leaderboard-production.up.railway.app`
+- **API**: `https://leaderboard-api-production-c84c.up.railway.app`
+- **Health Check**: `https://leaderboard-api-production-c84c.up.railway.app/api/health`
+- **GitHub Game Repo**: `https://github.com/meezymeek/ltdans-run-for-reelection-game`
+- **GitHub API Repo**: `https://github.com/meezymeek/ltdans-leaderboard-api`
 
 ## 🧪 Testing the System
 
