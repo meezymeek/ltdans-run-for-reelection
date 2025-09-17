@@ -1,7 +1,11 @@
 # Use nginx to serve static files
 FROM nginx:alpine
 
+# Add build argument for cache busting
+ARG CACHEBUST=1
+
 # Copy static files to nginx html directory
+# The ARG ensures these layers rebuild when the value changes
 COPY index.html /usr/share/nginx/html/
 COPY game.js /usr/share/nginx/html/
 COPY style.css /usr/share/nginx/html/
