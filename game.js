@@ -138,7 +138,7 @@ class LtDanRunner {
     constructor() {
         this.canvas = document.getElementById('gameCanvas');
         this.ctx = this.canvas.getContext('2d');
-        this.scoreElement = document.getElementById('score');
+        this.scoreElement = document.getElementById('scoreBadge');
         this.finalScoreElement = document.getElementById('finalScore');
         
         // UI Screen elements
@@ -146,6 +146,13 @@ class LtDanRunner {
         this.gameOverScreen = document.getElementById('gameOverScreen');
         this.leaderboardScreen = document.getElementById('leaderboardScreen');
         this.playerStatsScreen = document.getElementById('playerStatsScreen');
+        this.pauseScreen = document.getElementById('pauseScreen');
+        
+        // Header and control elements
+        this.gameHeader = document.querySelector('.game-header');
+        this.controlButtons = document.querySelector('.control-buttons');
+        this.scoreContainer = document.querySelector('.score-container');
+        this.scoreBadge = document.getElementById('scoreBadge');
         
         // Button elements
         this.startButton = document.getElementById('startButton');
@@ -155,11 +162,32 @@ class LtDanRunner {
         this.backToMenuButton = document.getElementById('backToMenuButton');
         this.backToLeaderboardButton = document.getElementById('backToLeaderboardButton');
         
+        // Control buttons
+        this.pauseButton = document.getElementById('pauseButton');
+        this.resumeButton = document.getElementById('resumeButton');
+        this.restartFromPauseButton = document.getElementById('restartFromPauseButton');
+        this.mainMenuFromPauseButton = document.getElementById('mainMenuFromPauseButton');
+        
         // Leaderboard elements
         this.globalTabButton = document.getElementById('globalTabButton');
         this.recentTabButton = document.getElementById('recentTabButton');
         this.refreshLeaderboardButton = document.getElementById('refreshLeaderboardButton');
         this.leaderboardContent = document.getElementById('leaderboardContent');
+
+        // Add Dev Menu button to pause screen
+        this.devMenuButton = document.createElement('div');
+        this.devMenuButton.textContent = '⚙️';
+        this.devMenuButton.style.position = 'absolute';
+        this.devMenuButton.style.bottom = '10px';
+        this.devMenuButton.style.right = '10px';
+        this.devMenuButton.style.fontSize = '20px';
+        this.devMenuButton.style.cursor = 'pointer';
+        this.devMenuButton.style.opacity = '0.6';
+        this.devMenuButton.style.transition = 'opacity 0.2s';
+        this.devMenuButton.onmouseenter = () => this.devMenuButton.style.opacity = '1';
+        this.devMenuButton.onmouseleave = () => this.devMenuButton.style.opacity = '0.6';
+        this.pauseScreen.style.position = 'relative';
+        this.pauseScreen.appendChild(this.devMenuButton);
         
         // Score submission elements
         this.scoreSubmissionForm = document.getElementById('scoreSubmissionForm');
@@ -187,9 +215,10 @@ class LtDanRunner {
         };
         
         // Game state
-        this.gameState = 'start'; // 'start', 'playing', 'gameOver'
+        this.gameState = 'start'; // 'start', 'playing', 'paused', 'gameOver'
         this.score = 0;
         this.gameFrame = 0;
+        this.lastScoreUpdate = 0;
         
         // Player object
         this.player = {
@@ -209,7 +238,65 @@ class LtDanRunner {
         // Background elements for scrolling effect
         this.backgroundElements = [];
         
+        // Floating score popups
+        this.popups = [];
+
+        // Sound effects (use placeholder beep if files missing)
+        this.sfx = {
+            point: [this.createBeep()],
+            jump: [this.createBeep()]
+        };
+
+        // Debug flag for hitboxes (off by default)
+        this.debugHitboxes = false;
+
+        // Dev menu element
+        this.devMenu = document.createElement('div');
+        this.devMenu.className = 'dev-menu hidden';
+        this.devMenu.style.position = 'fixed';
+        this.devMenu.style.top = '50%';
+        this.devMenu.style.left = '50%';
+        this.devMenu.style.transform = 'translate(-50%, -50%)';
+        this.devMenu.style.background = 'rgba(0,0,0,0.9)';
+        this.devMenu.style.color = '#fff';
+        this.devMenu.style.padding = '20px';
+        this.devMenu.style.border = '2px solid #ffd700';
+        this.devMenu.style.zIndex = '9999';
+        this.devMenu.style.borderRadius = '8px';
+        this.devMenu.innerHTML = `
+            <h3 style="margin-top:0;">Dev Menu</h3>
+            <label style="display:block; margin: 10px 0;">
+                <input type="checkbox" id="toggleHitboxes">
+                Show Hitboxes
+            </label>
+            <button id="closeDevMenu" style="margin-top:10px;">Close</button>
+        `;
+        document.body.appendChild(this.devMenu);
+
+        this.toggleHitboxesCheckbox = this.devMenu.querySelector('#toggleHitboxes');
+        this.closeDevMenuButton = this.devMenu.querySelector('#closeDevMenu');
+
         this.init();
+    }
+
+    createBeep() {
+        // Fallback oscillator beep if no audio file is available
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        return {
+            paused: true,
+            play: () => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = "square";
+                osc.frequency.value = 880;
+                gain.gain.setValueAtTime(0.1, ctx.currentTime);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.15);
+            },
+            cloneNode: function() { return this; }
+        };
     }
     
     init() {
@@ -221,15 +308,11 @@ class LtDanRunner {
     }
     
     setupCanvas() {
-        // Make canvas responsive
-        const container = this.canvas.parentElement;
-        const containerWidth = Math.min(container.clientWidth * 0.95, 800);
-        const containerHeight = Math.min(container.clientHeight * 0.7, 600);
-        
-        this.canvas.width = containerWidth;
-        this.canvas.height = containerHeight;
-        this.canvas.style.width = containerWidth + 'px';
-        this.canvas.style.height = containerHeight + 'px';
+        // Full screen canvas
+        this.canvas.width = window.innerWidth;
+        this.canvas.height = window.innerHeight;
+        this.canvas.style.width = window.innerWidth + 'px';
+        this.canvas.style.height = window.innerHeight + 'px';
     }
     
     calculatePositions() {
@@ -248,6 +331,12 @@ class LtDanRunner {
         this.viewLeaderboardButton.addEventListener('click', () => this.showLeaderboard());
         this.backToMenuButton.addEventListener('click', () => this.showStartScreen());
         this.backToLeaderboardButton.addEventListener('click', () => this.showLeaderboard());
+        
+        // Pause and control buttons
+        this.pauseButton.addEventListener('click', () => this.pauseGame());
+        this.resumeButton.addEventListener('click', () => this.resumeGame());
+        this.restartFromPauseButton.addEventListener('click', () => this.restartGame());
+        this.mainMenuFromPauseButton.addEventListener('click', () => this.showStartScreen());
         
         // Leaderboard tab buttons
         this.globalTabButton.addEventListener('click', () => this.showGlobalLeaderboard());
@@ -272,6 +361,9 @@ class LtDanRunner {
         // Mouse events for desktop testing
         this.canvas.addEventListener('click', () => this.handleJump());
         
+        // Keyboard events
+        document.addEventListener('keydown', (e) => this.handleKeyDown(e));
+        
         // Prevent default touch behaviors
         this.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
         
@@ -281,6 +373,12 @@ class LtDanRunner {
                 this.setupCanvas();
                 this.calculatePositions();
             }, 100);
+        });
+
+        // Dev Menu button
+        this.devMenuButton.addEventListener('click', () => {
+            console.log("Dev Menu button clicked");
+            this.showDevMenu();
         });
     }
     
@@ -302,6 +400,70 @@ class LtDanRunner {
         }
     }
     
+    handleKeyDown(e) {
+        // Pause game with P key or Escape
+        if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') {
+            if (this.gameState === 'playing') {
+                this.pauseGame();
+            } else if (this.gameState === 'paused') {
+                this.resumeGame();
+            }
+        }
+        
+        // Space bar to jump
+        if (e.key === ' ' || e.key === 'Spacebar') {
+            e.preventDefault();
+            this.handleJump();
+        }
+    }
+    
+    pauseGame() {
+        if (this.gameState !== 'playing') return;
+        
+        this.gameState = 'paused';
+        this.updateHUDVisibility();
+        this.pauseScreen.classList.remove('hidden');
+    }
+    
+    resumeGame() {
+        if (this.gameState !== 'paused') return;
+        
+        this.gameState = 'playing';
+        this.updateHUDVisibility();
+        this.pauseScreen.classList.add('hidden');
+    }
+    
+    showDevMenu() {
+        // Open Dev Menu from pause screen
+        this.devMenu.classList.remove('hidden');
+
+        // Sync checkbox with current state
+        this.toggleHitboxesCheckbox.checked = this.debugHitboxes;
+
+        // Event listeners
+        this.toggleHitboxesCheckbox.onchange = (e) => {
+            this.debugHitboxes = e.target.checked;
+        };
+        this.closeDevMenuButton.onclick = () => {
+            this.devMenu.classList.add('hidden');
+        };
+    }
+    
+    updateHUDVisibility() {
+        // Show/hide header and controls based on game state
+        if (this.gameState === 'playing' || this.gameState === 'paused') {
+            // During gameplay, show controls and score, hide header
+            this.gameHeader.classList.remove('show-title');
+            this.controlButtons.classList.add('active');
+            this.scoreContainer.classList.add('active');
+        } else {
+            // In menus, show header and hide controls/score
+            this.gameHeader.classList.add('show-title');
+            this.controlButtons.classList.remove('active');
+            this.scoreContainer.classList.remove('active');
+        }
+    }
+    
     createBackgroundElements() {
         // Create scrolling background elements (clouds, buildings, etc.)
         for (let i = 0; i < 5; i++) {
@@ -320,6 +482,7 @@ class LtDanRunner {
         this.gameState = 'playing';
         this.gameStartTime = Date.now();
         this.hideAllScreens();
+        this.updateHUDVisibility();
         this.score = 0;
         this.gameFrame = 0;
         this.obstacles = [];
@@ -343,6 +506,7 @@ class LtDanRunner {
         this.gameState = 'gameOver';
         this.gameEndTime = Date.now();
         this.finalScoreElement.textContent = this.score;
+        this.updateHUDVisibility();
         
         // Check if this might be a high score worth submitting
         this.checkForHighScore();
@@ -356,15 +520,19 @@ class LtDanRunner {
         this.gameOverScreen.classList.add('hidden');
         this.leaderboardScreen.classList.add('hidden');
         this.playerStatsScreen.classList.add('hidden');
+        this.pauseScreen.classList.add('hidden');
     }
 
     showStartScreen() {
+        this.gameState = 'start';
         this.hideAllScreens();
+        this.updateHUDVisibility();
         this.startScreen.classList.remove('hidden');
     }
 
     showLeaderboard() {
         this.hideAllScreens();
+        this.updateHUDVisibility();
         this.leaderboardScreen.classList.remove('hidden');
         this.showGlobalLeaderboard();
     }
@@ -647,6 +815,8 @@ class LtDanRunner {
                 this.obstacles.splice(i, 1);
                 this.score += 10;
                 this.updateScore();
+                this.addPopup("+10", this.player.x + this.player.width/2, this.player.y - 20);
+                this.playPointSfx();
             }
             
             // Collision detection
@@ -677,13 +847,31 @@ class LtDanRunner {
     }
     
     updateScore() {
-        this.scoreElement.textContent = this.score;
+        // Update score with throttling to avoid excessive DOM updates
+        const now = Date.now();
+        if (now - this.lastScoreUpdate > 50) { // Update every 50ms max
+            this.scoreElement.textContent = this.score;
+            this.lastScoreUpdate = now;
+            
+            // Add score animation for significant milestones
+            if (this.score > 0 && this.score % 100 === 0) {
+                this.animateScoreBadge();
+            }
+        }
         
         // Gradually increase game speed
         if (this.score > 0 && this.score % 100 === 0) {
             this.config.gameSpeed = Math.min(this.config.gameSpeed + 0.2, 8);
             this.config.obstacleSpeed = Math.min(this.config.obstacleSpeed + 0.2, 8);
         }
+    }
+    
+    animateScoreBadge() {
+        // Add the shake class for the milestone animation
+        this.scoreBadge.classList.add('shake');
+        setTimeout(() => {
+            this.scoreBadge.classList.remove('shake');
+        }, 600); // Match the animation duration
     }
     
     render() {
@@ -729,16 +917,21 @@ class LtDanRunner {
             this.ctx.fillRect(obstacle.x + 5, obstacle.y + 5, obstacle.width - 10, 3);
         }
         
-        // Draw UI hints during gameplay
-        if (this.gameState === 'playing' && this.gameFrame < 300) {
-            this.ctx.fillStyle = 'rgba(255, 215, 0, 0.8)';
-            this.ctx.font = `${Math.max(12, this.canvas.width * 0.02)}px Arial`;
-            this.ctx.textAlign = 'center';
-            this.ctx.fillText(
-                'TAP TO JUMP', 
-                this.canvas.width / 2, 
-                50
-            );
+        // Removed "TAP TO JUMP" hint text
+
+        // Debug: draw hitboxes
+        if (this.debugHitboxes) {
+            // Player hitbox
+            this.ctx.strokeStyle = 'lime';
+            this.ctx.lineWidth = 2;
+            this.ctx.strokeRect(this.player.x, this.player.y, this.player.width, this.player.height);
+
+            // Obstacle hitboxes
+            for (let obstacle of this.obstacles) {
+                this.ctx.strokeStyle = 'red';
+                this.ctx.lineWidth = 2;
+                this.ctx.strokeRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+            }
         }
     }
     
@@ -749,16 +942,116 @@ class LtDanRunner {
             this.spawnObstacle();
             this.updateObstacles();
             this.updateBackground();
+            this.updatePopups();
             
             // Continuous scoring
             if (this.gameFrame % 10 === 0) {
                 this.score += 1;
                 this.updateScore();
             }
+        } else if (this.gameState === 'paused') {
+            // When paused, only render the current frame without updates
         }
         
         this.render();
+        this.renderPopups();
         requestAnimationFrame(() => this.gameLoop());
+    }
+    
+    addPopup(text, x, y, opts={}) {
+        const now = performance.now();
+        this.popups.push({
+            text,
+            icon: opts.icon || null,
+            x, y,
+            vx: (Math.random() - 0.5) * 0.25,
+            vy: -0.6,
+            start: now,
+            life: 850,
+            scale: 0.6,
+            alpha: 1
+        });
+        if (this.popups.length > 20) this.popups.shift();
+    }
+
+    updatePopups() {
+        const now = performance.now();
+        for (let i = this.popups.length - 1; i >= 0; i--) {
+            const p = this.popups[i];
+            const t = now - p.start;
+            const k = Math.min(t / p.life, 1);
+
+            // Scale in at start
+            if (k < 0.18) {
+                const u = k / 0.18;
+                p.scale = 0.6 + (1.1 - 0.6) * this.easeOutBack(u);
+            } else {
+                p.scale = 1.0;
+            }
+
+            // Animate toward top-center of screen with ramping speed
+            const targetX = this.canvas.width / 2;
+            const targetY = this.canvas.height * 0.15;
+            const linger = 0.25; // linger for first 25% of life
+            let speedFactor;
+            if (k < linger) {
+                speedFactor = 0.002; // very slow drift at start
+            } else {
+                const u = (k - linger) / (1 - linger);
+                speedFactor = 0.01 + 0.18 * u; // then ramp up quickly
+            }
+            p.x += (targetX - p.x) * speedFactor;
+            p.y += (targetY - p.y) * speedFactor;
+
+            // Fade out quicker
+            if (k < 0.35) {
+                p.alpha = 1;
+            } else {
+                p.alpha = Math.max(0, 1 - (k - 0.35) / 0.35);
+            }
+
+            if (k >= 1) this.popups.splice(i, 1);
+        }
+    }
+
+    renderPopups() {
+        const ctx = this.ctx;
+        for (const p of this.popups) {
+            ctx.save();
+            ctx.globalAlpha = p.alpha;
+            ctx.translate(p.x, p.y);
+            ctx.scale(p.scale, p.scale);
+            ctx.font = 'bold 28px Tiny5';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = '#ffd700';
+            ctx.shadowColor = 'rgba(0,0,0,0.6)';
+            ctx.shadowBlur = 6;
+            const content = (p.icon ? (p.icon + ' ') : '') + p.text;
+            ctx.strokeText(content, 0, 0);
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText(content, 0, 0);
+            ctx.restore();
+        }
+    }
+
+    easeOutBack(t) {
+        const c1 = 1.70158, c3 = c1 + 1;
+        return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+    }
+
+    playPointSfx() {
+        const pool = this.sfx.point;
+        const a = pool.find(x => x.paused) || pool[0].cloneNode();
+        a.playbackRate = 0.98 + Math.random() * 0.04;
+        try { a.currentTime = 0; a.play(); } catch {}
+    }
+
+    playJumpSfx() {
+        const a = this.sfx.jump[0];
+        a.playbackRate = 1.0;
+        try { a.currentTime = 0; a.play(); } catch {}
     }
 }
 

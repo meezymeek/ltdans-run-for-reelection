@@ -1,5 +1,69 @@
 /* Mobile-first CSS for Lt. Dan's Run for Re-Election */
 
+/* Design Tokens */
+:root {
+    /* Colors */
+    --color-bg-primary: #1e3c72;
+    --color-bg-secondary: #2a5298;
+    --color-accent: #ffd700;
+    --color-accent-bright: #ffed4e;
+    --color-primary: #ff6b6b;
+    --color-success: #00ff88;
+    --color-error: #ff6b6b;
+    --color-warning: #ffa726;
+    --color-surface: rgba(0, 0, 0, 0.9);
+    --color-surface-light: rgba(255, 255, 255, 0.05);
+    --color-text: #ffffff;
+    --color-text-muted: #cccccc;
+    --color-text-dark: #333333;
+    
+    /* Spacing */
+    --space-xs: 0.25rem;
+    --space-sm: 0.5rem;
+    --space-md: 1rem;
+    --space-lg: 1.5rem;
+    --space-xl: 2rem;
+    --space-xxl: 3rem;
+    
+    /* Border radius */
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 15px;
+    --radius-xl: 20px;
+    --radius-pill: 25px;
+    
+    /* Shadows */
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.15);
+    --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+    --shadow-focus: 0 0 0 3px rgba(255, 215, 0, 0.4);
+    
+    /* Typography */
+    --font-size-xs: 0.75rem;
+    --font-size-sm: 0.875rem;
+    --font-size-base: 1rem;
+    --font-size-lg: 1.125rem;
+    --font-size-xl: 1.25rem;
+    --font-size-2xl: 1.5rem;
+    --font-size-3xl: 2rem;
+    --font-size-4xl: 3rem;
+    
+    /* Interactive */
+    --touch-target: 44px;
+    --transition: all 0.2s ease;
+    --transition-slow: all 0.3s ease;
+}
+
+/* High contrast theme */
+[data-theme="high-contrast"] {
+    --color-bg-primary: #000000;
+    --color-bg-secondary: #1a1a1a;
+    --color-surface: rgba(255, 255, 255, 0.95);
+    --color-text: #ffffff;
+    --color-accent: #ffff00;
+    --color-primary: #ff0000;
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -8,12 +72,21 @@
 }
 
 body {
-    font-family: 'Arial', sans-serif;
-    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    font-family: 'Tiny5', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+    background: linear-gradient(135deg, var(--color-bg-primary) 0%, var(--color-bg-secondary) 100%);
     overflow: hidden;
     touch-action: none;
     user-select: none;
     -webkit-user-select: none;
+}
+
+/* Accessibility - Respect user preferences */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
 }
 
 .game-container {
@@ -24,44 +97,196 @@ body {
     align-items: center;
     justify-content: center;
     position: relative;
+    /* Safe area support for modern mobile devices */
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    padding-top: max(env(safe-area-inset-top), var(--space-md));
+    padding-bottom: max(env(safe-area-inset-bottom), var(--space-md));
 }
 
+/* Game Header - Only show title when not playing */
+/* Move "Votes" header down ~15% */
 .game-header {
     position: absolute;
-    top: 10px;
-    left: 10px;
-    right: 10px;
+    top: 10%;
+    left: var(--space-md);
+    right: var(--space-md);
     z-index: 100;
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
-    flex-wrap: wrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: var(--transition);
+}
+
+.game-header.show-title {
+    opacity: 1;
 }
 
 .game-header h1 {
-    color: white;
-    font-size: clamp(0.8rem, 4vw, 1.5rem);
+    color: var(--color-text);
+    font-size: clamp(var(--font-size-lg), 4vw, var(--font-size-2xl));
     text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
     font-weight: bold;
+    text-align: center;
 }
 
-.score {
-    color: #ffd700;
-    font-size: clamp(0.9rem, 4vw, 1.2rem);
-    font-weight: bold;
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+/* Score Badge - Top center position for maximum size */
+.score-container {
+    position: absolute;
+    top: max(var(--space-md), env(safe-area-inset-top));
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    opacity: 0;
+    pointer-events: none;
+    transition: var(--transition);
+}
+
+.score-container.active {
+    opacity: 1;
+}
+
+/* Control Buttons - Bottom right position, close to edge */
+.control-buttons {
+    position: absolute;
+    bottom: max(var(--space-xl), env(safe-area-inset-bottom));
+    right: max(var(--space-sm), env(safe-area-inset-right));
+    z-index: 100;
+    display: flex;
+    flex-direction: row;
+    gap: var(--space-md);
+    opacity: 0;
+    pointer-events: none;
+    transition: var(--transition);
+}
+
+.control-buttons.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.control-btn {
+    background: transparent !important;
+    border: none !important;
+    outline: none !important;
+    color: var(--color-text);
+    font-size: clamp(var(--font-size-xl), 6vw, var(--font-size-2xl));
+    width: auto;
+    height: auto;
+    display: inline;
+    cursor: pointer;
+    transition: var(--transition);
+    padding: 0 !important;
+    margin: 0 !important;
+    filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.7));
+    box-shadow: none !important;
+    border-radius: 0 !important;
+}
+
+.control-btn:hover,
+.control-btn:focus {
+    transform: scale(1.1);
+    filter: drop-shadow(3px 3px 6px rgba(0,0,0,0.8));
+    background: transparent !important;
+    outline: none !important;
+}
+
+.control-btn:active {
+    transform: scale(0.95);
+    background: transparent !important;
+}
+
+
+/* Yellow "VOTES" label above score */
+.score-header {
+    font-family: 'Tiny5', monospace;
+    font-size: clamp(var(--font-size-lg), 5vw, var(--font-size-xl));
+    color: var(--color-accent);
+    text-align: center;
+    margin-bottom: var(--space-sm);
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+    letter-spacing: 0.3em;
+    position: relative;
+    top: 2rem; /* push it down */
+}
+
+.score-badge {
+    background: radial-gradient(ellipse 250px 120px at center, 
+                               rgba(0, 0, 0, 0.85) 20%, 
+                               rgba(0, 0, 0, 0.6) 50%, 
+                               transparent 100%);
+    border: none;
+    color: var(--color-text);
+    font-family: 'Tiny5', monospace;
+    font-size: clamp(10rem, 30vw, 12rem);
+    font-weight: 400;
+    padding: var(--space-xl) var(--space-xxl);
+    text-shadow: 3px 3px 6px rgba(0,0,0,0.9);
+    transition: var(--transition);
+    text-align: center;
+    position: relative;
+    margin-top: -20%; /* move score up by ~20% */
+    letter-spacing: 0.1em;
+    border-radius: var(--radius-pill);
+}
+
+.score-badge.shake {
+    animation: scoreShake 0.6s ease-in-out;
+    color: var(--color-accent);
+}
+
+/* Portrait-first overrides: make VOTES and score much larger on portrait */
+@media (orientation: portrait) {
+    .score-header {
+        /* ~100% increase for portrait */
+        font-size: clamp(3rem, 10vw, 6rem);
+        letter-spacing: 0.4em;
+        margin-bottom: var(--space-md);
+    }
+    .score-badge {
+        /* Double portrait size; scale primarily by viewport width */
+        font-size: clamp(24rem, 60vw, 32rem);
+        padding: var(--space-xxl) var(--space-xxl);
+        background: none;
+    }
+}
+
+/* Landscape tuning so it doesn't blow up horizontally */
+@media (orientation: landscape) {
+    .score-header {
+        font-size: clamp(1.5rem, 3vw, 3rem);
+    }
+    .score-badge {
+        font-size: clamp(8rem, 25vw, 12rem);
+    }
+}
+
+@keyframes scoreShake {
+    0% { transform: translateX(0) scale(1); }
+    10% { transform: translateX(-8px) scale(1.15); }
+    20% { transform: translateX(8px) scale(1.15); }
+    30% { transform: translateX(-6px) scale(1.1); }
+    40% { transform: translateX(6px) scale(1.1); }
+    50% { transform: translateX(-4px) scale(1.05); }
+    60% { transform: translateX(4px) scale(1.05); }
+    70% { transform: translateX(-2px) scale(1.02); }
+    80% { transform: translateX(2px) scale(1.02); }
+    90% { transform: translateX(-1px) scale(1.01); }
+    100% { transform: translateX(0) scale(1); }
 }
 
 #gameCanvas {
-    border: 3px solid #ffd700;
-    border-radius: 10px;
+    /* Full screen canvas - no borders or constraints */
     background: linear-gradient(to bottom, #87CEEB 0%, #98FB98 100%);
-    max-width: 95vw;
-    max-height: 70vh;
-    width: auto;
-    height: auto;
+    width: 100vw;
+    height: 100vh;
     touch-action: none;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1;
 }
 
 .game-ui {
@@ -494,9 +719,138 @@ button:active {
     }
 }
 
+/* Pause Screen Styles */
+.pause-backdrop {
+    backdrop-filter: blur(8px);
+    background: rgba(0, 0, 0, 0.7);
+}
+
+#pauseScreen .menu-buttons {
+    gap: var(--space-lg);
+    margin-top: var(--space-lg);
+}
+
+#pauseScreen .menu-buttons button {
+    min-width: 200px;
+    font-size: clamp(var(--font-size-base), 4vw, var(--font-size-lg));
+}
+
+/* Focus Management */
+.topbar-btn:focus,
+button:focus {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+}
+
+/* Touch target improvements */
+@media (max-width: 768px) {
+    .topbar-btn {
+        width: 48px;
+        height: 48px;
+        font-size: 1.2rem;
+    }
+    
+    .score-badge {
+        font-size: clamp(var(--font-size-sm), 5vw, var(--font-size-lg));
+        padding: var(--space-xs) var(--space-md);
+        min-width: 60px;
+    }
+    
+    #pauseScreen .menu-buttons button {
+        min-width: 180px;
+        padding: var(--space-md) var(--space-lg);
+    }
+}
+
+/* Very small screens */
+@media (max-width: 320px) {
+    .topbar {
+        left: var(--space-sm);
+        right: var(--space-sm);
+    }
+    
+    .topbar-btn {
+        width: 42px;
+        height: 42px;
+        font-size: 1rem;
+    }
+    
+    .score-badge {
+        font-size: var(--font-size-sm);
+        padding: var(--space-xs) var(--space-sm);
+        min-width: 50px;
+    }
+}
+
+/* Landscape mode adjustments */
+@media (orientation: landscape) and (max-height: 500px) {
+    .topbar {
+        top: var(--space-sm);
+    }
+    
+    .game-header {
+        top: var(--space-sm);
+    }
+    
+    #pauseScreen {
+        padding: var(--space-lg);
+    }
+    
+    #pauseScreen .menu-buttons {
+        flex-direction: row;
+        justify-content: center;
+        gap: var(--space-md);
+        flex-wrap: wrap;
+    }
+    
+    #pauseScreen .menu-buttons button {
+        min-width: 140px;
+        font-size: var(--font-size-sm);
+        padding: var(--space-sm) var(--space-md);
+    }
+}
+
+/* Final orientation overrides for score readability */
+.score-badge {
+    font-size: clamp(6rem, 22vw, 16rem);
+}
+
+@media (orientation: portrait) {
+    .score-header {
+        font-size: clamp(2rem, 8vw, 5rem);
+        letter-spacing: 0.35em;
+        margin-bottom: var(--space-md);
+    }
+    .score-badge {
+        font-size: clamp(8rem, 28vw, 20rem);
+        padding: var(--space-xxl) var(--space-xxl);
+    }
+}
+
+@media (orientation: landscape) {
+    .score-header {
+        font-size: clamp(1.25rem, 3.5vw, 3rem);
+    }
+    .score-badge {
+        font-size: clamp(5rem, 12vh, 10rem);
+    }
+}
+
+/* High contrast theme adjustments */
+[data-theme="high-contrast"] .topbar-btn {
+    border-width: 3px;
+    font-weight: bold;
+}
+
+[data-theme="high-contrast"] .score-badge {
+    border-width: 3px;
+    font-weight: bold;
+}
+
 /* Prevent zoom on double tap */
 @media (pointer: coarse) {
-    button {
+    button,
+    .topbar-btn {
         touch-action: manipulation;
     }
 }

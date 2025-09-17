@@ -123,11 +123,17 @@ CREATE INDEX idx_scores_player ON player_scores (player_name, score DESC);
 - [x] Anti-cheat measures active
 
 ### 🎯 Live URLs:
-- **Game with Leaderboard**: `https://lt-dans-game-with-leaderboard-production.up.railway.app`
+- **Game with Leaderboard**: `https://lt-dans-game-frontend-production.up.railway.app`
 - **API**: `https://leaderboard-api-production-c84c.up.railway.app`
 - **Health Check**: `https://leaderboard-api-production-c84c.up.railway.app/api/health`
 - **GitHub Game Repo**: `https://github.com/meezymeek/ltdans-run-for-reelection-game`
 - **GitHub API Repo**: `https://github.com/meezymeek/ltdans-leaderboard-api`
+
+### 🔧 Fixed Issues:
+- ✅ **MIME Type Problem**: Resolved by using Railway's default static site handling
+- ✅ **Git Branch Mismatch**: Fixed master/main branch synchronization
+- ✅ **Score Validation**: Improved game duration calculation and error handling
+- ✅ **Button Functionality**: All leaderboard buttons now working correctly
 
 ## 🧪 Testing the System
 

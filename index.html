@@ -4,13 +4,27 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Lt. Dan's Run for Re-Election</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Tiny5:wght@400&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="game-container">
+        <!-- Game Header - Only shows title when not playing -->
         <div class="game-header">
             <h1>Lt. Dan's Run for Re-Election</h1>
-            <div class="score">Score: <span id="score">0</span></div>
+        </div>
+        
+        <!-- Score Badge - Top center for maximum size -->
+        <div class="score-container">
+            <div class="score-header">VOTES</div>
+            <div class="score-badge" id="scoreBadge">0</div>
+        </div>
+        
+        <!-- Control Buttons - Bottom right -->
+        <div class="control-buttons">
+            <button class="control-btn" id="pauseButton" title="Pause Game">⏸</button>
         </div>
         
         <canvas id="gameCanvas" width="800" height="600"></canvas>
@@ -19,9 +33,6 @@
             <div id="startScreen" class="screen">
                 <h2>Re-Run</h2>
                 <p>Help Lt. Dan win the election!</p>
-                <div class="controls-info">
-                    <p>📱 Tap to JUMP</p>
-                </div>
                 <div class="menu-buttons">
                     <button id="startButton">Start Campaign!</button>
                     <button id="leaderboardButton" class="secondary-button">🏆 Leaderboard</button>
@@ -72,11 +83,18 @@
                     <button id="backToLeaderboardButton">Back to Leaderboard</button>
                 </div>
             </div>
+
+            <div id="pauseScreen" class="screen hidden">
+                <h2>⏸️ Game Paused</h2>
+                <p>Take a break, the campaign will wait!</p>
+                <div class="menu-buttons">
+                    <button id="resumeButton">▶️ Resume Campaign</button>
+                    <button id="restartFromPauseButton" class="secondary-button">🔄 Restart</button>
+                    <button id="mainMenuFromPauseButton" class="secondary-button">🏠 Main Menu</button>
+                </div>
+            </div>
         </div>
         
-        <div class="touch-controls">
-            <div class="control-hint">Tap anywhere to play</div>
-        </div>
     </div>
     
     <script src="game.js"></script>
