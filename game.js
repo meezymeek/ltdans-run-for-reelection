@@ -846,7 +846,7 @@ class LtDanRunner {
                 if (obstacle.type === 'tall') {
                     this.score += this.config.tallPoints;
                     this.updateScore();
-                    this.addPopup("+50", this.player.x + this.player.width/2, this.player.y - 20);
+                    this.addPopup("+30", this.player.x + this.player.width/2, this.player.y - 20);
                 } else {
                     this.score += this.config.lowPoints;
                     this.updateScore();

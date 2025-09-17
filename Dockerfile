@@ -1,7 +1,8 @@
 # Use nginx to serve static files
 FROM nginx:alpine
 
-# Add build argument for cache busting
+# Force complete rebuild with timestamp
+ENV REBUILD_TIME=2025-01-17-1838
 ARG CACHEBUST=1
 
 # Copy static files to nginx html directory
@@ -10,7 +11,7 @@ COPY index.html /usr/share/nginx/html/
 COPY game.js /usr/share/nginx/html/
 COPY style.css /usr/share/nginx/html/
 
-# Create nginx config template that uses PORT environment variable
+# Create nginx config template with cache control headers
 RUN echo 'server { \
     listen $PORT; \
     listen [::]:$PORT; \
@@ -19,6 +20,15 @@ RUN echo 'server { \
         root /usr/share/nginx/html; \
         index index.html; \
         try_files $uri $uri/ /index.html; \
+        # Prevent caching of JS/CSS files \
+        location ~* \.(js|css)$ { \
+            expires -1; \
+            add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0"; \
+        } \
+        # Allow caching of images \
+        location ~* \.(jpg|jpeg|png|gif|ico|svg)$ { \
+            expires 1d; \
+        } \
     } \
 }' > /etc/nginx/conf.d/default.conf.template
 
