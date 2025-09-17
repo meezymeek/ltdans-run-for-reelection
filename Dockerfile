@@ -6,8 +6,7 @@ COPY index.html /usr/share/nginx/html/
 COPY game.js /usr/share/nginx/html/
 COPY style.css /usr/share/nginx/html/
 
-# Copy custom nginx config if it exists
-COPY nginx.conf /etc/nginx/nginx.conf
+# Note: Using default nginx config (no custom nginx.conf needed for static files)
 
 # Expose port 80
 EXPOSE 80
