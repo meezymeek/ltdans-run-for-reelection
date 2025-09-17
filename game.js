@@ -209,10 +209,18 @@ class LtDanRunner {
             jumpPower: -15,
             groundLevel: 0.8,
             gameSpeed: 4,
-            obstacleSpawnRate: 120, // frames between obstacles (fixed interval)
+            obstacleSpawnRate: 180, // increased by 50% (was 120)
             obstacleSpeed: 4,
-            scoreMultiplier: 1
+            scoreMultiplier: 1,
+            lowPoints: 10,
+            tallPoints: 30,
+            tallSpawnMin: 270, // increased by 50% (was 180)
+            tallSpawnMax: 540,  // increased by 50% (was 360)
+            minObstacleGapPx: 250 // minimum pixel gap between obstacles
         };
+        
+        this.tallSpawnCounter = 0;
+        this.nextTallSpawn = this.randomInt(this.config.tallSpawnMin, this.config.tallSpawnMax);
         
         // Game state
         this.gameState = 'start'; // 'start', 'playing', 'paused', 'gameOver'
@@ -790,8 +798,12 @@ class LtDanRunner {
     }
     
     spawnObstacle() {
-        if (this.gameFrame % this.config.obstacleSpawnRate === 0) {
-            // Only spawn low obstacles that can be jumped over
+        const lastObstacle = this.obstacles[this.obstacles.length - 1];
+        const canSpawn = !lastObstacle || 
+            (this.canvas.width + 50 - (lastObstacle.x + lastObstacle.width)) >= this.config.minObstacleGapPx;
+
+        // Low obstacle spawn (fixed interval)
+        if (canSpawn && this.gameFrame % this.config.obstacleSpawnRate === 0) {
             const obstacle = {
                 x: this.canvas.width + 50,
                 y: this.player.groundY - 40,
@@ -803,6 +815,24 @@ class LtDanRunner {
             };
             this.obstacles.push(obstacle);
         }
+
+        // Tall obstacle spawn (random interval)
+        this.tallSpawnCounter++;
+        if (canSpawn && this.tallSpawnCounter >= this.nextTallSpawn) {
+            const tallHeight = this.computeTallHeight();
+            const obstacle = {
+                x: this.canvas.width + 50,
+                y: this.player.groundY - tallHeight,
+                width: 35,
+                height: tallHeight,
+                speed: this.config.obstacleSpeed,
+                type: 'tall',
+                color: '#5C2E0E'
+            };
+            this.obstacles.push(obstacle);
+            this.tallSpawnCounter = 0;
+            this.nextTallSpawn = this.randomInt(this.config.tallSpawnMin, this.config.tallSpawnMax);
+        }
     }
     
     updateObstacles() {
@@ -813,18 +843,33 @@ class LtDanRunner {
             // Remove obstacles that have gone off screen
             if (obstacle.x + obstacle.width < 0) {
                 this.obstacles.splice(i, 1);
-                this.score += 10;
-                this.updateScore();
-                this.addPopup("+10", this.player.x + this.player.width/2, this.player.y - 20);
+                if (obstacle.type === 'tall') {
+                    this.score += this.config.tallPoints;
+                    this.updateScore();
+                    this.addPopup("+50", this.player.x + this.player.width/2, this.player.y - 20);
+                } else {
+                    this.score += this.config.lowPoints;
+                    this.updateScore();
+                    this.addPopup("+10", this.player.x + this.player.width/2, this.player.y - 20);
+                }
                 this.playPointSfx();
             }
-            
+
             // Collision detection
             if (this.checkCollision(this.player, obstacle)) {
                 this.gameOver();
                 return;
             }
         }
+    }
+
+    randomInt(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    computeTallHeight() {
+        // Fixed height for tall obstacles
+        return 80;
     }
     
     checkCollision(player, obstacle) {
