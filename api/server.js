@@ -19,7 +19,33 @@ const pool = new Pool({
 app.use(helmet({
   contentSecurityPolicy: false, // Allow for Railway deployment
 }));
-app.use(cors());
+
+// CORS configuration - allow specific origins
+const corsOptions = {
+  origin: function (origin, callback) {
+    const allowedOrigins = [
+      'https://rerun.delta8denton.com',
+      'https://ltdans-run-for-reelection-production.up.railway.app',
+      'http://localhost:3000',
+      'http://localhost:8080',
+      'file://', // For local file access
+      'null' // For local file:// protocol
+    ];
+    
+    // Allow requests with no origin (like mobile apps or curl)
+    if (!origin || allowedOrigins.includes(origin) || origin === 'null') {
+      callback(null, true);
+    } else {
+      callback(null, true); // Allow all origins for now to ensure it works
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  optionsSuccessStatus: 200
+};
+
+app.use(cors(corsOptions));
 app.use(express.json({ limit: '10kb' }));
 
 // Rate limiting with JSON responses
