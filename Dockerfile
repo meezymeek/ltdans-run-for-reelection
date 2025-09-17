@@ -6,10 +6,20 @@ COPY index.html /usr/share/nginx/html/
 COPY game.js /usr/share/nginx/html/
 COPY style.css /usr/share/nginx/html/
 
-# Note: Using default nginx config (no custom nginx.conf needed for static files)
+# Create nginx config template that uses PORT environment variable
+RUN echo 'server { \
+    listen $PORT; \
+    listen [::]:$PORT; \
+    server_name _; \
+    location / { \
+        root /usr/share/nginx/html; \
+        index index.html; \
+        try_files $uri $uri/ /index.html; \
+    } \
+}' > /etc/nginx/conf.d/default.conf.template
 
-# Expose port 80
-EXPOSE 80
+# Remove default nginx config
+RUN rm /etc/nginx/conf.d/default.conf
 
-# Start nginx
-CMD ["nginx", "-g", "daemon off;"]
+# Use shell form to substitute environment variables
+CMD sh -c "envsubst '\$PORT' < /etc/nginx/conf.d/default.conf.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"
