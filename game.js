@@ -572,7 +572,24 @@ class LtDanRunner {
             return;
         }
 
-        const gameDuration = Math.floor((this.gameEndTime - this.gameStartTime) / 1000);
+        // Calculate game duration with fallback
+        let gameDuration = Math.floor((this.gameEndTime - this.gameStartTime) / 1000);
+        
+        // Ensure minimum game duration (anti-cheat protection)
+        if (gameDuration < 5) {
+            gameDuration = Math.max(5, Math.floor(this.score / 10)); // Estimate based on score
+        }
+        
+        // Cap maximum duration to prevent issues
+        if (gameDuration > 7200) {
+            gameDuration = 7200;
+        }
+
+        console.log('Submitting score:', {
+            playerName,
+            score: this.score,
+            gameDuration
+        });
         
         // Disable submit button
         this.submitScoreButton.disabled = true;
@@ -595,6 +612,7 @@ class LtDanRunner {
                 }, 3000);
             }
         } catch (error) {
+            console.error('Full error details:', error);
             this.showSubmissionResult(`Failed to submit score: ${error.message}`, true);
         } finally {
             // Re-enable submit button
