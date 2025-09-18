@@ -243,7 +243,20 @@ class LtDanRunner {
             velocityY: 0,
             isJumping: false,
             groundY: 0,
-            color: '#ff6b6b'
+            color: '#ff6b6b',
+            // Animation properties
+            animationFrame: 0,
+            runCycle: 0,
+            animationSpeed: 0.15,
+            // Joint angles for animation
+            leftLegAngle: 0,
+            rightLegAngle: 0,
+            leftKneeAngle: 0,
+            rightKneeAngle: 0,
+            leftArmAngle: 0,
+            rightArmAngle: 0,
+            leftElbowAngle: 0,
+            rightElbowAngle: 0
         };
         
         // Obstacles array
@@ -965,6 +978,167 @@ class LtDanRunner {
             this.player.velocityY = 0;
             this.player.isJumping = false;
         }
+        
+        // Update animation
+        this.updatePlayerAnimation();
+    }
+    
+    updatePlayerAnimation() {
+        if (!this.player.isJumping) {
+            // Running animation
+            this.player.animationFrame += this.player.animationSpeed;
+            const cycle = Math.floor(this.player.animationFrame) % 4;
+            
+            // Calculate joint angles based on cycle
+            const runPhase = (this.player.animationFrame % 4) / 4 * Math.PI * 2;
+            
+            // Leg animation (opposite legs move in opposite directions)
+            // Negative angles move forward, positive backward
+            this.player.leftLegAngle = -Math.sin(runPhase) * 30;
+            this.player.rightLegAngle = -Math.sin(runPhase + Math.PI) * 30;
+            
+            // Knee animation - bend when leg is forward
+            this.player.leftKneeAngle = Math.max(0, Math.sin(runPhase) * 45);
+            this.player.rightKneeAngle = Math.max(0, Math.sin(runPhase + Math.PI) * 45);
+            
+            // Arm swing (opposite to legs) - asymmetrical swing: more forward, less backward
+            // Base angle of 50, swings from 10 (forward) to 85 (backward, not past body)
+            const leftSwing = Math.sin(runPhase + Math.PI);
+            const rightSwing = Math.sin(runPhase);
+            
+            // Apply asymmetrical swing: -40 forward, +35 backward from base of 50
+            this.player.leftArmAngle = 50 + (leftSwing > 0 ? leftSwing * 35 : leftSwing * 40);
+            this.player.rightArmAngle = 50 + (rightSwing > 0 ? rightSwing * 35 : rightSwing * 40);
+            
+            // Elbow bend - increased bend for more natural running motion
+            this.player.leftElbowAngle = -Math.abs(Math.sin(runPhase + Math.PI)) * 85;
+            this.player.rightElbowAngle = -Math.abs(Math.sin(runPhase)) * 85;
+        } else {
+            // Jumping animation - arms fully extended upwards to the sky
+            this.player.leftLegAngle = -15;
+            this.player.rightLegAngle = -15;
+            this.player.leftKneeAngle = 20;
+            this.player.rightKneeAngle = 20;
+            this.player.leftArmAngle = 180;  // Arms pointing straight up to the sky
+            this.player.rightArmAngle = 180;
+            this.player.leftElbowAngle = 0;  // Fully extended (no bend)
+            this.player.rightElbowAngle = 0;
+        }
+    }
+    
+    drawPlayerLimb(startX, startY, angle1, length1, angle2, length2, width) {
+        this.ctx.save();
+        this.ctx.lineWidth = width;
+        this.ctx.lineCap = 'round';
+        this.ctx.strokeStyle = this.player.color;
+        
+        // Upper limb
+        this.ctx.translate(startX, startY);
+        this.ctx.rotate(angle1 * Math.PI / 180);
+        this.ctx.beginPath();
+        this.ctx.moveTo(0, 0);
+        this.ctx.lineTo(0, length1);
+        this.ctx.stroke();
+        
+        // Lower limb
+        this.ctx.translate(0, length1);
+        this.ctx.rotate(angle2 * Math.PI / 180);
+        this.ctx.beginPath();
+        this.ctx.moveTo(0, 0);
+        this.ctx.lineTo(0, length2);
+        this.ctx.stroke();
+        
+        this.ctx.restore();
+    }
+    
+    drawArticulatedPlayer() {
+        const centerX = this.player.x + this.player.width / 2;
+        const topY = this.player.y;
+        
+        // Body proportions
+        const headHeight = this.player.height * 0.33;
+        const torsoHeight = this.player.height * 0.33;
+        const legHeight = this.player.height * 0.34;
+        
+        // Save context
+        this.ctx.save();
+        
+        // Draw layers in correct z-order for side profile
+        const hipY = topY + headHeight + torsoHeight;
+        const thighLength = legHeight * 0.5;
+        const shinLength = legHeight * 0.5;
+        
+        // 1. Draw right leg FIRST (behind torso)
+        this.drawPlayerLimb(
+            centerX + 5,  // Moved closer together (was 8)
+            hipY,
+            this.player.rightLegAngle,
+            thighLength,
+            this.player.rightKneeAngle,
+            shinLength,
+            8
+        );
+        
+        // 2. Draw torso (center)
+        const torsoY = topY + headHeight;
+        this.ctx.fillStyle = '#cc5858';
+        this.ctx.fillRect(
+            centerX - this.player.width/2 + 5,
+            torsoY,
+            this.player.width - 10,
+            torsoHeight
+        );
+        
+        // 3. Draw head (shifted right for side profile)
+        const headOffset = 8; // Shift head to the right for side profile
+        this.ctx.fillStyle = this.player.color;
+        this.ctx.fillRect(
+            centerX - this.player.width/2 + headOffset,
+            topY,
+            this.player.width - headOffset,
+            headHeight
+        );
+        
+        // 4. Draw face (positioned for side profile - single eye visible)
+        this.ctx.fillStyle = 'white';
+        // Single eye for side profile (moved up slightly)
+        this.ctx.fillRect(centerX + 8, topY + 5, 5, 5);  // Changed from topY + 7 to topY + 5
+        
+        // Side profile mouth (extended diagonal line)
+        this.ctx.strokeStyle = 'white';
+        this.ctx.lineWidth = 2;
+        this.ctx.beginPath();
+        this.ctx.moveTo(centerX + 11, topY + 13);  // Start a bit more left
+        this.ctx.lineTo(centerX + 17, topY + 16);  // Extended further right
+        this.ctx.stroke();
+        
+        // 5. Draw arm
+        const shoulderY = torsoY + 4;
+        const armLength = torsoHeight * 0.5;
+        
+        // Single arm for side profile
+        this.drawPlayerLimb(
+            centerX,
+            shoulderY,
+            this.player.leftArmAngle,
+            armLength,
+            this.player.leftElbowAngle,
+            armLength * 0.8,
+            6
+        );
+        
+        // 6. Draw left leg LAST (in front)
+        this.drawPlayerLimb(
+            centerX - 5,  // Moved closer together (was 8)
+            hipY,
+            this.player.leftLegAngle,
+            thighLength,
+            this.player.leftKneeAngle,
+            shinLength,
+            8
+        );
+        
+        this.ctx.restore();
     }
     
     spawnObstacle() {
@@ -1113,19 +1287,8 @@ class LtDanRunner {
         this.ctx.lineTo(this.canvas.width, this.player.groundY);
         this.ctx.stroke();
         
-        // Draw player (Lt. Dan)
-        this.ctx.fillStyle = this.player.color;
-        this.ctx.fillRect(
-            this.player.x, 
-            this.player.y, 
-            this.player.width, 
-            this.player.height
-        );
-        
-        // Add simple face to Lt. Dan
-        this.ctx.fillStyle = 'white';
-        this.ctx.fillRect(this.player.x + 8, this.player.y + 8, 6, 6); // Left eye
-        this.ctx.fillRect(this.player.x + 26, this.player.y + 8, 6, 6); // Right eye
+        // Draw articulated player (Lt. Dan)
+        this.drawArticulatedPlayer();
         
         // Draw obstacles
         for (let obstacle of this.obstacles) {
