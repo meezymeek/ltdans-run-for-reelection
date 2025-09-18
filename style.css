@@ -511,19 +511,36 @@ button:active {
     width: 100%;
     max-width: 250px;
     padding: 0.8rem;
+    font-family: var(--font-pixel) !important;
     font-size: 1rem;
-    border: 2px solid #ffd700;
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.9);
-    color: #333;
+    letter-spacing: 0.05em;
+    border: var(--px-border-1) solid #ffd700;
+    border-radius: 0;  /* Sharp pixel art edges */
+    background: rgba(0, 0, 0, 0.8);
+    color: #ffd700;
     text-align: center;
     margin-bottom: 1rem;
+    box-shadow: var(--px-shadow-offset) var(--px-shadow-offset) 0 var(--px-shadow);
+    -webkit-font-smoothing: none;
+    -moz-osx-font-smoothing: auto;
+    transition: var(--transition);
+}
+
+#playerNameInput::placeholder {
+    color: rgba(255, 215, 0, 0.5);
+    font-family: var(--font-pixel);
 }
 
 #playerNameInput:focus {
-    outline: none;
-    border-color: #ff6b6b;
-    box-shadow: 0 0 10px rgba(255, 107, 107, 0.3);
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+    border-color: var(--color-accent-bright);
+    background: rgba(0, 0, 0, 0.9);
+    box-shadow: calc(var(--px-shadow-offset) + 2px) calc(var(--px-shadow-offset) + 2px) 0 var(--px-shadow);
+}
+
+#playerNameInput:active {
+    box-shadow: 2px 2px 0 var(--px-shadow);
 }
 
 .form-buttons {

@@ -863,10 +863,8 @@ class LtDanRunner {
         this.playerNameInput.value = savedName;
         this.scoreSubmissionForm.classList.remove('hidden');
         
-        // Focus on input if no saved name
-        if (!savedName) {
-            setTimeout(() => this.playerNameInput.focus(), 100);
-        }
+        // Don't auto-focus to prevent mobile keyboard from popping up
+        // Users can tap the input field when they're ready to type
     }
 
     async submitScore() {
