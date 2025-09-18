@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Generate Placeholder Skins</title>
+</head>
+<body>
+    <h1>Placeholder Skin Generator</h1>
+    <p>Right-click each image and save to skins/default/ folder:</p>
+    
+    <div id="images"></div>
+    
+    <script>
+        // Define body parts with their dimensions and colors
+        const bodyParts = [
+            { name: 'head', width: 32, height: 20, color: '#ff6b6b' },
+            { name: 'torso', width: 30, height: 20, color: '#cc5858' },
+            { name: 'upper_arm', width: 8, height: 12, color: '#ff6b6b' },
+            { name: 'forearm', width: 6, height: 10, color: '#ff8585' },
+            { name: 'thigh', width: 10, height: 12, color: '#ff6b6b' },
+            { name: 'shin', width: 8, height: 12, color: '#ff8585' }
+        ];
+        
+        const container = document.getElementById('images');
+        
+        bodyParts.forEach(part => {
+            // Create canvas for each body part
+            const canvas = document.createElement('canvas');
+            canvas.width = part.width;
+            canvas.height = part.height;
+            const ctx = canvas.getContext('2d');
+            
+            // Draw base color
+            ctx.fillStyle = part.color;
+            ctx.fillRect(0, 0, part.width, part.height);
+            
+            // Add some detail/shading
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+            ctx.fillRect(0, 0, part.width, 2);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.fillRect(0, part.height - 2, part.width, 2);
+            
+            // Add edge highlight
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(0.5, 0.5, part.width - 1, part.height - 1);
+            
+            // Create container for this part
+            const partDiv = document.createElement('div');
+            partDiv.style.margin = '10px';
+            partDiv.style.padding = '10px';
+            partDiv.style.border = '1px solid #ccc';
+            partDiv.style.display = 'inline-block';
+            
+            const label = document.createElement('p');
+            label.textContent = `${part.name}.png (${part.width}x${part.height})`;
+            
+            const img = document.createElement('img');
+            img.src = canvas.toDataURL('image/png');
+            img.style.imageRendering = 'pixelated';
+            img.style.width = part.width * 4 + 'px';
+            img.style.height = part.height * 4 + 'px';
+            img.style.border = '1px solid #000';
+            img.style.display = 'block';
+            
+            // Create download link
+            const link = document.createElement('a');
+            link.href = canvas.toDataURL('image/png');
+            link.download = `${part.name}.png`;
+            link.textContent = `Download ${part.name}.png`;
+            link.style.display = 'block';
+            link.style.marginTop = '5px';
+            
+            partDiv.appendChild(label);
+            partDiv.appendChild(img);
+            partDiv.appendChild(link);
+            container.appendChild(partDiv);
+        });
+    </script>
+</body>
+</html>

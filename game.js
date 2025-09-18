@@ -145,6 +145,12 @@ class LtDanRunner {
         this.soundManager = new SoundManager();
         this.soundManager.loadSettings();
         
+        // Skin system
+        this.currentSkin = 'default';
+        this.skinImages = {};
+        this.skinsLoaded = false;
+        this.initializeSkins();
+        
         // UI Screen elements
         this.startScreen = document.getElementById('startScreen');
         this.gameOverScreen = document.getElementById('gameOverScreen');
@@ -256,7 +262,18 @@ class LtDanRunner {
             leftArmAngle: 0,
             rightArmAngle: 0,
             leftElbowAngle: 0,
-            rightElbowAngle: 0
+            rightElbowAngle: 0,
+            // Head animation properties (current values)
+            headYOffset: 0,
+            headXOffset: 0,
+            headRotation: 0,
+            // Head animation targets (for smooth lerp)
+            headYOffsetTarget: 0,
+            headXOffsetTarget: 0,
+            headRotationTarget: 0,
+            // Breathing animation
+            breathingCycle: 0,
+            isBreathingOut: false
         };
         
         // Obstacles array
@@ -300,6 +317,49 @@ class LtDanRunner {
         this.init();
     }
 
+    initializeSkins() {
+        // Define body parts that need skins
+        const bodyParts = ['head', 'head-open-mouth', 'torso', 'upper_arm', 'forearm', 'thigh', 'shin'];
+        
+        // Load default placeholder skins (embedded as base64 for now)
+        // In production, these would load from skins/default/*.png files
+        const placeholderSkins = {
+            head: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAATCAYAAAC1L2x7AAAABHNCSVQICAgIfAhkiAAAAGlJREFUSIntlDEKACEMQ1/x/lfWSXAQKVhaaHFoCgmEfEhARACA7l4AMLPWWt/3vu/fOWcppQCAiGBm1FpRa0VEICKYGbXWX+89xhhjjPHee4wxxnjvPUQEM+Occ8455xxzTkQEM6OUspz7AEfzHdK5dpP1AAAAAElFTkSuQmCC',
+            'head-open-mouth': 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAATCAYAAAC1L2x7AAAABHNCSVQICAgIfAhkiAAAAGlJREFUSIntlDEKACEMQ1/x/lfWSXAQKVhaaHFoCgmEfEhARACA7l4AMLPWWt/3vu/fOWcppQCAiGBm1FpRa0VEICKYGbXWX+89xhhjjPHee4wxxnjvPUQEM+Occ8455xxzTkQEM6OUspz7AEfzHdK5dpP1AAAAAElFTkSuQmCC',
+            torso: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAATCAYAAACHrr18AAAABHNCSVQICAgIfAhkiAAAAFxJREFUSIntlDEKACAMAzP//2cHQRAUtINDXSJcIBByiAiICADM7AEAEXnf9/M8z/u+n+d53/fzPE9E5H3fz/M8EZH3fT/P80RE3vf9PM8TEQEAZkZEAGBmRASA7n4BWPMZyr5T/ZIAAAAASUVORK5CYII=',
+            upper_arm: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAMCAYAAABfnvydAAAABHNCSVQICAgIfAhkiAAAADRJREFUGJVjZGBg+M/AwMDAxMDAgAOMowqIV8DIwMDAz8DAcImBgYGJgYGBYeTYARMAMAQGS92R5ZQAAAAASUVORK5CYII=',
+            forearm: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAYAAAAKCAYAAACXtdZwAAAABHNCSVQICAgIfAhkiAAAAC1JREFUCB1jZGBg+M/AwMDAxAADjAwMDPwMDAxXGBgYmBgYGBhGqQMEAAP8BgaGcOsXCFgAAAAASUVORK5CYII=',
+            thigh: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAMCAYAAABGdnDgAAAABHNCSVQICAgIfAhkiAAAADNJREFUGJVjZGBg+M/AwMDAxAAFjAwMDPwMDAxXGBgYmBgYGBhGRSECAA0AAwP/DAwMVwC2SAYGuTPoCgAAAABJRU5ErkJggg==',
+            shin: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAMCAYAAABfnvydAAAABHNCSVQICAgIfAhkiAAAADJJREFUGJVjZGBg+M/AwMDAxAAFjAwMDPwMDAxXGBgYmBgYGBhGFRAAAA0AAwP/DAwMVwCzEgYGv5yITAAAAABJRU5ErkJggg=='
+        };
+        
+        // Load images
+        bodyParts.forEach(part => {
+            const img = new Image();
+            img.onload = () => {
+                console.log(`Loaded skin: ${part}`);
+            };
+            img.onerror = () => {
+                console.log(`Failed to load skin: ${part}, using fallback`);
+            };
+            
+            // Try to load from file first, fallback to embedded base64
+            img.src = `skins/${this.currentSkin}/${part}.png`;
+            
+            // Use placeholder if file doesn't exist
+            img.onerror = () => {
+                img.src = placeholderSkins[part];
+            };
+            
+            this.skinImages[part] = img;
+        });
+        
+        // Mark skins as loaded after a short delay
+        setTimeout(() => {
+            this.skinsLoaded = true;
+            console.log('All skins loaded');
+        }, 100);
+    }
     
     init() {
         this.setupCanvas();
@@ -1011,6 +1071,24 @@ class LtDanRunner {
             // Elbow bend - increased bend for more natural running motion
             this.player.leftElbowAngle = -Math.abs(Math.sin(runPhase + Math.PI)) * 85;
             this.player.rightElbowAngle = -Math.abs(Math.sin(runPhase)) * 85;
+            
+            // Breathing animation - cycle between normal and open-mouth
+            this.player.breathingCycle += 0.08; // Faster breathing rate (increased from 0.02)
+            // Switch breathing state more frequently
+            const breathPhase = Math.sin(this.player.breathingCycle);
+            this.player.isBreathingOut = breathPhase > 0.3; // Open mouth 35% of the time
+            
+            // Head animation - combined natural motion (slowed down, more exaggerated)
+            // Calculate target values with increased amplitude
+            this.player.headYOffsetTarget = Math.abs(Math.sin(runPhase)) * 3.5;  // Increased from 2
+            this.player.headXOffsetTarget = Math.sin(runPhase * 0.5) * 2;      // Increased from 1
+            this.player.headRotationTarget = Math.sin(runPhase * 0.5) * 4;     // Increased from ±2 to ±4 degrees
+            
+            // Apply lerp for smooth transitions
+            const lerpFactor = 0.15; // Adjust this value for smoothness (0.05 = very smooth, 0.3 = less smooth)
+            this.player.headYOffset += (this.player.headYOffsetTarget - this.player.headYOffset) * lerpFactor;
+            this.player.headXOffset += (this.player.headXOffsetTarget - this.player.headXOffset) * lerpFactor;
+            this.player.headRotation += (this.player.headRotationTarget - this.player.headRotation) * lerpFactor;
         } else {
             // Jumping animation - arms fully extended upwards to the sky
             this.player.leftLegAngle = -15;
@@ -1021,6 +1099,17 @@ class LtDanRunner {
             this.player.rightArmAngle = 180;
             this.player.leftElbowAngle = 0;  // Fully extended (no bend)
             this.player.rightElbowAngle = 0;
+            
+            // Head animation during jump - slight backward tilt
+            this.player.headYOffsetTarget = -2;
+            this.player.headXOffsetTarget = 0;
+            this.player.headRotationTarget = -5; // Looking upward
+            
+            // Apply lerp for smooth transitions (faster lerp for jumping)
+            const jumpLerpFactor = 0.25;
+            this.player.headYOffset += (this.player.headYOffsetTarget - this.player.headYOffset) * jumpLerpFactor;
+            this.player.headXOffset += (this.player.headXOffsetTarget - this.player.headXOffset) * jumpLerpFactor;
+            this.player.headRotation += (this.player.headRotationTarget - this.player.headRotation) * jumpLerpFactor;
         }
     }
     
@@ -1049,6 +1138,48 @@ class LtDanRunner {
         this.ctx.restore();
     }
     
+    drawPlayerLimb(startX, startY, angle1, length1, angle2, length2, width, upperSkin, lowerSkin) {
+        this.ctx.save();
+        
+        // Upper limb
+        this.ctx.translate(startX, startY);
+        this.ctx.rotate(angle1 * Math.PI / 180);
+        
+        if (this.skinsLoaded && upperSkin && upperSkin.complete) {
+            // Draw skinned upper limb
+            this.ctx.drawImage(upperSkin, -width/2, 0, width, length1);
+        } else {
+            // Fallback to line drawing
+            this.ctx.lineWidth = width;
+            this.ctx.lineCap = 'round';
+            this.ctx.strokeStyle = this.player.color;
+            this.ctx.beginPath();
+            this.ctx.moveTo(0, 0);
+            this.ctx.lineTo(0, length1);
+            this.ctx.stroke();
+        }
+        
+        // Lower limb
+        this.ctx.translate(0, length1);
+        this.ctx.rotate(angle2 * Math.PI / 180);
+        
+        if (this.skinsLoaded && lowerSkin && lowerSkin.complete) {
+            // Draw skinned lower limb
+            this.ctx.drawImage(lowerSkin, -width/2, 0, width, length2);
+        } else {
+            // Fallback to line drawing
+            this.ctx.lineWidth = width;
+            this.ctx.lineCap = 'round';
+            this.ctx.strokeStyle = this.player.color;
+            this.ctx.beginPath();
+            this.ctx.moveTo(0, 0);
+            this.ctx.lineTo(0, length2);
+            this.ctx.stroke();
+        }
+        
+        this.ctx.restore();
+    }
+    
     drawArticulatedPlayer() {
         const centerX = this.player.x + this.player.width / 2;
         const topY = this.player.y;
@@ -1068,47 +1199,91 @@ class LtDanRunner {
         
         // 1. Draw right leg FIRST (behind torso)
         this.drawPlayerLimb(
-            centerX + 5,  // Moved closer together (was 8)
+            centerX + 5,
             hipY,
             this.player.rightLegAngle,
             thighLength,
             this.player.rightKneeAngle,
             shinLength,
-            8
+            10,
+            this.skinImages.thigh,
+            this.skinImages.shin
         );
         
         // 2. Draw torso (center)
         const torsoY = topY + headHeight;
-        this.ctx.fillStyle = '#cc5858';
-        this.ctx.fillRect(
-            centerX - this.player.width/2 + 5,
-            torsoY,
-            this.player.width - 10,
-            torsoHeight
-        );
+        if (this.skinsLoaded && this.skinImages.torso && this.skinImages.torso.complete) {
+            this.ctx.drawImage(
+                this.skinImages.torso,
+                centerX - this.player.width/2 + 5,
+                torsoY,
+                this.player.width - 10,
+                torsoHeight
+            );
+        } else {
+            this.ctx.fillStyle = '#cc5858';
+            this.ctx.fillRect(
+                centerX - this.player.width/2 + 5,
+                torsoY,
+                this.player.width - 10,
+                torsoHeight
+            );
+        }
         
-        // 3. Draw head (shifted right for side profile)
-        const headOffset = 8; // Shift head to the right for side profile
-        this.ctx.fillStyle = this.player.color;
-        this.ctx.fillRect(
-            centerX - this.player.width/2 + headOffset,
-            topY,
-            this.player.width - headOffset,
-            headHeight
-        );
+        // 3. Draw head (shifted right for side profile with animation)
+        const headOffset = 8;
         
-        // 4. Draw face (positioned for side profile - single eye visible)
-        this.ctx.fillStyle = 'white';
-        // Single eye for side profile (moved up slightly)
-        this.ctx.fillRect(centerX + 8, topY + 5, 5, 5);  // Changed from topY + 7 to topY + 5
+        // Save context for head transformation
+        this.ctx.save();
         
-        // Side profile mouth (extended diagonal line)
-        this.ctx.strokeStyle = 'white';
-        this.ctx.lineWidth = 2;
-        this.ctx.beginPath();
-        this.ctx.moveTo(centerX + 11, topY + 13);  // Start a bit more left
-        this.ctx.lineTo(centerX + 17, topY + 16);  // Extended further right
-        this.ctx.stroke();
+        // Apply head animation transformations
+        const headX = centerX - this.player.width/2 + headOffset + this.player.headXOffset;
+        const headY = topY - this.player.headYOffset; // Negative because Y offset lifts the head up
+        
+        // Apply rotation around the head center
+        const headCenterX = headX + (this.player.width - headOffset) / 2;
+        const headCenterY = headY + headHeight / 2;
+        this.ctx.translate(headCenterX, headCenterY);
+        this.ctx.rotate(this.player.headRotation * Math.PI / 180);
+        this.ctx.translate(-headCenterX, -headCenterY);
+        
+        // Choose which head to use based on jumping or breathing state
+        const useOpenMouth = this.player.isJumping || this.player.isBreathingOut;
+        const headImage = useOpenMouth ? this.skinImages['head-open-mouth'] : this.skinImages.head;
+        
+        if (this.skinsLoaded && headImage && headImage.complete) {
+            this.ctx.drawImage(
+                headImage,
+                headX,
+                headY,
+                this.player.width - headOffset,
+                headHeight
+            );
+        } else {
+            this.ctx.fillStyle = this.player.color;
+            this.ctx.fillRect(
+                headX,
+                headY,
+                this.player.width - headOffset,
+                headHeight
+            );
+        }
+        
+        // 4. Draw face features only if not using skins
+        if (!this.skinsLoaded || !this.skinImages.head || !this.skinImages.head.complete) {
+            this.ctx.fillStyle = 'white';
+            this.ctx.fillRect(headX + headOffset + 8, headY + 5, 5, 5);
+            
+            this.ctx.strokeStyle = 'white';
+            this.ctx.lineWidth = 2;
+            this.ctx.beginPath();
+            this.ctx.moveTo(headX + headOffset + 11, headY + 13);
+            this.ctx.lineTo(headX + headOffset + 17, headY + 16);
+            this.ctx.stroke();
+        }
+        
+        // Restore context after head transformation
+        this.ctx.restore();
         
         // 5. Draw arm
         const shoulderY = torsoY + 4;
@@ -1122,18 +1297,22 @@ class LtDanRunner {
             armLength,
             this.player.leftElbowAngle,
             armLength * 0.8,
-            6
+            8,
+            this.skinImages.upper_arm,
+            this.skinImages.forearm
         );
         
         // 6. Draw left leg LAST (in front)
         this.drawPlayerLimb(
-            centerX - 5,  // Moved closer together (was 8)
+            centerX - 5,
             hipY,
             this.player.leftLegAngle,
             thighLength,
             this.player.leftKneeAngle,
             shinLength,
-            8
+            10,
+            this.skinImages.thigh,
+            this.skinImages.shin
         );
         
         this.ctx.restore();

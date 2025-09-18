@@ -12,6 +12,7 @@ COPY game.js /usr/share/nginx/html/
 COPY style.css /usr/share/nginx/html/
 COPY soundManager.js /usr/share/nginx/html/
 COPY sfx /usr/share/nginx/html/sfx/
+COPY skins /usr/share/nginx/html/skins/
 
 # Create nginx config template with cache control headers
 RUN echo 'server { \

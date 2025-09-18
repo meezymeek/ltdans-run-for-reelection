@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Auto-generate Placeholder Skins</title>
+</head>
+<body>
+    <h1>Auto-generating Placeholder Skins...</h1>
+    <div id="status"></div>
+    <div id="images"></div>
+    
+    <script>
+        // Define body parts with their dimensions and colors
+        const bodyParts = [
+            { name: 'head', width: 32, height: 20, color: '#ff6b6b' },
+            { name: 'torso', width: 30, height: 20, color: '#cc5858' },
+            { name: 'upper_arm', width: 8, height: 12, color: '#ff6b6b' },
+            { name: 'forearm', width: 6, height: 10, color: '#ff8585' },
+            { name: 'thigh', width: 10, height: 12, color: '#ff6b6b' },
+            { name: 'shin', width: 8, height: 12, color: '#ff8585' }
+        ];
+        
+        const statusDiv = document.getElementById('status');
+        const imagesDiv = document.getElementById('images');
+        
+        // Generate base64 data for each part
+        const skinData = {};
+        
+        bodyParts.forEach(part => {
+            // Create canvas for each body part
+            const canvas = document.createElement('canvas');
+            canvas.width = part.width;
+            canvas.height = part.height;
+            const ctx = canvas.getContext('2d');
+            
+            // Draw base color
+            ctx.fillStyle = part.color;
+            ctx.fillRect(0, 0, part.width, part.height);
+            
+            // Add some detail/shading
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+            ctx.fillRect(0, 0, part.width, 2);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.fillRect(0, part.height - 2, part.width, 2);
+            
+            // Add edge highlight
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(0.5, 0.5, part.width - 1, part.height - 1);
+            
+            // Store the base64 data
+            skinData[part.name] = canvas.toDataURL('image/png');
+            
+            // Display the image
+            const container = document.createElement('div');
+            container.style.display = 'inline-block';
+            container.style.margin = '10px';
+            container.style.textAlign = 'center';
+            
+            const img = document.createElement('img');
+            img.src = skinData[part.name];
+            img.style.imageRendering = 'pixelated';
+            img.style.width = part.width * 4 + 'px';
+            img.style.height = part.height * 4 + 'px';
+            img.style.border = '1px solid #000';
+            
+            const label = document.createElement('div');
+            label.textContent = `${part.name}.png`;
+            
+            container.appendChild(img);
+            container.appendChild(label);
+            imagesDiv.appendChild(container);
+        });
+        
+        // Output the data as JavaScript that can be copied
+        const output = document.createElement('pre');
+        output.style.background = '#f0f0f0';
+        output.style.padding = '10px';
+        output.style.margin = '20px';
+        output.style.overflow = 'auto';
+        output.style.maxHeight = '300px';
+        output.textContent = `// Copy this data to use in your game:
+const PLACEHOLDER_SKINS = ${JSON.stringify(skinData, null, 2)};`;
+        
+        statusDiv.innerHTML = '<h2>Generated Skins:</h2><p>You can download each image individually, or use the base64 data below in your game.</p>';
+        document.body.appendChild(output);
+    </script>
+</body>
+</html>
