@@ -47,6 +47,7 @@ class SoundManager {
                 pointLow: 'sfx/effects/point-low',
                 pointTall: 'sfx/effects/point-tall',
                 collision: 'sfx/effects/collision',
+                crash: 'sfx/effects/crash',  // New crash sound for ragdoll
                 buttonClick: 'sfx/effects/button-click',
                 milestone: 'sfx/effects/milestone-100',
                 countdown3: 'sfx/effects/countdown-3',
@@ -72,6 +73,7 @@ class SoundManager {
             pointLow: { frequency: 880, duration: 0.15, type: 'square' },
             pointTall: { frequency: 1200, duration: 0.2, type: 'square' },
             collision: { frequency: 150, duration: 0.3, type: 'sawtooth' },
+            crash: { frequency: 100, duration: 0.5, type: 'sawtooth' },  // Deeper crash sound
             buttonClick: { frequency: 600, duration: 0.05, type: 'sine' },
             milestone: { frequency: 1000, duration: 0.5, type: 'triangle' },
             countdown: { frequency: 800, duration: 0.2, type: 'square' },
@@ -503,6 +505,10 @@ class SoundManager {
     
     playSpeedUp() {
         this.playEffect('speedUp', { volume: 0.7 });
+    }
+    
+    playCrash() {
+        this.playEffect('crash', { volume: 1.0, pitch: 0.9 + Math.random() * 0.2 });
     }
 }
 
