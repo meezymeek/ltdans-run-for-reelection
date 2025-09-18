@@ -141,6 +141,10 @@ class LtDanRunner {
         this.scoreElement = document.getElementById('scoreBadge');
         this.finalScoreElement = document.getElementById('finalScore');
         
+        // Initialize Sound Manager
+        this.soundManager = new SoundManager();
+        this.soundManager.loadSettings();
+        
         // UI Screen elements
         this.startScreen = document.getElementById('startScreen');
         this.gameOverScreen = document.getElementById('gameOverScreen');
@@ -227,6 +231,8 @@ class LtDanRunner {
         this.score = 0;
         this.gameFrame = 0;
         this.lastScoreUpdate = 0;
+        this.soundInitialized = false;
+        this.top5Threshold = 100; // Default threshold if API fails
         
         // Player object
         this.player = {
@@ -248,12 +254,6 @@ class LtDanRunner {
         
         // Floating score popups
         this.popups = [];
-
-        // Sound effects (use placeholder beep if files missing)
-        this.sfx = {
-            point: [this.createBeep()],
-            jump: [this.createBeep()]
-        };
 
         // Debug flag for hitboxes (off by default)
         this.debugHitboxes = false;
@@ -287,25 +287,6 @@ class LtDanRunner {
         this.init();
     }
 
-    createBeep() {
-        // Fallback oscillator beep if no audio file is available
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        return {
-            paused: true,
-            play: () => {
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.type = "square";
-                osc.frequency.value = 880;
-                gain.gain.setValueAtTime(0.1, ctx.currentTime);
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-                osc.start();
-                osc.stop(ctx.currentTime + 0.15);
-            },
-            cloneNode: function() { return this; }
-        };
-    }
     
     init() {
         this.setupCanvas();
@@ -330,21 +311,77 @@ class LtDanRunner {
     }
     
     setupEventListeners() {
-        // Game button event listeners
-        this.startButton.addEventListener('click', () => this.startGame());
-        this.restartButton.addEventListener('click', () => this.restartGame());
+        // Initialize sound on first user interaction
+        const initSound = async () => {
+            if (!this.soundInitialized) {
+                await this.soundManager.initialize();
+                this.soundInitialized = true;
+                console.log('Sound initialized, game state:', this.gameState);
+                // Start menu music after initialization
+                if (this.gameState === 'start') {
+                    this.soundManager.playMusic('menu');
+                }
+            }
+        };
         
-        // Leaderboard navigation buttons
-        this.leaderboardButton.addEventListener('click', () => this.showLeaderboard());
-        this.viewLeaderboardButton.addEventListener('click', () => this.showLeaderboard());
-        this.backToMenuButton.addEventListener('click', () => this.showStartScreen());
-        this.backToLeaderboardButton.addEventListener('click', () => this.showLeaderboard());
+        // Add event listeners for sound initialization
+        const handleFirstInteraction = async (e) => {
+            await initSound();
+            // Remove all first interaction listeners after initialization
+            document.removeEventListener('click', handleFirstInteraction);
+            document.removeEventListener('touchstart', handleFirstInteraction);
+            document.removeEventListener('keydown', handleFirstInteraction);
+        };
         
-        // Pause and control buttons
-        this.pauseButton.addEventListener('click', () => this.pauseGame());
-        this.resumeButton.addEventListener('click', () => this.resumeGame());
-        this.restartFromPauseButton.addEventListener('click', () => this.restartGame());
-        this.mainMenuFromPauseButton.addEventListener('click', () => this.showStartScreen());
+        document.addEventListener('click', handleFirstInteraction);
+        document.addEventListener('touchstart', handleFirstInteraction);
+        document.addEventListener('keydown', handleFirstInteraction);
+        
+        // Game button event listeners with sound
+        this.startButton.addEventListener('click', () => {
+            this.soundManager.playButtonClick();
+            this.startGame();
+        });
+        this.restartButton.addEventListener('click', () => {
+            this.soundManager.playButtonClick();
+            this.restartGame();
+        });
+        
+        // Leaderboard navigation buttons with sound
+        this.leaderboardButton.addEventListener('click', () => {
+            this.soundManager.playButtonClick();
+            this.showLeaderboard();
+        });
+        this.viewLeaderboardButton.addEventListener('click', () => {
+            this.soundManager.playButtonClick();
+            this.showLeaderboard();
+        });
+        this.backToMenuButton.addEventListener('click', () => {
+            this.soundManager.playButtonClick();
+            this.showStartScreen();
+        });
+        this.backToLeaderboardButton.addEventListener('click', () => {
+            this.soundManager.playButtonClick();
+            this.showLeaderboard();
+        });
+        
+        // Pause and control buttons with sound
+        this.pauseButton.addEventListener('click', () => {
+            this.soundManager.playButtonClick();
+            this.pauseGame();
+        });
+        this.resumeButton.addEventListener('click', () => {
+            this.soundManager.playButtonClick();
+            this.resumeGame();
+        });
+        this.restartFromPauseButton.addEventListener('click', () => {
+            this.soundManager.playButtonClick();
+            this.restartGame();
+        });
+        this.mainMenuFromPauseButton.addEventListener('click', () => {
+            this.soundManager.playButtonClick();
+            this.showStartScreen();
+        });
         
         // Leaderboard tab buttons
         this.globalTabButton.addEventListener('click', () => this.showGlobalLeaderboard());
@@ -388,6 +425,83 @@ class LtDanRunner {
             console.log("Dev Menu button clicked");
             this.showDevMenu();
         });
+        
+        // Audio control elements
+        this.setupAudioControls();
+    }
+    
+    setupAudioControls() {
+        // Get audio control elements
+        const masterVolume = document.getElementById('masterVolume');
+        const masterVolumeValue = document.getElementById('masterVolumeValue');
+        const masterMute = document.getElementById('masterMute');
+        
+        const musicVolume = document.getElementById('musicVolume');
+        const musicVolumeValue = document.getElementById('musicVolumeValue');
+        const musicMute = document.getElementById('musicMute');
+        
+        const effectsVolume = document.getElementById('effectsVolume');
+        const effectsVolumeValue = document.getElementById('effectsVolumeValue');
+        const effectsMute = document.getElementById('effectsMute');
+        
+        // Load current values from SoundManager
+        masterVolume.value = this.soundManager.volumes.master * 100;
+        masterVolumeValue.textContent = Math.round(this.soundManager.volumes.master * 100) + '%';
+        
+        musicVolume.value = this.soundManager.volumes.music * 100;
+        musicVolumeValue.textContent = Math.round(this.soundManager.volumes.music * 100) + '%';
+        
+        effectsVolume.value = this.soundManager.volumes.effects * 100;
+        effectsVolumeValue.textContent = Math.round(this.soundManager.volumes.effects * 100) + '%';
+        
+        // Update mute button states
+        masterMute.textContent = this.soundManager.muted.master ? '🔊' : '🔇';
+        masterMute.classList.toggle('muted', this.soundManager.muted.master);
+        
+        musicMute.textContent = this.soundManager.muted.music ? '🔊' : '🔇';
+        musicMute.classList.toggle('muted', this.soundManager.muted.music);
+        
+        effectsMute.textContent = this.soundManager.muted.effects ? '🔊' : '🔇';
+        effectsMute.classList.toggle('muted', this.soundManager.muted.effects);
+        
+        // Master volume control
+        masterVolume.addEventListener('input', (e) => {
+            const value = e.target.value / 100;
+            this.soundManager.setVolume('master', value);
+            masterVolumeValue.textContent = Math.round(value * 100) + '%';
+        });
+        
+        masterMute.addEventListener('click', () => {
+            this.soundManager.toggleMute('master');
+            masterMute.textContent = this.soundManager.muted.master ? '🔊' : '🔇';
+            masterMute.classList.toggle('muted', this.soundManager.muted.master);
+        });
+        
+        // Music volume control
+        musicVolume.addEventListener('input', (e) => {
+            const value = e.target.value / 100;
+            this.soundManager.setVolume('music', value);
+            musicVolumeValue.textContent = Math.round(value * 100) + '%';
+        });
+        
+        musicMute.addEventListener('click', () => {
+            this.soundManager.toggleMute('music');
+            musicMute.textContent = this.soundManager.muted.music ? '🔊' : '🔇';
+            musicMute.classList.toggle('muted', this.soundManager.muted.music);
+        });
+        
+        // Effects volume control
+        effectsVolume.addEventListener('input', (e) => {
+            const value = e.target.value / 100;
+            this.soundManager.setVolume('effects', value);
+            effectsVolumeValue.textContent = Math.round(value * 100) + '%';
+        });
+        
+        effectsMute.addEventListener('click', () => {
+            this.soundManager.toggleMute('effects');
+            effectsMute.textContent = this.soundManager.muted.effects ? '🔊' : '🔇';
+            effectsMute.classList.toggle('muted', this.soundManager.muted.effects);
+        });
     }
     
     handleTouchStart(e) {
@@ -405,6 +519,7 @@ class LtDanRunner {
         if (!this.player.isJumping) {
             this.player.velocityY = this.config.jumpPower;
             this.player.isJumping = true;
+            this.soundManager.playJump();
         }
     }
     
@@ -431,6 +546,10 @@ class LtDanRunner {
         this.gameState = 'paused';
         this.updateHUDVisibility();
         this.pauseScreen.classList.remove('hidden');
+        
+        // Pause the game music
+        this.soundManager.pauseMusic();
+        this.soundManager.playMusic('pause');
     }
     
     resumeGame() {
@@ -439,6 +558,10 @@ class LtDanRunner {
         this.gameState = 'playing';
         this.updateHUDVisibility();
         this.pauseScreen.classList.add('hidden');
+        
+        // Resume game music
+        this.soundManager.stopMusic();
+        this.soundManager.playMusic('game');
     }
     
     showDevMenu() {
@@ -486,7 +609,7 @@ class LtDanRunner {
         }
     }
     
-    startGame() {
+    async startGame() {
         this.gameState = 'playing';
         this.gameStartTime = Date.now();
         this.hideAllScreens();
@@ -503,6 +626,30 @@ class LtDanRunner {
         this.config.gameSpeed = 4;
         this.config.obstacleSpeed = 4;
         
+        // Fetch top 5 scores to determine victory threshold
+        try {
+            const data = await this.leaderboard.getGlobalLeaderboard(5);
+            if (data.leaderboard && data.leaderboard.length >= 5) {
+                // Set threshold to the 5th place score
+                this.top5Threshold = data.leaderboard[4].score;
+                console.log('Top 5 threshold set to:', this.top5Threshold);
+            } else if (data.leaderboard && data.leaderboard.length > 0) {
+                // If less than 5 scores, any score beats the leaderboard
+                this.top5Threshold = 0;
+                console.log('Less than 5 scores on leaderboard, threshold set to 0');
+            } else {
+                // Empty leaderboard, use default
+                this.top5Threshold = 100;
+                console.log('Empty leaderboard, using default threshold of 100');
+            }
+        } catch (error) {
+            console.log('Could not fetch leaderboard, using default threshold');
+            this.top5Threshold = 100;
+        }
+        
+        // Play game music
+        this.soundManager.playMusic('game');
+        
         this.updateScore();
     }
     
@@ -515,6 +662,23 @@ class LtDanRunner {
         this.gameEndTime = Date.now();
         this.finalScoreElement.textContent = this.score;
         this.updateHUDVisibility();
+        
+        // Stop game music and always play menu music
+        this.soundManager.stopMusic();
+        this.soundManager.playMusic('menu');
+        
+        // If player achieved top 5, play victory fanfare on top
+        if (this.score > this.top5Threshold) {
+            console.log(`Score ${this.score} beats top 5 threshold of ${this.top5Threshold}! Playing victory fanfare.`);
+            this.soundManager.playEffect('victory-fanfare');
+            
+            // Add a special popup for top 5 achievement
+            this.addPopup("TOP 5!", this.canvas.width/2, this.canvas.height * 0.4, {icon: '🏆'});
+        } else {
+            // Player didn't make top 5, play fail sound
+            console.log(`Score ${this.score} didn't beat top 5 threshold of ${this.top5Threshold}. Playing fail sound.`);
+            this.soundManager.playEffect('fail');
+        }
         
         // Check if this might be a high score worth submitting
         this.checkForHighScore();
@@ -536,6 +700,12 @@ class LtDanRunner {
         this.hideAllScreens();
         this.updateHUDVisibility();
         this.startScreen.classList.remove('hidden');
+        
+        // Play menu music if sound is initialized
+        if (this.soundInitialized) {
+            this.soundManager.stopMusic();
+            this.soundManager.playMusic('menu');
+        }
     }
 
     showLeaderboard() {
@@ -847,16 +1017,18 @@ class LtDanRunner {
                     this.score += this.config.tallPoints;
                     this.updateScore();
                     this.addPopup("+30", this.player.x + this.player.width/2, this.player.y - 20);
+                    this.soundManager.playPointTall();
                 } else {
                     this.score += this.config.lowPoints;
                     this.updateScore();
                     this.addPopup("+10", this.player.x + this.player.width/2, this.player.y - 20);
+                    this.soundManager.playPointLow();
                 }
-                this.playPointSfx();
             }
 
             // Collision detection
             if (this.checkCollision(this.player, obstacle)) {
+                this.soundManager.playCollision();
                 this.gameOver();
                 return;
             }
@@ -901,6 +1073,8 @@ class LtDanRunner {
             // Add score animation for significant milestones
             if (this.score > 0 && this.score % 100 === 0) {
                 this.animateScoreBadge();
+                this.soundManager.playMilestone();
+                this.addPopup("MILESTONE!", this.canvas.width/2, this.canvas.height * 0.3, {icon: '🎯'});
             }
         }
         
@@ -908,6 +1082,7 @@ class LtDanRunner {
         if (this.score > 0 && this.score % 100 === 0) {
             this.config.gameSpeed = Math.min(this.config.gameSpeed + 0.2, 8);
             this.config.obstacleSpeed = Math.min(this.config.obstacleSpeed + 0.2, 8);
+            this.soundManager.playSpeedUp();
         }
     }
     
@@ -1084,19 +1259,6 @@ class LtDanRunner {
     easeOutBack(t) {
         const c1 = 1.70158, c3 = c1 + 1;
         return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
-    }
-
-    playPointSfx() {
-        const pool = this.sfx.point;
-        const a = pool.find(x => x.paused) || pool[0].cloneNode();
-        a.playbackRate = 0.98 + Math.random() * 0.04;
-        try { a.currentTime = 0; a.play(); } catch {}
-    }
-
-    playJumpSfx() {
-        const a = this.sfx.jump[0];
-        a.playbackRate = 1.0;
-        try { a.currentTime = 0; a.play(); } catch {}
     }
 }
 

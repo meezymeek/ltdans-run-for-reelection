@@ -87,6 +87,30 @@
             <div id="pauseScreen" class="screen hidden">
                 <h2>⏸️ Game Paused</h2>
                 <p>Take a break, the campaign will wait!</p>
+                
+                <!-- Audio Controls -->
+                <div class="audio-controls">
+                    <h3>🔊 Audio Settings</h3>
+                    <div class="volume-control">
+                        <label for="masterVolume">Master Volume</label>
+                        <input type="range" id="masterVolume" min="0" max="100" value="70">
+                        <span id="masterVolumeValue">70%</span>
+                        <button id="masterMute" class="mute-btn">🔇</button>
+                    </div>
+                    <div class="volume-control">
+                        <label for="musicVolume">Music Volume</label>
+                        <input type="range" id="musicVolume" min="0" max="100" value="60">
+                        <span id="musicVolumeValue">60%</span>
+                        <button id="musicMute" class="mute-btn">🔇</button>
+                    </div>
+                    <div class="volume-control">
+                        <label for="effectsVolume">Effects Volume</label>
+                        <input type="range" id="effectsVolume" min="0" max="100" value="80">
+                        <span id="effectsVolumeValue">80%</span>
+                        <button id="effectsMute" class="mute-btn">🔇</button>
+                    </div>
+                </div>
+                
                 <div class="menu-buttons">
                     <button id="resumeButton">▶️ Resume Campaign</button>
                     <button id="restartFromPauseButton" class="secondary-button">🔄 Restart</button>
@@ -97,6 +121,7 @@
         
     </div>
     
+    <script src="soundManager.js"></script>
     <script src="game.js"></script>
 </body>
 </html>

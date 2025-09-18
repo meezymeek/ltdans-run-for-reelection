@@ -895,3 +895,117 @@ button:focus {
         touch-action: manipulation;
     }
 }
+
+/* Audio Controls Styles */
+.audio-controls {
+    background: rgba(0, 0, 0, 0.3);
+    border: var(--px-border-1) solid rgba(255, 215, 0, 0.3);
+    border-radius: 0;
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+    box-shadow: var(--px-shadow-offset) var(--px-shadow-offset) 0 rgba(0, 0, 0, 0.3);
+}
+
+.audio-controls h3 {
+    color: var(--color-accent);
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+
+.volume-control {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin: 0.8rem 0;
+    padding: 0.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 0;
+}
+
+.volume-control label {
+    flex: 0 0 120px;
+    font-size: 0.9rem;
+    color: var(--color-text-muted);
+}
+
+.volume-control input[type="range"] {
+    flex: 1;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.2);
+    outline: none;
+    border: var(--px-border-1) solid var(--px-border);
+}
+
+.volume-control input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    background: var(--color-accent);
+    cursor: pointer;
+    border: var(--px-border-1) solid var(--px-border);
+    box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5);
+}
+
+.volume-control input[type="range"]::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    background: var(--color-accent);
+    cursor: pointer;
+    border: var(--px-border-1) solid var(--px-border);
+    box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5);
+}
+
+.volume-control span {
+    flex: 0 0 50px;
+    text-align: right;
+    font-size: 0.9rem;
+    color: var(--color-accent);
+    font-weight: bold;
+}
+
+.mute-btn {
+    flex: 0 0 40px !important;
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+    min-height: 40px !important;
+    padding: 0 !important;
+    background: rgba(255, 107, 107, 0.8) !important;
+    border: var(--px-border-1) solid var(--px-border) !important;
+    font-size: 1.2rem !important;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.mute-btn:hover {
+    background: var(--color-primary) !important;
+}
+
+.mute-btn.muted {
+    background: rgba(128, 128, 128, 0.8) !important;
+    opacity: 0.6;
+}
+
+/* Responsive audio controls */
+@media (max-width: 480px) {
+    .audio-controls {
+        padding: 1rem;
+    }
+    
+    .volume-control {
+        flex-wrap: wrap;
+    }
+    
+    .volume-control label {
+        flex: 1 1 100%;
+        margin-bottom: 0.5rem;
+    }
+    
+    .volume-control input[type="range"] {
+        flex: 1 1 auto;
+    }
+}
