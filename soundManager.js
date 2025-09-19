@@ -92,6 +92,105 @@ class SoundManager {
         // Initialize on first user interaction
         this.initialized = false;
         this.initPromise = null;
+        
+        // Page visibility tracking
+        this.wasPlayingBeforeHidden = false;
+        this.setupPageVisibilityHandlers();
+    }
+    
+    // Setup page visibility API to pause audio when page is hidden
+    setupPageVisibilityHandlers() {
+        // Handle page visibility changes (tab switching, app switching, screen lock)
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                // Page is now hidden (switched app, locked phone, etc.)
+                this.handlePageHidden();
+            } else {
+                // Page is now visible again
+                this.handlePageVisible();
+            }
+        });
+        
+        // Handle window focus/blur events (additional coverage)
+        window.addEventListener('blur', () => {
+            this.handlePageHidden();
+        });
+        
+        window.addEventListener('focus', () => {
+            this.handlePageVisible();
+        });
+        
+        // Handle beforeunload to clean up audio
+        window.addEventListener('beforeunload', () => {
+            this.stopAllAudio();
+        });
+    }
+    
+    handlePageHidden() {
+        // Store whether music was playing before hiding
+        this.wasPlayingBeforeHidden = this.currentMusic && !this.currentMusic.paused;
+        
+        // Pause all audio
+        this.pauseAllAudio();
+        
+        // Auto-pause the game if it's playing
+        if (window.gameInstance && window.gameInstance.gameState === 'playing') {
+            window.gameInstance.pauseGame();
+        }
+    }
+    
+    handlePageVisible() {
+        // Only resume music if it was playing before hiding AND game is not manually paused
+        if (this.wasPlayingBeforeHidden && 
+            window.gameInstance && 
+            window.gameInstance.gameState !== 'paused') {
+            this.resumeMusic();
+        }
+        
+        this.wasPlayingBeforeHidden = false;
+    }
+    
+    pauseAllAudio() {
+        // Pause current music
+        if (this.currentMusic && !this.currentMusic.paused) {
+            this.currentMusic.pause();
+        }
+        
+        // Stop all playing effects
+        for (const pool of Object.values(this.audioPools)) {
+            for (const audio of pool) {
+                if (!audio.paused) {
+                    audio.pause();
+                    audio.currentTime = 0;
+                }
+            }
+        }
+        
+        // Stop any standalone effects
+        for (const effect of Object.values(this.loadedSounds.effects)) {
+            if (!effect.paused) {
+                effect.pause();
+                effect.currentTime = 0;
+            }
+        }
+    }
+    
+    stopAllAudio() {
+        // Stop current music completely
+        this.stopMusic();
+        
+        // Stop all effects
+        for (const pool of Object.values(this.audioPools)) {
+            for (const audio of pool) {
+                audio.pause();
+                audio.currentTime = 0;
+            }
+        }
+        
+        for (const effect of Object.values(this.loadedSounds.effects)) {
+            effect.pause();
+            effect.currentTime = 0;
+        }
     }
     
     // Initialize audio context (must be called after user interaction)
