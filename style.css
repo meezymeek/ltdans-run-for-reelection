@@ -717,7 +717,7 @@ button:active {
 /* Leaderboard Screen */
 .leaderboard-tabs {
     display: flex;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
     border-bottom: 2px solid #ffd700;
 }
 
@@ -746,13 +746,13 @@ button:active {
 }
 
 .leaderboard-content {
-    min-height: 300px;
-    max-height: 60vh;
+    min-height: 200px;
+    max-height: 45vh;
     overflow-y: auto;
     background: rgba(255, 255, 255, 0.05);
     border-radius: 10px;
-    padding: 1rem;
-    margin-bottom: 1.5rem;
+    padding: 0.8rem;
+    margin-bottom: 1rem;
 }
 
 .leaderboard-table {
@@ -875,6 +875,52 @@ button:active {
     flex-wrap: wrap;
 }
 
+/* Mobile optimizations for leaderboard screen */
+#leaderboardScreen {
+    max-width: min(400px, 95vw);
+    max-height: 85vh;
+    padding: 1rem 1.5rem;
+    overflow-y: auto;
+}
+
+#leaderboardScreen h2 {
+    font-size: clamp(1.3rem, 6vw, 2rem) !important;
+    margin-bottom: 0.8rem;
+}
+
+#leaderboardScreen .leaderboard-tabs {
+    margin-bottom: 0.8rem;
+}
+
+#leaderboardScreen .tab-button {
+    padding: 0.6rem 0.8rem !important;
+    font-size: clamp(0.7rem, 2.8vw, 0.9rem) !important;
+}
+
+#leaderboardScreen .leaderboard-content {
+    max-height: 40vh;
+    min-height: 180px;
+    padding: 0.6rem;
+    margin-bottom: 0.8rem;
+}
+
+#leaderboardScreen .leaderboard-entry {
+    padding: 0.6rem 0;
+    font-size: clamp(0.7rem, 2.8vw, 0.85rem);
+}
+
+#leaderboardScreen .leaderboard-actions {
+    gap: 0.8rem;
+    margin-top: 0.8rem;
+}
+
+#leaderboardScreen .leaderboard-actions button {
+    width: clamp(140px, 45vw, 200px) !important;
+    font-size: clamp(0.8rem, 3.2vw, 1rem) !important;
+    padding: 10px 14px !important;
+    min-height: 42px !important;
+}
+
 /* Responsive adjustments for leaderboard */
 @media (max-width: 480px) {
     .leaderboard-entry {
@@ -898,6 +944,37 @@ button:active {
     .stats-actions {
         flex-direction: column;
         align-items: center;
+    }
+    
+    /* More aggressive mobile sizing */
+    #leaderboardScreen {
+        max-height: 90vh;
+        padding: 0.8rem 1rem;
+    }
+    
+    #leaderboardScreen .leaderboard-content {
+        max-height: 35vh;
+        min-height: 150px;
+    }
+    
+    #leaderboardScreen .leaderboard-entry {
+        padding: 0.5rem 0;
+        font-size: 0.75rem;
+    }
+    
+    #leaderboardScreen .leaderboard-rank {
+        min-width: 35px;
+        font-size: 0.75rem;
+    }
+    
+    #leaderboardScreen .leaderboard-name {
+        margin-left: 0.5rem;
+        font-size: 0.75rem;
+    }
+    
+    #leaderboardScreen .leaderboard-score {
+        min-width: 50px;
+        font-size: 0.75rem;
     }
 }
 
