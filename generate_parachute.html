@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Generate Default Parachute</title>
+</head>
+<body>
+    <h1>Default Parachute Generator</h1>
+    <p>Click the button to download the default parachute skin:</p>
+    
+    <div id="preview"></div>
+    <button id="downloadBtn">Download parachute_default.png</button>
+    
+    <script>
+        // Generate default parachute
+        const canvas = document.createElement('canvas');
+        canvas.width = 70;
+        canvas.height = 40;
+        const ctx = canvas.getContext('2d');
+        
+        // Clear canvas with transparency
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Save the clipping region for the parachute shape
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(canvas.width / 2, canvas.height - 5, canvas.width / 2 - 5, Math.PI, 2 * Math.PI, false);
+        ctx.closePath();
+        ctx.clip();
+        
+        // Draw alternating red and darker red stripes
+        for (let i = 0; i < 8; i++) {
+            ctx.fillStyle = i % 2 === 0 ? '#FF6B6B' : '#CC5555';
+            ctx.fillRect((canvas.width / 8) * i, 0, canvas.width / 8, canvas.height);
+        }
+        
+        // Restore and add outline
+        ctx.restore();
+        
+        // Add outline
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(canvas.width / 2, canvas.height - 5, canvas.width / 2 - 6, Math.PI, 2 * Math.PI, false);
+        ctx.stroke();
+        
+        // Add strings
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
+        ctx.lineWidth = 1;
+        for (let i = 1; i < 6; i++) {
+            const x = (canvas.width / 6) * i;
+            ctx.beginPath();
+            ctx.moveTo(x, canvas.height - 5);
+            ctx.lineTo(canvas.width / 2, canvas.height + 10);
+            ctx.stroke();
+        }
+        
+        // Display preview
+        const preview = document.getElementById('preview');
+        const img = document.createElement('img');
+        img.src = canvas.toDataURL('image/png');
+        img.style.imageRendering = 'pixelated';
+        img.style.width = canvas.width * 3 + 'px';
+        img.style.height = canvas.height * 3 + 'px';
+        img.style.border = '1px solid #000';
+        img.style.display = 'block';
+        img.style.backgroundColor = '#f0f0f0';
+        img.style.marginBottom = '20px';
+        preview.appendChild(img);
+        
+        // Setup download button
+        document.getElementById('downloadBtn').onclick = function() {
+            const link = document.createElement('a');
+            link.href = canvas.toDataURL('image/png');
+            link.download = 'parachute_default.png';
+            link.click();
+        };
+    </script>
+</body>
+</html>

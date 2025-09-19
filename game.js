@@ -446,15 +446,32 @@ class LtDanRunner {
             gravity: 0.8,
             jumpPower: -15,
             groundLevel: 0.8,
-            gameSpeed: 4,
-            obstacleSpawnRate: 180, // increased by 50% (was 120)
+            // Speed settings (now with gradual ramping)
+            baseGameSpeed: 4,        // Reverted to original speed for playability
+            gameSpeed: 4,            // Current game speed
+            baseObstacleSpeed: 4,
             obstacleSpeed: 4,
-            scoreMultiplier: 1,
+            speedIncreaseRate: 0.0002,  // Slower increase rate
+            maxGameSpeed: 8,         // Maximum speed cap
+            // Scoring
+            scoreMultiplier: 1,      // Modified by effects
+            baseScoreMultiplier: 1,
             lowPoints: 10,
             tallPoints: 30,
+            // Spawn rates
+            obstacleSpawnRate: 180, // increased by 50% (was 120)
             tallSpawnMin: 270, // increased by 50% (was 180)
             tallSpawnMax: 540,  // increased by 50% (was 360)
-            minObstacleGapPx: 250 // minimum pixel gap between obstacles
+            minObstacleGapPx: 250, // minimum pixel gap between obstacles
+            constituentSpawnRate: 300,  // New: constituents spawn rate
+            bribeSpawnRate: 240,        // New: bribes spawn rate
+            // Effect modifiers
+            constituentSpeedMod: 0.85,   // 15% slower when stomping constituent
+            constituentScoreMod: 0.8,    // 20% less points when affected
+            bribeSpeedMod: 1.2,          // 20% faster when taking bribe
+            bribeScoreMod: 1.5,          // 50% more points when affected
+            effectDuration: 5000,        // Effects last 5 seconds
+            bribeDuration: 7000          // Bribe effects last 7 seconds
         };
         
         this.tallSpawnCounter = 0;
@@ -467,6 +484,10 @@ class LtDanRunner {
         this.lastScoreUpdate = 0;
         this.soundInitialized = false;
         this.top5Threshold = 100; // Default threshold if API fails
+        
+        // Delta time tracking for frame-independent updates
+        this.lastFrameTime = performance.now();
+        this.deltaTime = 0;
         
         // Ragdoll system
         this.ragdoll = null;
@@ -485,6 +506,20 @@ class LtDanRunner {
             isJumping: false,
             groundY: 0,
             color: '#ff6b6b',
+            // Parachute properties
+            hasParachute: false,
+            parachuteUsedThisJump: false,  // Track if parachute was already used in this jump
+            parachuteActivationHeight: 0,
+            parachuteTimeLeft: 0,
+            parachuteTapping: false,
+            lastTapTime: 0,
+            // Touch tracking for timer display (with smooth lerp)
+            lastTouchX: 0,
+            lastTouchY: 0,
+            timerX: 0,        // Current timer position
+            timerY: 0,        // Current timer position
+            timerTargetX: 0,  // Target timer position
+            timerTargetY: 0,  // Target timer position
             // Animation properties
             animationFrame: 0,
             runCycle: 0,
@@ -514,14 +549,35 @@ class LtDanRunner {
         // Obstacles array
         this.obstacles = [];
         
+        // Constituents array (stompable enemies)
+        this.constituents = [];
+        this.constituentSpawnCounter = 0;
+        
+        // Bribes array (collectible power-ups)
+        this.bribes = [];
+        this.bribeSpawnCounter = 0;
+        
+        // Active effects tracking
+        this.activeEffects = {
+            constituents: [],     // Array of active constituent effect timers
+            bribes: [],          // Array of active bribe effect timers
+            currentSpeedMod: 1,  // Combined speed modifier
+            currentScoreMod: 1   // Combined score modifier
+        };
+        
+        // Unified spawn tracking for proper spacing
+        this.lastSpawnDistance = 0;  // Track distance moved since last spawn
+        this.minSpawnGap = 200; // Minimum gap between ANY entities
+        
         // Background elements for scrolling effect
         this.backgroundElements = [];
         
         // Floating score popups
         this.popups = [];
 
-        // Debug flag for hitboxes (off by default)
+        // Debug flags (off by default)
         this.debugHitboxes = false;
+        this.showSpeed = false;
 
         // Dev menu element
         this.devMenu = document.createElement('div');
@@ -542,11 +598,16 @@ class LtDanRunner {
                 <input type="checkbox" id="toggleHitboxes">
                 Show Hitboxes
             </label>
+            <label style="display:block; margin: 10px 0;">
+                <input type="checkbox" id="toggleSpeed">
+                Show Speed
+            </label>
             <button id="closeDevMenu" style="margin-top:10px;">Close</button>
         `;
         document.body.appendChild(this.devMenu);
 
         this.toggleHitboxesCheckbox = this.devMenu.querySelector('#toggleHitboxes');
+        this.toggleSpeedCheckbox = this.devMenu.querySelector('#toggleSpeed');
         this.closeDevMenuButton = this.devMenu.querySelector('#closeDevMenu');
 
         this.init();
@@ -567,6 +628,16 @@ class LtDanRunner {
             thigh: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAMCAYAAABGdnDgAAAABHNCSVQICAgIfAhkiAAAADNJREFUGJVjZGBg+M/AwMDAxAAFjAwMDPwMDAxXGBgYmBgYGBhGRSECAA0AAwP/DAwMVwC2SAYGuTPoCgAAAABJRU5ErkJggg==',
             shin: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAMCAYAAABfnvydAAAABHNCSVQICAgIfAhkiAAAADJJREFUGJVjZGBg+M/AwMDAxAAFjAwMDPwMDAxXGBgYmBgYGBhGFRAAAA0AAwP/DAwMVwCzEgYGv5yITAAAAABJRU5ErkJggg=='
         };
+        
+        // Parachute skins array (will be populated from skins/parachutes directory)
+        this.parachuteSkins = [];
+        this.loadedParachuteSkins = [];
+        
+        // Currently selected parachute skin (will be randomized each deployment)
+        this.currentParachuteSkin = null;
+        
+        // Load parachute skins from directory
+        this.loadParachuteSkins();
         
         // Load images
         bodyParts.forEach(part => {
@@ -594,6 +665,74 @@ class LtDanRunner {
             this.skinsLoaded = true;
             console.log('All skins loaded');
         }, 100);
+    }
+    
+    loadParachuteSkins() {
+        // Define the list of parachute skins to load
+        // Easy to modify - just add/remove filenames here!
+        const parachuteSkinFiles = [
+            'parachute_marlboro.png',
+            'parachute_silvereagle.png',
+            'parachute_koch.png',        // New Koch parachute
+            'parachute_spacex.png'       // New SpaceX parachute
+        ];
+        
+        console.log(`Attempting to load ${parachuteSkinFiles.length} parachute skins`);
+        
+        // Load each skin from the list
+        let loadedCount = 0;
+        parachuteSkinFiles.forEach(filename => {
+            const img = new Image();
+            const skinName = filename.replace('parachute_', '').replace('.png', '');
+            
+            img.onload = () => {
+                console.log(`Loaded parachute skin: ${skinName}`);
+                this.loadedParachuteSkins.push({
+                    name: skinName,
+                    image: img,
+                    loaded: true
+                });
+                loadedCount++;
+                
+                // Check if all skins attempted loading
+                if (loadedCount + (parachuteSkinFiles.length - this.loadedParachuteSkins.length) >= parachuteSkinFiles.length) {
+                    this.checkParachuteSkinsFallback();
+                }
+            };
+            
+            img.onerror = () => {
+                console.log(`Failed to load parachute skin: ${filename}`);
+                loadedCount++;
+                
+                // Check if all skins attempted loading
+                if (loadedCount >= parachuteSkinFiles.length) {
+                    this.checkParachuteSkinsFallback();
+                }
+            };
+            
+            // Try to load from skins/parachutes/ directory
+            img.src = `skins/parachutes/${filename}`;
+        });
+        
+        // Set a timeout fallback in case images don't trigger events
+        setTimeout(() => {
+            this.checkParachuteSkinsFallback();
+        }, 1000);
+    }
+    
+    checkParachuteSkinsFallback() {
+        // Check if any skins loaded successfully
+        if (this.loadedParachuteSkins.length === 0) {
+            console.log('No parachute skins loaded, using fallback colors');
+            // Fallback to simple colored parachutes if no images load
+            this.loadedParachuteSkins = [
+                { name: 'red', color: '#FF6B6B', loaded: false },
+                { name: 'blue', color: '#6B8FFF', loaded: false },
+                { name: 'green', color: '#6BFF8F', loaded: false }
+            ];
+        } else {
+            console.log(`Successfully loaded ${this.loadedParachuteSkins.length} parachute skins`);
+        }
     }
     
     init() {
@@ -712,7 +851,12 @@ class LtDanRunner {
         this.canvas.addEventListener('touchstart', (e) => this.handleTouchStart(e), { passive: false });
         
         // Mouse events for desktop testing
-        this.canvas.addEventListener('click', () => this.handleJump());
+        this.canvas.addEventListener('click', (e) => {
+            const rect = this.canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            this.handleJump(mouseX, mouseY);
+        });
         
         // Keyboard events
         document.addEventListener('keydown', (e) => this.handleKeyDown(e));
@@ -816,15 +960,50 @@ class LtDanRunner {
         e.preventDefault();
         
         if (this.gameState === 'playing') {
+            // Capture touch coordinates and set as target
+            if (e.touches && e.touches.length > 0) {
+                this.player.lastTouchX = e.touches[0].clientX;
+                this.player.lastTouchY = e.touches[0].clientY;
+                // Set target positions for smooth lerp
+                this.player.timerTargetX = e.touches[0].clientX;
+                this.player.timerTargetY = e.touches[0].clientY;
+                
+                // Initialize current position if first tap
+                if (this.player.timerX === 0 && this.player.timerY === 0) {
+                    this.player.timerX = e.touches[0].clientX;
+                    this.player.timerY = e.touches[0].clientY;
+                }
+            }
             // Jump on touch
             this.handleJump();
         }
     }
     
-    handleJump() {
+    handleJump(mouseX, mouseY) {
         if (this.gameState !== 'playing') return;
         
-        if (!this.player.isJumping) {
+        // Update touch position if mouse coordinates are provided
+        if (mouseX !== undefined && mouseY !== undefined) {
+            this.player.lastTouchX = mouseX;
+            this.player.lastTouchY = mouseY;
+            // Set target positions for smooth lerp
+            this.player.timerTargetX = mouseX;
+            this.player.timerTargetY = mouseY;
+            
+            // Initialize current position if first tap
+            if (this.player.timerX === 0 && this.player.timerY === 0) {
+                this.player.timerX = mouseX;
+                this.player.timerY = mouseY;
+            }
+        }
+        
+        // Only allow parachute tapping if parachute is active AND has time remaining
+        if (this.player.hasParachute && this.player.parachuteTimeLeft > 0) {
+            // Register tap to maintain parachute and give small upward boost ONLY if time remains
+            this.player.lastTapTime = Date.now();
+            this.player.velocityY -= 2; // Small upward boost on each tap
+        } else if (!this.player.isJumping) {
+            // If parachute has expired or doesn't exist, only allow normal jumping from ground
             this.player.velocityY = this.config.jumpPower;
             this.player.isJumping = true;
             this.soundManager.playJump();
@@ -876,12 +1055,16 @@ class LtDanRunner {
         // Open Dev Menu from pause screen
         this.devMenu.classList.remove('hidden');
 
-        // Sync checkbox with current state
+        // Sync checkboxes with current state
         this.toggleHitboxesCheckbox.checked = this.debugHitboxes;
+        this.toggleSpeedCheckbox.checked = this.showSpeed;
 
         // Event listeners
         this.toggleHitboxesCheckbox.onchange = (e) => {
             this.debugHitboxes = e.target.checked;
+        };
+        this.toggleSpeedCheckbox.onchange = (e) => {
+            this.showSpeed = e.target.checked;
         };
         this.closeDevMenuButton.onclick = () => {
             this.devMenu.classList.add('hidden');
@@ -925,14 +1108,26 @@ class LtDanRunner {
         this.score = 0;
         this.gameFrame = 0;
         this.obstacles = [];
+        this.constituents = [];
+        this.bribes = [];
+        this.constituentSpawnCounter = 0;
+        this.bribeSpawnCounter = 0;
         this.player.y = this.player.groundY - this.player.height;
         this.player.velocityY = 0;
         this.player.isJumping = false;
         this.player.height = 60;
         
-        // Reset game speed
-        this.config.gameSpeed = 4;
-        this.config.obstacleSpeed = 4;
+        // Reset game speed to new slower initial speed
+        this.config.gameSpeed = this.config.baseGameSpeed;
+        this.config.obstacleSpeed = this.config.baseObstacleSpeed;
+        
+        // Reset active effects
+        this.activeEffects = {
+            constituents: [],
+            bribes: [],
+            currentSpeedMod: 1,
+            currentScoreMod: 1
+        };
         
         // Fetch top 5 scores to determine victory threshold
         try {
@@ -1288,8 +1483,88 @@ class LtDanRunner {
     updatePlayer() {
         if (this.gameState !== 'playing') return;
         
-        // Apply gravity
-        this.player.velocityY += this.config.gravity;
+        // Smoothly animate timer position to target with lerp
+        const timerLerpSpeed = 0.18; // Adjust for smoothness (0.05 = very smooth, 0.3 = snappy)
+        this.player.timerX += (this.player.timerTargetX - this.player.timerX) * timerLerpSpeed;
+        this.player.timerY += (this.player.timerTargetY - this.player.timerY) * timerLerpSpeed;
+        
+        // Check parachute activation - activate ONLY ONCE per jump when player reaches high altitude
+        const highAltitudeThreshold = this.player.groundY * 0.4; // Activate when above 60% of screen height
+        if (!this.player.hasParachute && !this.player.parachuteUsedThisJump && this.player.isJumping && this.player.y < highAltitudeThreshold) {
+            this.player.hasParachute = true;
+            this.player.parachuteUsedThisJump = true;  // Mark that parachute has been used for this jump
+            this.player.parachuteTimeLeft = 3000; // 3 seconds maximum
+            this.player.lastTapTime = 0; // Initialize to force initial non-tapping state
+            this.player.parachuteActivationHeight = this.player.y;
+            
+            // Randomly select a parachute skin from loaded skins
+            if (this.loadedParachuteSkins.length > 0) {
+                this.currentParachuteSkin = this.loadedParachuteSkins[Math.floor(Math.random() * this.loadedParachuteSkins.length)];
+                console.log('Parachute deployed with skin:', this.currentParachuteSkin.name);
+            } else {
+                // Fallback if no skins loaded
+                this.currentParachuteSkin = { name: 'default', color: '#FF6B6B', loaded: false };
+            }
+            
+            this.addPopup("PARACHUTE!", this.player.x + this.player.width/2, this.player.y - 30, {icon: '🪂'});
+        }
+        
+        // Update parachute state
+        if (this.player.hasParachute && this.player.parachuteTimeLeft > 0) {
+            // Decrease parachute time using actual delta time
+            this.player.parachuteTimeLeft -= this.deltaTime;
+            
+            // Check if parachute time expired
+            if (this.player.parachuteTimeLeft <= 0) {
+                // COMPLETELY DISABLE PARACHUTE - clear all states
+                this.player.hasParachute = false;
+                this.player.parachuteTimeLeft = 0;  // Ensure timer is at zero
+                this.player.parachuteTapping = false;  // Reset tapping state immediately
+                this.player.lastTapTime = 0;  // Clear tap time
+                // Force normal gravity immediately
+                this.player.velocityY = Math.max(this.player.velocityY, 2); // Ensure player starts falling
+                this.addPopup("PARACHUTE EXPIRED!", this.player.x + this.player.width/2, this.player.y - 20, {icon: '⏰'});
+            } else {
+                // Only check tapping if parachute still has time
+                const now = Date.now();
+                const timeSinceLastTap = now - this.player.lastTapTime;
+                this.player.parachuteTapping = this.player.lastTapTime > 0 && timeSinceLastTap < 300;
+            }
+        } else {
+            // No parachute or timer expired - ensure all parachute states are cleared
+            if (this.player.hasParachute) {
+                this.player.hasParachute = false;
+            }
+            this.player.parachuteTapping = false;
+            this.player.lastTapTime = 0;
+            this.player.parachuteTimeLeft = 0;
+        }
+        
+        // Apply gravity based on parachute state AND timer
+        // Double-check timer to ensure no floating after expiration
+        if (this.player.hasParachute && this.player.parachuteTimeLeft > 0) {
+            // Parachute active and has time remaining
+            if (this.player.parachuteTapping && this.player.velocityY > 0) {
+                // Player is actively tapping - counteract gravity to stay afloat
+                this.player.velocityY += this.config.gravity * -0.02; // Slight upward force to counteract gravity
+                // Add visual feedback when tapping is detected
+                if (Math.random() < 0.08) { // Occasional feedback to avoid spam
+                    this.addPopup("FLOATING!", this.player.x + this.player.width/2, this.player.y + 20, {icon: '🪂'});
+                }
+            } else {
+                // Player not tapping but has parachute - moderate descent
+                this.player.velocityY += this.config.gravity * 0.6; // 40% reduced gravity
+            }
+        } else {
+            // No parachute OR timer expired - always apply normal gravity
+            // Clear any remaining parachute states as extra safeguard
+            if (this.player.parachuteTapping || this.player.lastTapTime > 0) {
+                this.player.parachuteTapping = false;
+                this.player.lastTapTime = 0;
+            }
+            this.player.velocityY += this.config.gravity;
+        }
+        
         this.player.y += this.player.velocityY;
         
         // Ground collision
@@ -1299,6 +1574,9 @@ class LtDanRunner {
             this.player.y = groundY;
             this.player.velocityY = 0;
             this.player.isJumping = false;
+            this.player.hasParachute = false; // Remove parachute on landing
+            this.player.parachuteUsedThisJump = false; // Reset for next jump
+            this.player.parachuteTimeLeft = 0; // Ensure timer is reset
         }
         
         // Update animation
@@ -1353,8 +1631,29 @@ class LtDanRunner {
             this.player.headYOffset += (this.player.headYOffsetTarget - this.player.headYOffset) * lerpFactor;
             this.player.headXOffset += (this.player.headXOffsetTarget - this.player.headXOffset) * lerpFactor;
             this.player.headRotation += (this.player.headRotationTarget - this.player.headRotation) * lerpFactor;
+        } else if (this.player.hasParachute) {
+            // Parachuting animation - arms reaching up to hold chute lines
+            this.player.leftLegAngle = 0;    // Legs hanging straight down
+            this.player.rightLegAngle = 0;
+            this.player.leftKneeAngle = 0;   // No knee bend while parachuting
+            this.player.rightKneeAngle = 0;
+            this.player.leftArmAngle = 160;  // Arms reaching up to parachute
+            this.player.rightArmAngle = 160;
+            this.player.leftElbowAngle = 0;  // Arms fully extended
+            this.player.rightElbowAngle = 0;
+            
+            // Head looking slightly down while parachuting
+            this.player.headYOffsetTarget = 1;
+            this.player.headXOffsetTarget = 0;
+            this.player.headRotationTarget = 3; // Slight downward look
+            
+            // Apply lerp for smooth transitions
+            const parachuteLerpFactor = 0.2;
+            this.player.headYOffset += (this.player.headYOffsetTarget - this.player.headYOffset) * parachuteLerpFactor;
+            this.player.headXOffset += (this.player.headXOffsetTarget - this.player.headXOffset) * parachuteLerpFactor;
+            this.player.headRotation += (this.player.headRotationTarget - this.player.headRotation) * parachuteLerpFactor;
         } else {
-            // Jumping animation - arms fully extended upwards to the sky
+            // Regular jumping animation - arms fully extended upwards to the sky
             this.player.leftLegAngle = -15;
             this.player.rightLegAngle = -15;
             this.player.leftKneeAngle = 20;
@@ -1582,7 +1881,15 @@ class LtDanRunner {
         this.ctx.restore();
     }
     
+    canSpawnEntity() {
+        // Check if enough distance has passed since last spawn
+        return this.lastSpawnDistance >= this.minSpawnGap;
+    }
+    
     spawnObstacle() {
+        // Check unified spawn spacing first
+        if (!this.canSpawnEntity()) return;
+        
         const lastObstacle = this.obstacles[this.obstacles.length - 1];
         const canSpawn = !lastObstacle || 
             (this.canvas.width + 50 - (lastObstacle.x + lastObstacle.width)) >= this.config.minObstacleGapPx;
@@ -1599,11 +1906,12 @@ class LtDanRunner {
                 color: '#8B4513'
             };
             this.obstacles.push(obstacle);
+            this.lastSpawnDistance = 0;  // Reset spawn distance
         }
 
         // Tall obstacle spawn (random interval)
         this.tallSpawnCounter++;
-        if (canSpawn && this.tallSpawnCounter >= this.nextTallSpawn) {
+        if (canSpawn && this.tallSpawnCounter >= this.nextTallSpawn && this.canSpawnEntity()) {
             const tallHeight = this.computeTallHeight();
             const obstacle = {
                 x: this.canvas.width + 50,
@@ -1617,6 +1925,7 @@ class LtDanRunner {
             this.obstacles.push(obstacle);
             this.tallSpawnCounter = 0;
             this.nextTallSpawn = this.randomInt(this.config.tallSpawnMin, this.config.tallSpawnMax);
+            this.lastSpawnDistance = 0;  // Reset spawn distance
         }
     }
     
@@ -1631,12 +1940,14 @@ class LtDanRunner {
                 if (obstacle.type === 'tall') {
                     this.score += this.config.tallPoints;
                     this.updateScore();
-                    this.addPopup("+30", this.player.x + this.player.width/2, this.player.y - 20);
+                    this.addPopup("+" + this.config.tallPoints, 
+                                  this.player.x + this.player.width/2, this.player.y - 20);
                     this.soundManager.playPointTall();
                 } else {
                     this.score += this.config.lowPoints;
                     this.updateScore();
-                    this.addPopup("+10", this.player.x + this.player.width/2, this.player.y - 20);
+                    this.addPopup("+" + this.config.lowPoints, 
+                                  this.player.x + this.player.width/2, this.player.y - 20);
                     this.soundManager.playPointLow();
                 }
             }
@@ -1648,6 +1959,134 @@ class LtDanRunner {
             }
         }
     }
+    
+    spawnConstituent() {
+        // Check unified spawn spacing first
+        if (!this.canSpawnEntity()) return;
+        
+        // Spawn constituents periodically
+        this.constituentSpawnCounter++;
+        if (this.constituentSpawnCounter >= this.config.constituentSpawnRate) {
+            const constituent = {
+                x: this.canvas.width + 50,
+                y: this.player.groundY - 60,  // Same height as player
+                width: 40,  // Same width as player
+                height: 60, // Same height as player
+                speed: this.config.obstacleSpeed * 0.8, // Slower than obstacles
+                animationFrame: Math.random() * 4,
+                walkDirection: 1,
+                color: '#ff4444'  // Red color
+            };
+            this.constituents.push(constituent);
+            this.constituentSpawnCounter = 0;
+            this.lastSpawnDistance = 0;  // Reset spawn distance
+        }
+    }
+    
+    updateConstituents() {
+        for (let i = this.constituents.length - 1; i >= 0; i--) {
+            const constituent = this.constituents[i];
+            
+            // Move constituent
+            constituent.x -= constituent.speed;
+            
+            // Walking animation
+            constituent.animationFrame += 0.1;
+            
+            // Remove if off screen
+            if (constituent.x + constituent.width < 0) {
+                this.constituents.splice(i, 1);
+                continue;
+            }
+            
+            // Check if player is stomping on constituent
+            const isStomping = this.checkStomp(this.player, constituent);
+            if (isStomping) {
+                // Remove constituent
+                this.constituents.splice(i, 1);
+                
+                // Reduce score by 25 points
+                const penalty = 25;
+                this.score = Math.max(0, this.score - penalty);  // Prevent negative scores
+                this.updateScore();
+                this.addPopup("-25 STOMPED!", constituent.x, constituent.y - 20, {icon: '💥'});
+                
+                // Play stomp sound (use jump sound for now)
+                this.soundManager.playJump();
+                
+                // Reset parachute flag for this new launch - allows one parachute per stomp
+                this.player.parachuteUsedThisJump = false;
+                
+                // Launch player high in the air like a jump pad
+                this.player.velocityY = -28;  // Super strong jump pad boost
+                this.player.isJumping = true;
+            }
+        }
+    }
+    
+    spawnBribe() {
+        // Check unified spawn spacing first
+        if (!this.canSpawnEntity()) return;
+        
+        // Spawn bribes periodically
+        this.bribeSpawnCounter++;
+        if (this.bribeSpawnCounter >= this.config.bribeSpawnRate) {
+            const bribe = {
+                x: this.canvas.width + 50,
+                y: this.player.groundY - 120 - Math.random() * 60,  // In the air at jump height
+                width: 30,
+                height: 30,
+                speed: this.config.obstacleSpeed,
+                animationFrame: 0,
+                collected: false,
+                color: '#ffd700'  // Gold color
+            };
+            this.bribes.push(bribe);
+            this.bribeSpawnCounter = 0;
+            this.lastSpawnDistance = 0;  // Reset spawn distance
+        }
+    }
+    
+    updateBribes() {
+        for (let i = this.bribes.length - 1; i >= 0; i--) {
+            const bribe = this.bribes[i];
+            
+            // Move bribe
+            bribe.x -= bribe.speed;
+            
+            // Floating animation
+            bribe.animationFrame += 0.1;
+            bribe.y += Math.sin(bribe.animationFrame) * 0.5;
+            
+            // Remove if off screen
+            if (bribe.x + bribe.width < 0) {
+                this.bribes.splice(i, 1);
+                continue;
+            }
+            
+            // Check collision with player
+            if (this.checkCollision(this.player, bribe)) {
+                // Remove bribe
+                this.bribes.splice(i, 1);
+                
+                // Visual feedback
+                this.addPopup("BRIBE!", bribe.x, bribe.y, {icon: '💰'});
+                
+                // Play collect sound (use point sound for now)
+                this.soundManager.playPointTall();
+            }
+        }
+    }
+    
+    checkStomp(player, constituent) {
+        // Check if player is above and falling onto constituent
+        return player.x < constituent.x + constituent.width &&
+               player.x + player.width > constituent.x &&
+               player.y + player.height > constituent.y &&
+               player.y + player.height < constituent.y + constituent.height / 2 &&
+               player.velocityY > 0;  // Must be falling
+    }
+    
 
     randomInt(min, max) {
         return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -1742,6 +2181,166 @@ class LtDanRunner {
         } else if (this.gameState === 'playing') {
             // Draw articulated player (Lt. Dan)
             this.drawArticulatedPlayer();
+            
+            // Draw parachute if active AND has time remaining
+            if (this.player.hasParachute && this.player.parachuteTimeLeft > 0) {
+                this.ctx.save();
+                
+                // Draw parachute above player
+                const chuteCenterX = this.player.x + this.player.width / 2;
+                const chuteY = this.player.y - 40;
+                
+                // Draw parachute with selected skin
+                if (this.currentParachuteSkin && this.currentParachuteSkin.loaded && this.currentParachuteSkin.image) {
+                    // Use loaded image for parachute
+                    this.ctx.save();
+                    this.ctx.beginPath();
+                    this.ctx.arc(chuteCenterX, chuteY, 35, Math.PI, 2 * Math.PI, false);
+                    this.ctx.closePath();
+                    this.ctx.clip();
+                    
+                    // Draw the parachute skin image
+                    this.ctx.drawImage(
+                        this.currentParachuteSkin.image,
+                        chuteCenterX - 35,
+                        chuteY - 35,
+                        70,
+                        70
+                    );
+                    
+                    this.ctx.restore();
+                } else {
+                    // Fallback to solid color if no image loaded
+                    const fallbackColor = this.currentParachuteSkin?.color || '#FF6B6B';
+                    this.ctx.fillStyle = fallbackColor;
+                    this.ctx.beginPath();
+                    this.ctx.arc(chuteCenterX, chuteY, 35, Math.PI, 2 * Math.PI, false);
+                    this.ctx.closePath();
+                    this.ctx.fill();
+                }
+                
+                // Parachute outline
+                this.ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)';
+                this.ctx.lineWidth = 2;
+                this.ctx.beginPath();
+                this.ctx.arc(chuteCenterX, chuteY, 35, Math.PI, 2 * Math.PI, false);
+                this.ctx.stroke();
+                
+                // Parachute lines to player
+                this.ctx.strokeStyle = '#333333'; // Dark gray
+                this.ctx.lineWidth = 1;
+                this.ctx.beginPath();
+                // Multiple lines for realistic look
+                this.ctx.moveTo(chuteCenterX - 25, chuteY);
+                this.ctx.lineTo(chuteCenterX - 8, this.player.y + 10);
+                this.ctx.moveTo(chuteCenterX - 12, chuteY);
+                this.ctx.lineTo(chuteCenterX - 4, this.player.y + 10);
+                this.ctx.moveTo(chuteCenterX, chuteY);
+                this.ctx.lineTo(chuteCenterX, this.player.y + 10);
+                this.ctx.moveTo(chuteCenterX + 12, chuteY);
+                this.ctx.lineTo(chuteCenterX + 4, this.player.y + 10);
+                this.ctx.moveTo(chuteCenterX + 25, chuteY);
+                this.ctx.lineTo(chuteCenterX + 8, this.player.y + 10);
+                this.ctx.stroke();
+                
+                this.ctx.restore();
+                
+                // Draw parachute timer at smoothly animated position (if player has tapped)
+                if (this.player.timerX && this.player.timerY) {
+                    this.ctx.save();
+                    
+                    // Position timer above the smoothly animated position
+                    const timerWidth = 120;
+                    const timerHeight = 50;
+                    const timerX = this.player.timerX - timerWidth / 2;
+                    const timerY = this.player.timerY - timerHeight - 40; // Position above finger to avoid obstruction
+                    
+                    // Timer background with transparency
+                    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+                    this.ctx.fillRect(timerX, timerY, timerWidth, timerHeight);
+                    
+                    // Timer border
+                    this.ctx.strokeStyle = '#ffd700';
+                    this.ctx.lineWidth = 2;
+                    this.ctx.strokeRect(timerX, timerY, timerWidth, timerHeight);
+                    
+                    // Timer bar
+                    const timePercent = Math.max(0, this.player.parachuteTimeLeft / 3000);
+                    const barColor = timePercent > 0.5 ? '#44ff88' : timePercent > 0.2 ? '#ffaa44' : '#ff4444';
+                    this.ctx.fillStyle = barColor;
+                    this.ctx.fillRect(timerX + 6, timerY + 28, (timerWidth - 12) * timePercent, 10);
+                    
+                    // Timer text
+                    this.ctx.font = 'bold 12px Tiny5';
+                    this.ctx.textAlign = 'center';
+                    this.ctx.fillStyle = '#ffffff';
+                    const timeLeft = Math.ceil(this.player.parachuteTimeLeft / 1000);
+                    this.ctx.fillText(`CHUTE: ${timeLeft}s`, timerX + timerWidth/2, timerY + 18);
+                    
+                    // Flashing TAP! indicator - flash continuously while parachute is active
+                    const flashSpeed = 200; // Flash cycle duration in milliseconds (faster flashing)
+                    const shouldShowTap = Math.floor(Date.now() / flashSpeed) % 2 === 0;
+                    
+                    if (shouldShowTap) {
+                        // Change color based on whether player is actually tapping
+                        this.ctx.fillStyle = this.player.parachuteTapping ? '#44ff88' : '#ffaa44';
+                        this.ctx.font = 'bold 10px Tiny5';
+                        this.ctx.fillText('TAP!', timerX + timerWidth/2, timerY + 45);
+                    }
+                    
+                    this.ctx.restore();
+                }
+                
+                this.ctx.restore();
+            }
+        }
+        
+        // Draw constituents (red walking enemies - same size as player)
+        for (let constituent of this.constituents) {
+            this.ctx.save();
+            
+            // Simple walking figure scaled to player size
+            this.ctx.fillStyle = constituent.color;
+            
+            // Head (larger)
+            this.ctx.fillRect(constituent.x + 8, constituent.y + 2, 24, 18);
+            
+            // Body (larger)
+            this.ctx.fillRect(constituent.x + 5, constituent.y + 22, 30, 28);
+            
+            // Legs animation (larger)
+            const legPhase = Math.sin(constituent.animationFrame) * 8;
+            this.ctx.fillRect(constituent.x + 12, constituent.y + 50, 6, 15);
+            this.ctx.fillRect(constituent.x + 22, constituent.y + 50, 6, 15 - legPhase);
+            
+            // Add angry face (larger)
+            this.ctx.fillStyle = 'white';
+            this.ctx.fillRect(constituent.x + 14, constituent.y + 8, 4, 4);
+            this.ctx.fillRect(constituent.x + 22, constituent.y + 8, 4, 4);
+            
+            this.ctx.restore();
+        }
+        
+        // Draw bribes (gold floating money)
+        for (let bribe of this.bribes) {
+            this.ctx.save();
+            
+            // Floating animation
+            const floatY = Math.sin(bribe.animationFrame) * 3;
+            
+            // Draw dollar sign
+            this.ctx.fillStyle = bribe.color;
+            this.ctx.font = 'bold 24px Arial';
+            this.ctx.textAlign = 'center';
+            this.ctx.textBaseline = 'middle';
+            this.ctx.fillText('$', bribe.x + bribe.width/2, bribe.y + bribe.height/2 + floatY);
+            
+            // Add glow effect
+            this.ctx.shadowColor = bribe.color;
+            this.ctx.shadowBlur = 10;
+            this.ctx.fillText('$', bribe.x + bribe.width/2, bribe.y + bribe.height/2 + floatY);
+            
+            this.ctx.restore();
         }
         
         // Draw obstacles (keep them visible during crash)
@@ -1753,6 +2352,7 @@ class LtDanRunner {
             this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
             this.ctx.fillRect(obstacle.x + 5, obstacle.y + 5, obstacle.width - 10, 3);
         }
+        
         
         // Debug: draw hitboxes
         if (this.debugHitboxes && this.gameState === 'playing') {
@@ -1769,16 +2369,59 @@ class LtDanRunner {
             }
         }
         
+        // Debug: show speed
+        if (this.showSpeed && this.gameState === 'playing') {
+            this.ctx.save();
+            
+            // Larger retro-style background with border
+            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+            this.ctx.fillRect(10, 10, 280, 100);
+            
+            // Golden border
+            this.ctx.strokeStyle = '#ffd700';
+            this.ctx.lineWidth = 3;
+            this.ctx.strokeRect(10, 10, 280, 100);
+            
+            // Larger retro pixel font (no outline)
+            this.ctx.font = 'bold 20px Tiny5';
+            this.ctx.textAlign = 'left';
+            this.ctx.fillStyle = '#ffffff';
+            
+            // Game Speed
+            this.ctx.fillText(`SPEED: ${this.config.gameSpeed.toFixed(2)}`, 25, 40);
+            
+            // Base Speed
+            this.ctx.fillText(`BASE: ${this.config.baseGameSpeed}`, 25, 65);
+            
+            // Max Speed
+            this.ctx.fillText(`MAX: ${this.config.maxGameSpeed}`, 25, 90);
+            
+            this.ctx.restore();
+        }
+        
         // Restore context after screen shake
         this.ctx.restore();
     }
     
     gameLoop() {
+        // Calculate delta time for frame-independent updates
+        const currentTime = performance.now();
+        this.deltaTime = Math.min(currentTime - this.lastFrameTime, 100); // Cap at 100ms to prevent huge jumps
+        this.lastFrameTime = currentTime;
+        
         if (this.gameState === 'playing') {
             this.gameFrame++;
+            
+            // Track distance moved since last spawn
+            this.lastSpawnDistance += this.config.obstacleSpeed;
+            
             this.updatePlayer();
             this.spawnObstacle();
+            this.spawnConstituent();
+            this.spawnBribe();
             this.updateObstacles();
+            this.updateConstituents();
+            this.updateBribes();
             this.updateBackground();
             this.updatePopups();
             
@@ -1910,6 +2553,7 @@ class LtDanRunner {
         const c1 = 1.70158, c3 = c1 + 1;
         return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
     }
+    
 }
 
 // Initialize game when DOM is loaded

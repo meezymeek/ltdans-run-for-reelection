@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parachute Skin Template Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #222;
+            color: #fff;
+            text-align: center;
+        }
+        canvas {
+            border: 2px solid #ffd700;
+            background: white;
+            display: block;
+            margin: 20px auto;
+            cursor: pointer;
+            image-rendering: pixelated;
+        }
+        canvas:hover {
+            border-color: #ffaa00;
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        }
+        h1 {
+            color: #ffd700;
+        }
+        .instructions {
+            background: #333;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px auto;
+            max-width: 600px;
+        }
+        .instructions h3 {
+            color: #ffd700;
+            margin-top: 0;
+        }
+        .instructions ul {
+            text-align: left;
+        }
+        .instructions code {
+            background: #111;
+            padding: 2px 6px;
+            border-radius: 3px;
+            color: #ffd700;
+        }
+        button {
+            background: #ffd700;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        button:hover {
+            background: #ffaa00;
+        }
+        .preview-container {
+            display: inline-block;
+            margin: 20px;
+            vertical-align: top;
+        }
+        .preview-container h4 {
+            color: #ffd700;
+        }
+    </style>
+</head>
+<body>
+    <h1>🪂 Parachute Skin Template Generator</h1>
+    
+    <div class="instructions">
+        <h3>Instructions:</h3>
+        <ul>
+            <li>Click on any canvas below to download that template as a PNG file</li>
+            <li>The parachute area is <strong>70x70 pixels</strong></li>
+            <li>The game clips the image to a semi-circle (dome shape)</li>
+            <li>Only the top half of the circle is visible (parachute dome)</li>
+            <li>Save your custom skins as: <code>parachute_[name].png</code></li>
+            <li>Place them in: <code>skins/parachutes/</code></li>
+        </ul>
+    </div>
+    
+    <div id="previews"></div>
+    
+    <script>
+        // Template designs
+        const templates = [
+            {
+                name: 'blank',
+                description: 'Blank Template',
+                draw: (ctx) => {
+                    // Draw guide circle (will be clipped in game)
+                    ctx.strokeStyle = '#ccc';
+                    ctx.lineWidth = 1;
+                    ctx.setLineDash([2, 2]);
+                    ctx.beginPath();
+                    ctx.arc(35, 35, 34, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                    
+                    // Draw center line guide
+                    ctx.strokeStyle = '#ddd';
+                    ctx.beginPath();
+                    ctx.moveTo(35, 0);
+                    ctx.lineTo(35, 70);
+                    ctx.stroke();
+                    
+                    // Draw horizontal guide
+                    ctx.beginPath();
+                    ctx.moveTo(0, 35);
+                    ctx.lineTo(70, 35);
+                    ctx.stroke();
+                    
+                    // Label
+                    ctx.fillStyle = '#aaa';
+                    ctx.font = '8px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('TEMPLATE', 35, 35);
+                }
+            },
+            {
+                name: 'stripes',
+                description: 'Vertical Stripes',
+                draw: (ctx) => {
+                    // Draw vertical stripes
+                    const stripeWidth = 70 / 7;
+                    for (let i = 0; i < 7; i++) {
+                        ctx.fillStyle = i % 2 === 0 ? '#ff6b6b' : '#ffffff';
+                        ctx.fillRect(i * stripeWidth, 0, stripeWidth, 70);
+                    }
+                    
+                    // Draw guide circle
+                    ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+                    ctx.lineWidth = 1;
+                    ctx.setLineDash([2, 2]);
+                    ctx.beginPath();
+                    ctx.arc(35, 35, 34, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+            },
+            {
+                name: 'radial',
+                description: 'Radial Pattern',
+                draw: (ctx) => {
+                    // Draw radial segments from center
+                    const segments = 8;
+                    const angleStep = (Math.PI * 2) / segments;
+                    
+                    for (let i = 0; i < segments; i++) {
+                        ctx.fillStyle = i % 2 === 0 ? '#4a90e2' : '#ffffff';
+                        ctx.beginPath();
+                        ctx.moveTo(35, 35);
+                        const angle1 = i * angleStep;
+                        const angle2 = (i + 1) * angleStep;
+                        ctx.arc(35, 35, 35, angle1, angle2);
+                        ctx.closePath();
+                        ctx.fill();
+                    }
+                }
+            },
+            {
+                name: 'grid',
+                description: 'Grid Pattern',
+                draw: (ctx) => {
+                    // Background
+                    ctx.fillStyle = '#2c3e50';
+                    ctx.fillRect(0, 0, 70, 70);
+                    
+                    // Grid lines
+                    ctx.strokeStyle = '#34495e';
+                    ctx.lineWidth = 2;
+                    
+                    // Vertical lines
+                    for (let x = 10; x < 70; x += 10) {
+                        ctx.beginPath();
+                        ctx.moveTo(x, 0);
+                        ctx.lineTo(x, 70);
+                        ctx.stroke();
+                    }
+                    
+                    // Horizontal lines
+                    for (let y = 10; y < 70; y += 10) {
+                        ctx.beginPath();
+                        ctx.moveTo(0, y);
+                        ctx.lineTo(70, y);
+                        ctx.stroke();
+                    }
+                }
+            },
+            {
+                name: 'rings',
+                description: 'Concentric Rings',
+                draw: (ctx) => {
+                    // Background
+                    ctx.fillStyle = '#fff';
+                    ctx.fillRect(0, 0, 70, 70);
+                    
+                    // Draw concentric circles
+                    const rings = 5;
+                    for (let i = rings; i > 0; i--) {
+                        ctx.fillStyle = i % 2 === 0 ? '#e74c3c' : '#ecf0f1';
+                        ctx.beginPath();
+                        ctx.arc(35, 35, (35 / rings) * i, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+            }
+        ];
+        
+        // Create canvases for each template
+        const container = document.getElementById('previews');
+        
+        templates.forEach(template => {
+            const div = document.createElement('div');
+            div.className = 'preview-container';
+            
+            const title = document.createElement('h4');
+            title.textContent = template.description;
+            div.appendChild(title);
+            
+            const canvas = document.createElement('canvas');
+            canvas.width = 70;
+            canvas.height = 70;
+            canvas.style.width = '140px';
+            canvas.style.height = '140px';
+            canvas.title = 'Click to download';
+            
+            const ctx = canvas.getContext('2d');
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, 70, 70);
+            
+            // Draw template
+            template.draw(ctx);
+            
+            // Click to download
+            canvas.addEventListener('click', () => {
+                const link = document.createElement('a');
+                link.download = `parachute_${template.name}_template.png`;
+                link.href = canvas.toDataURL();
+                link.click();
+            });
+            
+            div.appendChild(canvas);
+            container.appendChild(div);
+        });
+        
+        // Add info text
+        const info = document.createElement('div');
+        info.style.marginTop = '30px';
+        info.style.color = '#aaa';
+        info.innerHTML = `
+            <p><strong>Note:</strong> The game will automatically clip your image to show only the top dome of the parachute.</p>
+            <p>The visible area is a semi-circle from the center point (35, 35) with radius 35.</p>
+        `;
+        document.body.appendChild(info);
+    </script>
+</body>
+</html>

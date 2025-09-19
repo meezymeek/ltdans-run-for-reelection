@@ -20,6 +20,16 @@
             { name: 'shin', width: 8, height: 12, color: '#ff8585' }
         ];
         
+        // Parachute skins - multiple designs for random selection
+        const parachuteSkins = [
+            { name: 'parachute_default', width: 70, height: 40, type: 'striped', color1: '#FF6B6B', color2: '#CC5555' },
+            { name: 'parachute_camo', width: 70, height: 40, type: 'camo', color1: '#4A5F3A', color2: '#6B7F4E' },
+            { name: 'parachute_rainbow', width: 70, height: 40, type: 'rainbow' },
+            { name: 'parachute_stars', width: 70, height: 40, type: 'stars', color1: '#2E3F9B', color2: '#FFFFFF' },
+            { name: 'parachute_eagle', width: 70, height: 40, type: 'usa', color1: '#B22234', color2: '#FFFFFF' },
+            { name: 'parachute_neon', width: 70, height: 40, type: 'gradient', color1: '#FF00FF', color2: '#00FFFF' }
+        ];
+        
         const container = document.getElementById('images');
         
         bodyParts.forEach(part => {
@@ -67,6 +77,161 @@
             link.href = canvas.toDataURL('image/png');
             link.download = `${part.name}.png`;
             link.textContent = `Download ${part.name}.png`;
+            link.style.display = 'block';
+            link.style.marginTop = '5px';
+            
+            partDiv.appendChild(label);
+            partDiv.appendChild(img);
+            partDiv.appendChild(link);
+            container.appendChild(partDiv);
+        });
+        
+        // Add separator
+        const separator = document.createElement('hr');
+        separator.style.width = '100%';
+        separator.style.margin = '20px 0';
+        container.appendChild(separator);
+        
+        const parachuteTitle = document.createElement('h2');
+        parachuteTitle.textContent = 'Parachute Skins';
+        container.appendChild(parachuteTitle);
+        
+        // Generate parachute skins
+        parachuteSkins.forEach(parachute => {
+            const canvas = document.createElement('canvas');
+            canvas.width = parachute.width;
+            canvas.height = parachute.height;
+            const ctx = canvas.getContext('2d');
+            
+            // Clear canvas with transparency
+            ctx.clearRect(0, 0, parachute.width, parachute.height);
+            
+            // Save the clipping region for the parachute shape
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(parachute.width / 2, parachute.height - 5, parachute.width / 2 - 5, Math.PI, 2 * Math.PI, false);
+            ctx.closePath();
+            ctx.clip();
+            
+            // Draw different patterns based on type
+            switch(parachute.type) {
+                case 'striped':
+                    // Alternating stripes
+                    for (let i = 0; i < 8; i++) {
+                        ctx.fillStyle = i % 2 === 0 ? parachute.color1 : parachute.color2;
+                        ctx.fillRect((parachute.width / 8) * i, 0, parachute.width / 8, parachute.height);
+                    }
+                    break;
+                    
+                case 'camo':
+                    // Camouflage pattern
+                    ctx.fillStyle = parachute.color1;
+                    ctx.fillRect(0, 0, parachute.width, parachute.height);
+                    ctx.fillStyle = parachute.color2;
+                    for (let i = 0; i < 15; i++) {
+                        const x = Math.random() * parachute.width;
+                        const y = Math.random() * parachute.height;
+                        const size = 8 + Math.random() * 8;
+                        ctx.beginPath();
+                        ctx.arc(x, y, size, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                    break;
+                    
+                case 'rainbow':
+                    // Rainbow stripes
+                    const colors = ['#FF0000', '#FF7F00', '#FFFF00', '#00FF00', '#0000FF', '#4B0082', '#9400D3'];
+                    colors.forEach((color, i) => {
+                        ctx.fillStyle = color;
+                        ctx.fillRect((parachute.width / 7) * i, 0, parachute.width / 7 + 1, parachute.height);
+                    });
+                    break;
+                    
+                case 'stars':
+                    // Stars and stripes pattern
+                    ctx.fillStyle = parachute.color1;
+                    ctx.fillRect(0, 0, parachute.width, parachute.height);
+                    ctx.fillStyle = parachute.color2;
+                    // Draw stars
+                    for (let i = 0; i < 8; i++) {
+                        const x = 10 + (i % 4) * 15;
+                        const y = 5 + Math.floor(i / 4) * 15;
+                        ctx.font = '12px Arial';
+                        ctx.fillText('★', x, y);
+                    }
+                    break;
+                    
+                case 'usa':
+                    // USA themed
+                    // Red and white stripes
+                    for (let i = 0; i < 7; i++) {
+                        ctx.fillStyle = i % 2 === 0 ? parachute.color1 : parachute.color2;
+                        ctx.fillRect(0, (parachute.height / 7) * i, parachute.width, parachute.height / 7);
+                    }
+                    // Blue field with star
+                    ctx.fillStyle = '#002868';
+                    ctx.fillRect(0, 0, parachute.width / 3, parachute.height / 2.5);
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.font = 'bold 16px Arial';
+                    ctx.fillText('★', parachute.width / 6 - 8, parachute.height / 5 + 5);
+                    break;
+                    
+                case 'gradient':
+                    // Neon gradient
+                    const gradient = ctx.createLinearGradient(0, 0, parachute.width, 0);
+                    gradient.addColorStop(0, parachute.color1);
+                    gradient.addColorStop(0.5, '#FFFF00');
+                    gradient.addColorStop(1, parachute.color2);
+                    ctx.fillStyle = gradient;
+                    ctx.fillRect(0, 0, parachute.width, parachute.height);
+                    break;
+            }
+            
+            // Restore and add outline
+            ctx.restore();
+            
+            // Add outline
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(parachute.width / 2, parachute.height - 5, parachute.width / 2 - 6, Math.PI, 2 * Math.PI, false);
+            ctx.stroke();
+            
+            // Add strings
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
+            ctx.lineWidth = 1;
+            for (let i = 1; i < 6; i++) {
+                const x = (parachute.width / 6) * i;
+                ctx.beginPath();
+                ctx.moveTo(x, parachute.height - 5);
+                ctx.lineTo(parachute.width / 2, parachute.height + 10);
+                ctx.stroke();
+            }
+            
+            // Create container for this parachute
+            const partDiv = document.createElement('div');
+            partDiv.style.margin = '10px';
+            partDiv.style.padding = '10px';
+            partDiv.style.border = '1px solid #ccc';
+            partDiv.style.display = 'inline-block';
+            
+            const label = document.createElement('p');
+            label.textContent = `${parachute.name}.png (${parachute.width}x${parachute.height})`;
+            
+            const img = document.createElement('img');
+            img.src = canvas.toDataURL('image/png');
+            img.style.imageRendering = 'pixelated';
+            img.style.width = parachute.width * 2 + 'px';
+            img.style.height = parachute.height * 2 + 'px';
+            img.style.border = '1px solid #000';
+            img.style.display = 'block';
+            img.style.backgroundColor = '#f0f0f0'; // To see transparent areas
+            
+            // Create download link
+            const link = document.createElement('a');
+            link.href = canvas.toDataURL('image/png');
+            link.download = `${parachute.name}.png`;
+            link.textContent = `Download ${parachute.name}.png`;
             link.style.display = 'block';
             link.style.marginTop = '5px';
             
