@@ -464,7 +464,7 @@ class LtDanRunner {
             tallSpawnMax: 540,  // increased by 50% (was 360)
             minObstacleGapPx: 250, // minimum pixel gap between obstacles
             constituentSpawnRate: 300,  // New: constituents spawn rate
-            bribeSpawnRate: 240,        // New: bribes spawn rate
+            bribeSpawnRate: 180,        // Increased spacing between bribes
             // Effect modifiers
             constituentSpeedMod: 0.85,   // 15% slower when stomping constituent
             constituentScoreMod: 0.8,    // 20% less points when affected
@@ -556,6 +556,8 @@ class LtDanRunner {
         // Bribes array (collectible power-ups)
         this.bribes = [];
         this.bribeSpawnCounter = 0;
+        this.bribePatternCounter = 0;  // Track when to spawn patterns
+        this.nextBribePattern = 250;   // Increased spacing between patterns
         
         // Active effects tracking
         this.activeEffects = {
@@ -1972,10 +1974,27 @@ class LtDanRunner {
                 y: this.player.groundY - 60,  // Same height as player
                 width: 40,  // Same width as player
                 height: 60, // Same height as player
+                originalWidth: 40,  // Store original dimensions
+                originalHeight: 60,
                 speed: this.config.obstacleSpeed * 0.8, // Slower than obstacles
                 animationFrame: Math.random() * 4,
                 walkDirection: 1,
-                color: '#ff4444'  // Red color
+                color: '#ff4444',  // Red color
+                
+                // Squash and stretch animation state
+                isBeingStomped: false,
+                stompAnimationTime: 0,
+                scaleX: 1,      // Width multiplier
+                scaleY: 1,      // Height multiplier
+                targetScaleX: 1,  // Target width for lerp
+                targetScaleY: 1,  // Target height for lerp
+                
+                // Launch physics
+                launchVelocityX: 0,
+                launchVelocityY: 0,
+                rotation: 0,
+                rotationSpeed: 0,
+                opacity: 1
             };
             this.constituents.push(constituent);
             this.constituentSpawnCounter = 0;
@@ -1987,7 +2006,21 @@ class LtDanRunner {
         for (let i = this.constituents.length - 1; i >= 0; i--) {
             const constituent = this.constituents[i];
             
-            // Move constituent
+            // Check if animating
+            if (constituent.isBeingStomped) {
+                // Update animation
+                this.updateConstituentAnimation(constituent);
+                
+                // Remove when animation complete and off-screen
+                if (constituent.stompAnimationTime > 800 && 
+                    (constituent.x < -100 || constituent.x > this.canvas.width + 100 ||
+                     constituent.y < -200 || constituent.opacity <= 0)) {
+                    this.constituents.splice(i, 1);
+                }
+                continue;
+            }
+            
+            // Normal movement
             constituent.x -= constituent.speed;
             
             // Walking animation
@@ -2001,20 +2034,20 @@ class LtDanRunner {
             
             // Check if player is stomping on constituent
             const isStomping = this.checkStomp(this.player, constituent);
-            if (isStomping) {
-                // Remove constituent
-                this.constituents.splice(i, 1);
+            if (isStomping && !constituent.isBeingStomped) {
+                // Trigger animation instead of immediate removal
+                constituent.isBeingStomped = true;
+                constituent.stompAnimationTime = 0;
                 
                 // Reduce score by 25 points
                 const penalty = 25;
                 this.score = Math.max(0, this.score - penalty);  // Prevent negative scores
                 this.updateScore();
-                this.addPopup("-25 STOMPED!", constituent.x, constituent.y - 20, {icon: '💥'});
                 
                 // Play stomp sound (use jump sound for now)
                 this.soundManager.playJump();
                 
-                // Reset parachute flag for this new launch - allows one parachute per stomp
+                // Reset parachute flag for this new launch
                 this.player.parachuteUsedThisJump = false;
                 
                 // Launch player high in the air like a jump pad
@@ -2024,26 +2057,236 @@ class LtDanRunner {
         }
     }
     
-    spawnBribe() {
-        // Check unified spawn spacing first
-        if (!this.canSpawnEntity()) return;
+    updateConstituentAnimation(constituent) {
+        // Update animation time
+        constituent.stompAnimationTime += this.deltaTime;
+        const t = constituent.stompAnimationTime;
         
-        // Spawn bribes periodically
+        // Lerp speed for smooth transitions - FASTER!
+        const lerpSpeed = 0.25; // Much snappier transitions (was 0.12)
+        
+        if (t < 120) {
+            // Phase 1: SQUASHING (0-120ms) - FASTER!
+            const progress = t / 120;
+            const ease = this.easeOutQuad(progress);
+            
+            // Set target values for squash
+            constituent.targetScaleY = 1 - (ease * 0.75);  // Compress to 25% of original height
+            constituent.targetScaleX = 1 + (ease * 0.75);   // Expand to 175% of original width
+            
+        } else if (t < 250) {
+            // Phase 2: STRETCHING (120-250ms) - FASTER!
+            const progress = (t - 120) / 130;
+            const ease = this.easeOutElastic(progress);
+            
+            // Set target values for spring up
+            constituent.targetScaleY = 0.25 + (ease * 1.25);  // Spring to 150% height
+            constituent.targetScaleX = 1.75 - (ease * 1.15);   // Contract to 60% width
+            
+            // Prepare launch velocities late in the phase
+            if (t >= 220 && constituent.launchVelocityX === 0) {
+                constituent.launchVelocityX = -8;  // Faster launch
+                constituent.launchVelocityY = -24;  // Higher launch
+                constituent.rotationSpeed = (Math.random() - 0.5) * 0.4;  // More spin
+            }
+            
+        } else {
+            // Phase 3: LAUNCHING (250-500ms) - FASTER!
+            const progress = Math.min((t - 250) / 250, 1);
+            
+            // Maintain stretched proportions as targets
+            constituent.targetScaleY = 1.5;
+            constituent.targetScaleX = 0.6;
+            
+            // Apply launch physics
+            constituent.launchVelocityY += 0.6; // Gravity
+            constituent.x += constituent.launchVelocityX;
+            constituent.y += constituent.launchVelocityY;
+            
+            // Spin dramatically
+            constituent.rotation += constituent.rotationSpeed;
+            
+            // Fade out
+            constituent.opacity = Math.max(0, 1 - (progress * 0.8));
+        }
+        
+        // Apply lerp to smoothly transition scale values
+        constituent.scaleY += (constituent.targetScaleY - constituent.scaleY) * lerpSpeed;
+        constituent.scaleX += (constituent.targetScaleX - constituent.scaleX) * lerpSpeed;
+        
+        // Apply dimensions based on lerped scale values
+        constituent.height = constituent.originalHeight * constituent.scaleY;
+        constituent.width = constituent.originalWidth * constituent.scaleX;
+        
+        // Position constituent based on phase
+        if (t < 120) {
+            // Keep grounded during squash
+            constituent.y = this.player.groundY - constituent.height;
+        } else if (t < 250) {
+            // Lift off ground during stretch
+            const progress = (t - 120) / 130;
+            const liftAmount = this.easeOutElastic(progress) * 12;  // Slightly more lift
+            constituent.y = this.player.groundY - constituent.height - liftAmount;
+        }
+        // Phase 3 position is handled by launch physics above
+    }
+    
+    // Easing functions
+    easeOutQuad(t) {
+        return t * (2 - t);
+    }
+    
+    easeOutElastic(t) {
+        if (t === 0 || t === 1) return t;
+        const p = 0.3;
+        return Math.pow(2, -10 * t) * Math.sin((t - p / 4) * (2 * Math.PI) / p) + 1;
+    }
+    
+    spawnBribe() {
+        // Check for pattern spawning
+        this.bribePatternCounter++;
+        if (this.bribePatternCounter >= this.nextBribePattern) {
+            this.spawnBribePattern();
+            this.bribePatternCounter = 0;
+            this.nextBribePattern = 200 + Math.random() * 300; // Much more spacing between patterns
+            return;
+        }
+        
+        // Regular single bribe spawning
         this.bribeSpawnCounter++;
         if (this.bribeSpawnCounter >= this.config.bribeSpawnRate) {
+            // Check unified spawn spacing
+            if (!this.canSpawnEntity()) return;
+            
+            // Define height levels - now going much higher!
+            const heights = [
+                this.player.groundY - 80,   // Low (easy jump)
+                this.player.groundY - 140,  // Mid (high jump)
+                this.player.groundY - 200,  // High (needs good timing)
+                this.player.groundY - 260,  // Very high (parachute recommended)
+                this.player.groundY - 320,  // Super high (parachute essential)
+                this.player.groundY - 380,  // Sky high
+                this.player.groundY - 440   // Near space!
+            ];
+            
+            // Choose random height
+            const chosenHeight = heights[Math.floor(Math.random() * heights.length)];
+            
             const bribe = {
                 x: this.canvas.width + 50,
-                y: this.player.groundY - 120 - Math.random() * 60,  // In the air at jump height
+                y: chosenHeight + (Math.random() * 20 - 10),  // Add small variation
                 width: 30,
                 height: 30,
                 speed: this.config.obstacleSpeed,
-                animationFrame: 0,
+                animationFrame: Math.random() * Math.PI * 2,
                 collected: false,
                 color: '#ffd700'  // Gold color
             };
             this.bribes.push(bribe);
             this.bribeSpawnCounter = 0;
             this.lastSpawnDistance = 0;  // Reset spawn distance
+        }
+    }
+    
+    spawnBribePattern() {
+        const patterns = ['arch', 'wave', 'diagonal', 'cluster', 'stairs'];
+        const pattern = patterns[Math.floor(Math.random() * patterns.length)];
+        
+        const startX = this.canvas.width + 50;
+        const baseSpeed = this.config.obstacleSpeed;
+        
+        switch(pattern) {
+            case 'arch':
+                // Create an arch of 5 bribes
+                const archHeight = this.player.groundY - 180;
+                for (let i = 0; i < 5; i++) {
+                    const angle = (i / 4) * Math.PI; // 0 to PI
+                    const height = Math.sin(angle) * 60; // Arc height variation
+                    this.bribes.push({
+                        x: startX + i * 60,  // Increased spacing from 40 to 60
+                        y: archHeight - height,
+                        width: 30,
+                        height: 30,
+                        speed: baseSpeed,
+                        animationFrame: i * 0.5,
+                        collected: false,
+                        color: '#ffd700'
+                    });
+                }
+                break;
+                
+            case 'wave':
+                // Create a sine wave of bribes
+                for (let i = 0; i < 6; i++) {
+                    const waveY = this.player.groundY - 140 + Math.sin(i * 0.8) * 50;
+                    this.bribes.push({
+                        x: startX + i * 55,  // Increased spacing from 35 to 55
+                        y: waveY,
+                        width: 30,
+                        height: 30,
+                        speed: baseSpeed,
+                        animationFrame: i * 0.4,
+                        collected: false,
+                        color: '#ffd700'
+                    });
+                }
+                break;
+                
+            case 'diagonal':
+                // Rising or falling diagonal line
+                const rising = Math.random() > 0.5;
+                for (let i = 0; i < 4; i++) {
+                    const diagY = rising ? 
+                        this.player.groundY - 80 - i * 40 :
+                        this.player.groundY - 200 + i * 40;
+                    this.bribes.push({
+                        x: startX + i * 70,  // Increased spacing from 45 to 70
+                        y: diagY,
+                        width: 30,
+                        height: 30,
+                        speed: baseSpeed,
+                        animationFrame: i * 0.6,
+                        collected: false,
+                        color: '#ffd700'
+                    });
+                }
+                break;
+                
+            case 'cluster':
+                // Random cluster of 3 bribes at varying heights
+                const clusterBase = this.player.groundY - 100 - Math.random() * 100;
+                for (let i = 0; i < 3; i++) {
+                    this.bribes.push({
+                        x: startX + i * 45 + Math.random() * 20,  // Increased spacing from 25 to 45
+                        y: clusterBase + (Math.random() * 60 - 30),
+                        width: 30,
+                        height: 30,
+                        speed: baseSpeed,
+                        animationFrame: Math.random() * Math.PI * 2,
+                        collected: false,
+                        color: '#ffd700'
+                    });
+                }
+                break;
+                
+            case 'stairs':
+                // Staircase pattern going up then down
+                for (let i = 0; i < 6; i++) {
+                    const stairY = i < 3 ?
+                        this.player.groundY - 80 - i * 35 :
+                        this.player.groundY - 185 + (i - 3) * 35;
+                    this.bribes.push({
+                        x: startX + i * 55,  // Increased spacing from 35 to 55
+                        y: stairY,
+                        width: 30,
+                        height: 30,
+                        speed: baseSpeed,
+                        animationFrame: i * 0.3,
+                        collected: false,
+                        color: '#ffd700'
+                    });
+                }
+                break;
         }
     }
     
@@ -2069,8 +2312,12 @@ class LtDanRunner {
                 // Remove bribe
                 this.bribes.splice(i, 1);
                 
+                // Add 5 votes to score
+                this.score += 5;
+                this.updateScore();
+                
                 // Visual feedback
-                this.addPopup("BRIBE!", bribe.x, bribe.y, {icon: '💰'});
+                this.addPopup("+5 VOTES!", bribe.x, bribe.y, {icon: '💰'});
                 
                 // Play collect sound (use point sound for now)
                 this.soundManager.playPointTall();
@@ -2299,24 +2546,81 @@ class LtDanRunner {
         for (let constituent of this.constituents) {
             this.ctx.save();
             
-            // Simple walking figure scaled to player size
+            // Apply opacity for fade out during launch
+            if (constituent.opacity < 1) {
+                this.ctx.globalAlpha = constituent.opacity;
+            }
+            
+            // Apply rotation and scaling if being stomped
+            if (constituent.isBeingStomped) {
+                // Translate to center for rotation
+                const centerX = constituent.x + constituent.width / 2;
+                const centerY = constituent.y + constituent.height / 2;
+                this.ctx.translate(centerX, centerY);
+                this.ctx.rotate(constituent.rotation);
+                this.ctx.translate(-centerX, -centerY);
+            }
+            
+            // Simple walking figure with scaling applied
             this.ctx.fillStyle = constituent.color;
             
-            // Head (larger)
-            this.ctx.fillRect(constituent.x + 8, constituent.y + 2, 24, 18);
+            // Calculate actual dimensions based on scale
+            const actualWidth = constituent.width;
+            const actualHeight = constituent.height;
             
-            // Body (larger)
-            this.ctx.fillRect(constituent.x + 5, constituent.y + 22, 30, 28);
+            // Head (scaled proportionally)
+            const headWidth = actualWidth * 0.6;
+            const headHeight = actualHeight * 0.3;
+            const headX = constituent.x + (actualWidth - headWidth) / 2;
+            const headY = constituent.y + actualHeight * 0.03;
+            this.ctx.fillRect(headX, headY, headWidth, headHeight);
             
-            // Legs animation (larger)
-            const legPhase = Math.sin(constituent.animationFrame) * 8;
-            this.ctx.fillRect(constituent.x + 12, constituent.y + 50, 6, 15);
-            this.ctx.fillRect(constituent.x + 22, constituent.y + 50, 6, 15 - legPhase);
+            // Body (scaled proportionally)
+            const bodyWidth = actualWidth * 0.75;
+            const bodyHeight = actualHeight * 0.47;
+            const bodyX = constituent.x + (actualWidth - bodyWidth) / 2;
+            const bodyY = constituent.y + actualHeight * 0.37;
+            this.ctx.fillRect(bodyX, bodyY, bodyWidth, bodyHeight);
             
-            // Add angry face (larger)
-            this.ctx.fillStyle = 'white';
-            this.ctx.fillRect(constituent.x + 14, constituent.y + 8, 4, 4);
-            this.ctx.fillRect(constituent.x + 22, constituent.y + 8, 4, 4);
+            // Legs animation (scaled proportionally) - only if not being stomped
+            if (!constituent.isBeingStomped) {
+                const legPhase = Math.sin(constituent.animationFrame) * 8;
+                const legWidth = actualWidth * 0.15;
+                const legHeight = actualHeight * 0.25;
+                const leg1X = constituent.x + actualWidth * 0.3;
+                const leg2X = constituent.x + actualWidth * 0.55;
+                const legY = constituent.y + actualHeight * 0.83;
+                
+                this.ctx.fillRect(leg1X, legY, legWidth, legHeight);
+                this.ctx.fillRect(leg2X, legY, legWidth, legHeight - legPhase * (actualHeight / 60));
+            } else if (constituent.stompAnimationTime < 200) {
+                // During squash phase, draw compressed legs
+                const legWidth = actualWidth * 0.15;
+                const legHeight = actualHeight * 0.1; // Much shorter during squash
+                const legY = constituent.y + actualHeight * 0.9;
+                this.ctx.fillRect(constituent.x + actualWidth * 0.2, legY, legWidth, legHeight);
+                this.ctx.fillRect(constituent.x + actualWidth * 0.65, legY, legWidth, legHeight);
+            }
+            
+            // Add angry face (scaled proportionally) - only if not launching
+            if (constituent.stompAnimationTime < 400) {
+                this.ctx.fillStyle = 'white';
+                const eyeSize = actualWidth * 0.1;
+                const eye1X = constituent.x + actualWidth * 0.35;
+                const eye2X = constituent.x + actualWidth * 0.55;
+                const eyeY = constituent.y + actualHeight * 0.13;
+                
+                // During squash, make eyes wider
+                if (constituent.isBeingStomped && constituent.stompAnimationTime < 200) {
+                    // Surprised expression during squash
+                    this.ctx.fillRect(eye1X - eyeSize/2, eyeY, eyeSize * 1.5, eyeSize);
+                    this.ctx.fillRect(eye2X - eyeSize/2, eyeY, eyeSize * 1.5, eyeSize);
+                } else {
+                    // Normal angry eyes
+                    this.ctx.fillRect(eye1X, eyeY, eyeSize, eyeSize);
+                    this.ctx.fillRect(eye2X, eyeY, eyeSize, eyeSize);
+                }
+            }
             
             this.ctx.restore();
         }
