@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Percentage Coordinate System Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #1a1a1a;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        
+        canvas {
+            border: 2px solid #ffd700;
+            display: block;
+            margin: 0 auto;
+        }
+        
+        .controls {
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.8);
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 12px;
+        }
+        
+        button {
+            background: #ffd700;
+            color: #1a1a1a;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        button:hover {
+            background: #ffed4e;
+        }
+        
+        select {
+            background: #333;
+            color: white;
+            border: 1px solid #ffd700;
+            padding: 5px;
+            margin: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="controls">
+        <h2>Percentage Coordinate System Test</h2>
+        <p>Test different screen sizes to verify consistent positioning</p>
+        
+        <label>Screen Size: 
+            <select id="screenSize">
+                <option value="400x600">Small Phone (400x600)</option>
+                <option value="414x896">iPhone (414x896)</option>
+                <option value="600x800" selected>Medium (600x800)</option>
+                <option value="800x1200">Large (800x1200)</option>
+                <option value="1024x768">Tablet Landscape (1024x768)</option>
+            </select>
+        </label>
+        
+        <button id="resizeCanvas">Resize Canvas</button>
+        <button id="toggleSystem">Toggle: <span id="systemMode">Percentage</span></button>
+        <button id="testJump">Test Jump</button>
+        <button id="testLaunch">Test Stomp Launch</button>
+    </div>
+    
+    <canvas id="testCanvas" width="600" height="800"></canvas>
+    
+    <div class="info" id="debugInfo">
+        <div>Canvas: <span id="canvasSize">600x800</span></div>
+        <div>System: <span id="currentSystem">Percentage</span></div>
+        <div>Player Position: <span id="playerPos">16.7%, 70.0%</span></div>
+        <div>Jump Height Ratio: <span id="jumpRatio">4.69</span></div>
+        <div>Scale Factors: <span id="scaleFactors">X:1.000, Y:1.333</span></div>
+    </div>
+
+    <script>
+        // Self-contained ScaleManager
+        class ScaleManager {
+            constructor(canvas) {
+                this.baseWidth = 600;
+                this.baseHeight = 600;
+                this.canvas = canvas;
+                this.updateCanvas(canvas);
+            }
+            
+            updateCanvas(canvas) {
+                this.canvas = canvas;
+                this.canvasWidth = canvas.width;
+                this.canvasHeight = canvas.height;
+                this.scaleX = canvas.width / this.baseWidth;
+                this.scaleY = canvas.height / this.baseHeight;
+            }
+            
+            toPixelsX(percentage) { return percentage * this.canvasWidth; }
+            toPixelsY(percentage) { return percentage * this.canvasHeight; }
+            toPercentageX(pixels) { return pixels / this.canvasWidth; }
+            toPercentageY(pixels) { return pixels / this.canvasHeight; }
+            
+            velocityToPixels(percentageVelocity) { return percentageVelocity * this.canvasHeight; }
+            velocityToPercentage(pixelVelocity) { return pixelVelocity / this.baseHeight; }
+            
+            getDebugInfo() {
+                return {
+                    scaleFactors: `X:${this.scaleX.toFixed(3)}, Y:${this.scaleY.toFixed(3)}`
+                };
+            }
+        }
+        
+        // Game Configuration
+        const GAME_CONFIG = {
+            gravity: 0.8,
+            jumpPower: -15,
+            groundLevel: 0.8,
+            gravityPercent: 0.00133,
+            jumpPowerPercent: -0.025,
+            groundLevelPercent: 0.8
+        };
+        
+        const PLAYER_CONFIG = {
+            width: 40,
+            height: 60,
+            startX: 100,
+            widthPercent: 0.0667,
+            heightPercent: 0.1,
+            startXPercent: 0.167
+        };
+
+        class TestPlayer {
+            constructor(canvas, usePercentageCoordinates = true, scaleManager = null) {
+                this.canvas = canvas;
+                this.usePercentageCoordinates = usePercentageCoordinates;
+                this.scaleManager = scaleManager;
+                
+                if (usePercentageCoordinates && this.scaleManager) {
+                    // Position and dimensions (percentage-based)
+                    this.xPercent = PLAYER_CONFIG.startXPercent;
+                    this.yPercent = GAME_CONFIG.groundLevelPercent - PLAYER_CONFIG.heightPercent;
+                    this.widthPercent = PLAYER_CONFIG.widthPercent;
+                    this.heightPercent = PLAYER_CONFIG.heightPercent;
+                    this.velocityYPercent = 0;
+                    
+                    // Compute pixel values from percentages
+                    this.updatePixelValues();
+                } else {
+                    // Position and dimensions (pixel-based - legacy)
+                    this.x = PLAYER_CONFIG.startX;
+                    this.y = canvas.height * GAME_CONFIG.groundLevel - PLAYER_CONFIG.height;
+                    this.width = PLAYER_CONFIG.width;
+                    this.height = PLAYER_CONFIG.height;
+                    this.velocityY = 0;
+                    
+                    // Calculate percentage values for display
+                    this.xPercent = this.x / canvas.width;
+                    this.yPercent = this.y / canvas.height;
+                    this.widthPercent = this.width / canvas.width;
+                    this.heightPercent = this.height / canvas.height;
+                }
+                
+                this.isJumping = false;
+                this.groundY = canvas.height * GAME_CONFIG.groundLevel;
+            }
+            
+            updatePixelValues() {
+                if (!this.scaleManager) return;
+                
+                this.x = this.scaleManager.toPixelsX(this.xPercent);
+                this.y = this.scaleManager.toPixelsY(this.yPercent);
+                this.width = this.scaleManager.toPixelsX(this.widthPercent);
+                this.height = this.scaleManager.toPixelsY(this.heightPercent);
+                this.velocityY = this.scaleManager.velocityToPixels(this.velocityYPercent);
+            }
+            
+            jump() {
+                if (!this.isJumping) {
+                    if (this.usePercentageCoordinates && this.scaleManager) {
+                        this.velocityYPercent = GAME_CONFIG.jumpPowerPercent;
+                        this.updatePixelValues();
+                    } else {
+                        this.velocityY = GAME_CONFIG.jumpPower;
+                        this.velocityYPercent = this.velocityY / this.canvas.height;
+                    }
+                    this.isJumping = true;
+                    return true;
+                }
+                return false;
+            }
+            
+            launchToHeight(targetHeightRatio) {
+                if (this.usePercentageCoordinates && this.scaleManager) {
+                    const targetYPercent = targetHeightRatio;
+                    const distanceToTravelPercent = this.yPercent - targetYPercent;
+                    
+                    if (distanceToTravelPercent <= 0) {
+                        this.velocityYPercent = -0.0167; // Small boost in percentage
+                        this.isJumping = true;
+                        this.updatePixelValues();
+                        return;
+                    }
+                    
+                    const gravityPercent = GAME_CONFIG.gravityPercent;
+                    const requiredVelocityPercent = -Math.sqrt(2 * gravityPercent * distanceToTravelPercent);
+                    
+                    this.velocityYPercent = requiredVelocityPercent;
+                    this.isJumping = true;
+                    this.updatePixelValues();
+                } else {
+                    // Legacy pixel-based launch
+                    const targetY = this.canvas.height * targetHeightRatio;
+                    const distanceToTravel = this.y - targetY;
+                    
+                    if (distanceToTravel <= 0) {
+                        this.velocityY = -10;
+                        this.isJumping = true;
+                        return;
+                    }
+                    
+                    const gravity = GAME_CONFIG.gravity;
+                    const requiredVelocity = -Math.sqrt(2 * gravity * distanceToTravel);
+                    
+                    this.velocityY = requiredVelocity;
+                    this.isJumping = true;
+                    
+                    // Update percentage values for display
+                    this.velocityYPercent = this.velocityY / this.canvas.height;
+                }
+            }
+            
+            update() {
+                if (this.usePercentageCoordinates && this.scaleManager) {
+                    // Apply gravity in percentage space
+                    this.velocityYPercent += GAME_CONFIG.gravityPercent;
+                    this.yPercent += this.velocityYPercent;
+                    
+                    // Ground collision
+                    const groundYPercent = GAME_CONFIG.groundLevelPercent - this.heightPercent;
+                    if (this.yPercent >= groundYPercent) {
+                        this.yPercent = groundYPercent;
+                        this.velocityYPercent = 0;
+                        this.isJumping = false;
+                    }
+                    
+                    this.updatePixelValues();
+                } else {
+                    // Legacy pixel-based physics
+                    this.velocityY += GAME_CONFIG.gravity;
+                    this.y += this.velocityY;
+                    
+                    // Ground collision
+                    const groundY = this.groundY - this.height;
+                    if (this.y >= groundY) {
+                        this.y = groundY;
+                        this.velocityY = 0;
+                        this.isJumping = false;
+                    }
+                    
+                    // Update percentage values for display
+                    this.xPercent = this.x / this.canvas.width;
+                    this.yPercent = this.y / this.canvas.height;
+                    this.velocityYPercent = this.velocityY / this.canvas.height;
+                }
+            }
+            
+            getJumpHeightRatio() {
+                if (this.usePercentageCoordinates) {
+                    const groundYPercent = GAME_CONFIG.groundLevelPercent - this.heightPercent;
+                    const maxJumpHeight = Math.abs(GAME_CONFIG.jumpPowerPercent) ** 2 / (2 * GAME_CONFIG.gravityPercent);
+                    return maxJumpHeight / groundYPercent;
+                } else {
+                    const groundY = this.groundY - this.height;
+                    const maxJumpHeight = Math.abs(GAME_CONFIG.jumpPower) ** 2 / (2 * GAME_CONFIG.gravity);
+                    return maxJumpHeight / groundY;
+                }
+            }
+        }
+
+        class TestGame {
+            constructor() {
+                this.canvas = document.getElementById('testCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.usePercentageCoordinates = true;
+                
+                // Initialize ScaleManager
+                this.scaleManager = new ScaleManager(this.canvas);
+                
+                // Create test player
+                this.player = new TestPlayer(this.canvas, this.usePercentageCoordinates, this.scaleManager);
+                
+                // Test obstacles (drawn as percentages)
+                this.testObstacles = [
+                    { xPercent: 0.4, yPercent: 0.6, widthPercent: 0.05, heightPercent: 0.0667, label: 'Small' }, // Small obstacle
+                    { xPercent: 0.6, yPercent: 0.533, widthPercent: 0.0583, heightPercent: 0.133, label: 'Tall' }  // Tall obstacle
+                ];
+                
+                this.setupEventListeners();
+                this.updateDebugInfo();
+                this.gameLoop();
+            }
+            
+            setupEventListeners() {
+                document.getElementById('resizeCanvas').addEventListener('click', () => {
+                    const sizeSelect = document.getElementById('screenSize');
+                    const [width, height] = sizeSelect.value.split('x').map(Number);
+                    
+                    this.canvas.width = width;
+                    this.canvas.height = height;
+                    this.canvas.style.width = width + 'px';
+                    this.canvas.style.height = height + 'px';
+                    
+                    // Update ScaleManager
+                    this.scaleManager.updateCanvas(this.canvas);
+                    
+                    // Reset player position
+                    this.player = new TestPlayer(this.canvas, this.usePercentageCoordinates, this.scaleManager);
+                    
+                    this.updateDebugInfo();
+                });
+                
+                document.getElementById('toggleSystem').addEventListener('click', () => {
+                    this.usePercentageCoordinates = !this.usePercentageCoordinates;
+                    this.player = new TestPlayer(this.canvas, this.usePercentageCoordinates, this.scaleManager);
+                    
+                    const modeSpan = document.getElementById('systemMode');
+                    const currentSystemSpan = document.getElementById('currentSystem');
+                    const mode = this.usePercentageCoordinates ? 'Percentage' : 'Pixel';
+                    modeSpan.textContent = mode;
+                    currentSystemSpan.textContent = mode;
+                    
+                    this.updateDebugInfo();
+                });
+                
+                document.getElementById('testJump').addEventListener('click', () => {
+                    this.player.jump();
+                });
+                
+                document.getElementById('testLaunch').addEventListener('click', () => {
+                    this.player.launchToHeight(0.25); // Launch to 25% from top
+                });
+            }
+            
+            updateDebugInfo() {
+                document.getElementById('canvasSize').textContent = `${this.canvas.width}x${this.canvas.height}`;
+                document.getElementById('playerPos').textContent = 
+                    `${(this.player.xPercent * 100).toFixed(1)}%, ${(this.player.yPercent * 100).toFixed(1)}%`;
+                
+                document.getElementById('jumpRatio').textContent = this.player.getJumpHeightRatio().toFixed(2);
+                
+                if (this.usePercentageCoordinates) {
+                    const debugInfo = this.scaleManager.getDebugInfo();
+                    document.getElementById('scaleFactors').textContent = debugInfo.scaleFactors;
+                } else {
+                    document.getElementById('scaleFactors').textContent = 'N/A (Pixel Mode)';
+                }
+            }
+            
+            gameLoop() {
+                // Update player
+                this.player.update();
+                
+                // Clear canvas
+                this.ctx.fillStyle = '#87CEEB';
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                // Draw ground
+                const groundY = this.canvas.height * GAME_CONFIG.groundLevel;
+                this.ctx.fillStyle = '#8B4513';
+                this.ctx.fillRect(0, groundY, this.canvas.width, this.canvas.height - groundY);
+                
+                // Draw test obstacles
+                this.ctx.fillStyle = '#8B4513';
+                this.testObstacles.forEach(obs => {
+                    let x, y, width, height;
+                    
+                    if (this.usePercentageCoordinates) {
+                        x = this.scaleManager.toPixelsX(obs.xPercent);
+                        y = this.scaleManager.toPixelsY(obs.yPercent);
+                        width = this.scaleManager.toPixelsX(obs.widthPercent);
+                        height = this.scaleManager.toPixelsY(obs.heightPercent);
+                    } else {
+                        // Convert percentages to pixels manually for pixel mode
+                        x = obs.xPercent * this.canvas.width;
+                        y = obs.yPercent * this.canvas.height;
+                        width = obs.widthPercent * this.canvas.width;
+                        height = obs.heightPercent * this.canvas.height;
+                    }
+                    
+                    this.ctx.fillRect(x, y, width, height);
+                    
+                    // Label obstacles
+                    this.ctx.fillStyle = '#ffffff';
+                    this.ctx.font = '12px Arial';
+                    this.ctx.fillText(obs.label, x, y - 5);
+                    this.ctx.fillStyle = '#8B4513';
+                });
+                
+                // Draw player
+                this.ctx.fillStyle = '#ff6b6b';
+                this.ctx.fillRect(this.player.x, this.player.y, this.player.width, this.player.height);
+                
+                // Draw target launch height line (25% from top)
+                const targetY = this.canvas.height * 0.25;
+                this.ctx.strokeStyle = '#00ff00';
+                this.ctx.lineWidth = 2;
+                this.ctx.setLineDash([5, 5]);
+                this.ctx.beginPath();
+                this.ctx.moveTo(0, targetY);
+                this.ctx.lineTo(this.canvas.width, targetY);
+                this.ctx.stroke();
+                this.ctx.setLineDash([]);
+                
+                // Draw ground level line
+                this.ctx.strokeStyle = '#ffff00';
+                this.ctx.lineWidth = 2;
+                this.ctx.beginPath();
+                this.ctx.moveTo(0, groundY);
+                this.ctx.lineTo(this.canvas.width, groundY);
+                this.ctx.stroke();
+                
+                // Add labels
+                this.ctx.fillStyle = '#ffffff';
+                this.ctx.font = '14px Arial';
+                this.ctx.fillText('Target Launch Height (25%)', 10, targetY - 10);
+                this.ctx.fillText('Ground Level (80%)', 10, groundY - 10);
+                
+                // Draw jump height visualization
+                if (this.player.isJumping && this.player.velocityY < 0) {
+                    const maxJumpHeight = this.usePercentageCoordinates ? 
+                        Math.abs(GAME_CONFIG.jumpPowerPercent) ** 2 / (2 * GAME_CONFIG.gravityPercent) :
+                        Math.abs(GAME_CONFIG.jumpPower) ** 2 / (2 * GAME_CONFIG.gravity);
+                    
+                    const peakY = this.usePercentageCoordinates ? 
+                        this.scaleManager.toPixelsY(this.player.yPercent - maxJumpHeight) :
+                        this.player.y - maxJumpHeight;
+                    
+                    this.ctx.strokeStyle = '#ff00ff';
+                    this.ctx.lineWidth = 1;
+                    this.ctx.setLineDash([2, 2]);
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(this.player.x, peakY);
+                    this.ctx.lineTo(this.player.x + this.player.width, peakY);
+                    this.ctx.stroke();
+                    this.ctx.setLineDash([]);
+                    
+                    this.ctx.fillStyle = '#ff00ff';
+                    this.ctx.font = '10px Arial';
+                    this.ctx.fillText('Jump Peak', this.player.x + this.player.width + 5, peakY);
+                }
+                
+                // Update debug info
+                this.updateDebugInfo();
+                
+                requestAnimationFrame(() => this.gameLoop());
+            }
+        }
+
+        // Initialize test when page loads
+        window.addEventListener('load', () => {
+            const testGame = new TestGame();
+            window.testGame = testGame; // Make it globally accessible for debugging
+            
+            console.log('Test page loaded successfully!');
+            console.log('ScaleManager:', testGame.scaleManager.getDebugInfo());
+            console.log('Player position:', `${(testGame.player.xPercent * 100).toFixed(1)}%, ${(testGame.player.yPercent * 100).toFixed(1)}%`);
+        });
+    </script>
+</body>
+</html>

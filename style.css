@@ -407,6 +407,69 @@ body {
     font-family: var(--font-pixel);
 }
 
+/* Specific sizing for pause screen */
+#pauseScreen {
+    max-width: min(400px, 85vw);
+    max-height: 80vh;
+    overflow-y: auto;
+    padding: 1rem 1.5rem;
+}
+
+#pauseScreen h2 {
+    font-size: clamp(1.2rem, 5vw, 1.8rem) !important;
+    margin-bottom: 0.8rem;
+}
+
+#pauseScreen p {
+    font-size: clamp(0.8rem, 3vw, 1rem) !important;
+    margin-bottom: 0.8rem;
+}
+
+#pauseScreen .menu-buttons button {
+    width: clamp(180px, 70vw, 250px) !important;
+    font-size: clamp(0.9rem, 3.5vw, 1.1rem) !important;
+    padding: 12px 16px !important;
+    min-height: 44px !important;
+}
+
+/* Override default button sizing specifically for pause screen */
+#pauseScreen .menu-buttons {
+    gap: 0.8rem !important;
+    margin-top: 0.8rem !important;
+}
+
+#pauseScreen .secondary-button {
+    width: clamp(180px, 70vw, 250px) !important;
+    padding: 10px 14px !important;
+    font-size: clamp(0.8rem, 3vw, 1rem) !important;
+}
+
+/* Make audio controls even more compact on pause screen */
+#pauseScreen .audio-controls {
+    padding: 0.8rem;
+    margin: 0.8rem 0;
+}
+
+#pauseScreen .audio-controls h3 {
+    font-size: 0.9rem;
+    margin-bottom: 0.6rem;
+}
+
+#pauseScreen .volume-control {
+    margin: 0.4rem 0;
+    padding: 0.2rem;
+}
+
+#pauseScreen .volume-control label {
+    flex: 0 0 70px;
+    font-size: 0.7rem;
+}
+
+#pauseScreen .volume-control span {
+    flex: 0 0 40px;
+    font-size: 0.8rem;
+}
+
 .screen h2 {
     font-size: clamp(1.5rem, 8vw, 3rem);
     margin-bottom: 1rem;
@@ -1101,36 +1164,36 @@ button:focus {
     }
 }
 
-/* Audio Controls Styles */
+/* Audio Controls Styles - Optimized for pause screen */
 .audio-controls {
     background: rgba(0, 0, 0, 0.3);
     border: var(--px-border-1) solid rgba(255, 215, 0, 0.3);
     border-radius: 0;
-    padding: 1.5rem;
-    margin: 1.5rem 0;
+    padding: 1rem;
+    margin: 1rem 0;
     box-shadow: var(--px-shadow-offset) var(--px-shadow-offset) 0 rgba(0, 0, 0, 0.3);
 }
 
 .audio-controls h3 {
     color: var(--color-accent);
-    font-size: 1.2rem;
-    margin-bottom: 1rem;
+    font-size: 1rem;
+    margin-bottom: 0.8rem;
     text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
 }
 
 .volume-control {
     display: flex;
     align-items: center;
-    gap: 1rem;
-    margin: 0.8rem 0;
-    padding: 0.5rem;
+    gap: 0.5rem;
+    margin: 0.6rem 0;
+    padding: 0.3rem;
     background: rgba(255, 255, 255, 0.05);
     border-radius: 0;
 }
 
 .volume-control label {
-    flex: 0 0 120px;
-    font-size: 0.9rem;
+    flex: 0 0 80px;
+    font-size: 0.8rem;
     color: var(--color-text-muted);
 }
 

@@ -1,0 +1,33 @@
+{
+  "name": "lt-dans-run-for-reelection",
+  "version": "1.0.0",
+  "description": "Lt. Dan's Run for Re-Election - Mobile Endless Runner Game",
+  "main": "src/main.js",
+  "type": "module",
+  "scripts": {
+    "start": "python -m http.server 8000",
+    "build": "echo 'No build step required for static site'"
+  },
+  "keywords": [
+    "game",
+    "endless-runner",
+    "political-satire",
+    "mobile-game",
+    "html5-game"
+  ],
+  "author": "Grumpy Gears Dev",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/meezymeek/ltdans-run-for-reelection.git"
+  },
+  "devDependencies": {},
+  "dependencies": {},
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions"
+  ]
+}

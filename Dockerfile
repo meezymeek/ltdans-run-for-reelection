@@ -8,14 +8,15 @@ ARG CACHEBUST=1
 # Copy static files to nginx html directory
 # The ARG ensures these layers rebuild when the value changes
 COPY index.html /usr/share/nginx/html/
-COPY game.js /usr/share/nginx/html/
 COPY style.css /usr/share/nginx/html/
 COPY pagination.css /usr/share/nginx/html/
-COPY soundManager.js /usr/share/nginx/html/
+COPY manifest.json /usr/share/nginx/html/
+COPY package.json /usr/share/nginx/html/
+COPY src /usr/share/nginx/html/src/
 COPY sfx /usr/share/nginx/html/sfx/
 COPY skins /usr/share/nginx/html/skins/
 
-# Create nginx config template with cache control headers
+# Create nginx config template with cache control headers and proper MIME types
 RUN echo 'server { \
     listen $PORT; \
     listen [::]:$PORT; \
@@ -24,8 +25,14 @@ RUN echo 'server { \
         root /usr/share/nginx/html; \
         index index.html; \
         try_files $uri $uri/ /index.html; \
-        # Prevent caching of JS/CSS files \
-        location ~* \.(js|css)$ { \
+        # Set proper MIME type for JavaScript modules \
+        location ~* \.js$ { \
+            add_header Content-Type "application/javascript"; \
+            expires -1; \
+            add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0"; \
+        } \
+        # Prevent caching of CSS files \
+        location ~* \.css$ { \
             expires -1; \
             add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0"; \
         } \
