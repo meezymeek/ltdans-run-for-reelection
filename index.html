@@ -2,8 +2,31 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Lt. Dan's Run for Re-Election</title>
+    
+    <!-- PWA Meta Tags - Only load manifest when served over HTTP -->
+    <script>
+        if (window.location.protocol !== 'file:') {
+            const link = document.createElement('link');
+            link.rel = 'manifest';
+            link.href = 'manifest.json';
+            document.head.appendChild(link);
+        }
+    </script>
+    <meta name="theme-color" content="#1e3c72">
+    
+    <!-- iOS Web App Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Lt. Dan's Run">
+    <link rel="apple-touch-icon" href="icon-192x192.png">
+    
+    <!-- Android Chrome Meta Tags -->
+    <meta name="mobile-web-app-capable" content="yes">
+    
+    <!-- Prevent zoom on input focus (iOS) -->
+    <meta name="format-detection" content="telephone=no">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Tiny5:wght@400&display=swap" rel="stylesheet">
@@ -11,6 +34,17 @@
     <link rel="stylesheet" href="pagination.css">
 </head>
 <body>
+    <!-- Landscape Orientation Warning -->
+    <div id="orientationWarning" class="orientation-warning hidden">
+        <div class="orientation-content">
+            <div class="phone-icon">📱</div>
+            <h2>Please Rotate Your Device</h2>
+            <p>This game is designed for portrait mode only.</p>
+            <p>Please rotate your phone to portrait orientation to continue playing.</p>
+            <div class="rotate-animation">🔄</div>
+        </div>
+    </div>
+    
     <div class="game-container">
         <!-- Game Header - Only shows title when not playing -->
         <div class="game-header">

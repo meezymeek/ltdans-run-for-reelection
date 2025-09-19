@@ -1,5 +1,78 @@
 /* Mobile-first CSS for Lt. Dan's Run for Re-Election */
 
+/* Orientation Warning Styles */
+.orientation-warning {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh; /* Use dynamic viewport height for better mobile support */
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-family: 'Tiny5', system-ui, sans-serif;
+    transition: opacity 0.3s ease;
+}
+
+.orientation-content {
+    text-align: center;
+    padding: 2rem;
+    max-width: 400px;
+    animation: fadeInUp 0.6s ease-out;
+}
+
+.phone-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    animation: bounce 2s infinite;
+}
+
+.orientation-content h2 {
+    font-size: 1.5rem;
+    color: #ffd700;
+    margin-bottom: 1rem;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+
+.orientation-content p {
+    font-size: 1rem;
+    line-height: 1.4;
+    margin-bottom: 0.5rem;
+    color: #cccccc;
+}
+
+.rotate-animation {
+    font-size: 2rem;
+    margin-top: 1rem;
+    animation: rotate 2s linear infinite;
+}
+
+@keyframes bounce {
+    0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+    40% { transform: translateY(-20px); }
+    60% { transform: translateY(-10px); }
+}
+
+@keyframes rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 /* Design Tokens */
 :root {
     /* Pixel Art Design Tokens */
@@ -60,8 +133,10 @@
     --transition: all 0.2s ease;
     --transition-slow: all 0.3s ease;
 
-    /* Buttons */
-    --btn-width: clamp(180px, 45vw, 240px);
+    /* Buttons - Enhanced for mobile */
+    --btn-width: clamp(200px, 50vw, 280px);
+    --btn-height: clamp(48px, 12vw, 60px);
+    --btn-font-size: clamp(1rem, 4vw, 1.25rem);
 }
 
 /* High contrast theme */
@@ -365,16 +440,19 @@ button {
     color: var(--color-text) !important;
     border: var(--px-border-1) solid var(--px-border) !important;
     border-radius: 0 !important;
-    padding: 12px 16px !important;
-    min-height: 44px !important;
+    padding: 14px 20px !important;
+    min-height: var(--btn-height) !important;
     width: var(--btn-width) !important;
     font-family: var(--font-pixel) !important;
-    font-size: 1.1rem !important;
+    font-size: var(--btn-font-size) !important;
     font-weight: normal !important;
     letter-spacing: 0.04em;
     text-shadow: none !important;
     box-shadow: var(--px-shadow-offset) var(--px-shadow-offset) 0 var(--px-shadow) !important;
     transition: var(--transition) !important;
+    /* Ensure proper touch targets */
+    min-width: 48px;
+    cursor: pointer;
 }
 button:hover {
     background: color-mix(in srgb, var(--color-primary) 85%, white 15%) !important;
@@ -800,23 +878,133 @@ button:focus {
     outline-offset: 2px;
 }
 
-/* Touch target improvements */
+/* Enhanced Touch Target and Mobile Optimizations */
 @media (max-width: 768px) {
-    .topbar-btn {
-        width: 48px;
-        height: 48px;
-        font-size: 1.2rem;
+    .control-btn {
+        /* Ensure control buttons meet touch target standards */
+        min-width: 48px !important;
+        min-height: 48px !important;
+        padding: var(--space-sm) !important;
+        font-size: clamp(1.5rem, 7vw, 2.5rem) !important;
     }
     
-    .score-badge {
-        font-size: clamp(var(--font-size-sm), 5vw, var(--font-size-lg));
-        padding: var(--space-xs) var(--space-md);
-        min-width: 60px;
+    button {
+        /* Enhanced button sizing for mobile */
+        min-height: 48px !important;
+        padding: 16px 24px !important;
+        font-size: clamp(1.1rem, 4.5vw, 1.4rem) !important;
+        min-width: 48px !important;
     }
     
-    #pauseScreen .menu-buttons button {
-        min-width: 180px;
-        padding: var(--space-md) var(--space-lg);
+    /* Better spacing between interactive elements */
+    .menu-buttons {
+        gap: 1.2rem;
+    }
+    
+    .form-buttons {
+        gap: 1rem;
+    }
+    
+    .leaderboard-actions,
+    .stats-actions {
+        gap: 1.2rem;
+    }
+    
+    /* Improved input field sizing */
+    #playerNameInput {
+        min-height: 48px;
+        font-size: 1.1rem;
+        padding: 12px 16px;
+    }
+    
+    /* Enhanced audio controls for mobile */
+    .volume-control input[type="range"] {
+        min-height: 32px;
+    }
+    
+    .mute-btn {
+        min-width: 48px !important;
+        min-height: 48px !important;
+    }
+}
+
+/* Enhanced responsiveness for different phone sizes */
+@media (max-width: 375px) {
+    /* Small phones (iPhone SE, older phones) */
+    :root {
+        --btn-width: clamp(160px, 85vw, 200px);
+        --space-md: 0.75rem;
+        --space-lg: 1rem;
+    }
+    
+    .screen {
+        padding: 1rem 1.2rem;
+        margin: 0.5rem;
+    }
+    
+    .audio-controls {
+        padding: 1rem;
+    }
+    
+    .volume-control {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
+    }
+    
+    .volume-control label {
+        text-align: center;
+        flex: none;
+    }
+}
+
+@media (min-width: 430px) {
+    /* Large phones and small tablets */
+    :root {
+        --btn-width: clamp(220px, 40vw, 320px);
+        --btn-height: clamp(52px, 10vw, 64px);
+        --btn-font-size: clamp(1.1rem, 3.5vw, 1.4rem);
+    }
+    
+    .screen {
+        padding: 2rem 2.5rem;
+        max-width: 85vw;
+    }
+    
+    button {
+        padding: 16px 28px !important;
+    }
+    
+    .menu-buttons {
+        gap: 1.5rem;
+    }
+}
+
+/* Specific optimizations for common phone aspect ratios */
+@media (max-width: 414px) and (max-height: 896px) {
+    /* iPhone 11, XR, etc. */
+    .game-container {
+        padding-top: max(env(safe-area-inset-top), 1.5rem);
+        padding-bottom: max(env(safe-area-inset-bottom), 1.5rem);
+    }
+}
+
+@media (max-width: 390px) and (max-height: 844px) {
+    /* iPhone 12, 13, 14 */
+    .control-buttons {
+        bottom: max(calc(env(safe-area-inset-bottom) + 1rem), 2rem);
+        right: max(env(safe-area-inset-right), 1rem);
+    }
+}
+
+@media (max-width: 360px) and (max-height: 800px) {
+    /* Common Android phones */
+    .screen h2 {
+        font-size: clamp(1.3rem, 7vw, 2.5rem);
+    }
+    
+    .orientation-content h2 {
+        font-size: 1.3rem;
     }
 }
 

@@ -1085,10 +1085,10 @@ class LtDanRunner {
     updateHUDVisibility() {
         // Show/hide header and controls based on game state
         if (this.gameState === 'playing' || this.gameState === 'paused') {
-            // During gameplay, show controls and score, hide header
+            // During gameplay, show controls, hide header and HTML score (using canvas score instead)
             this.gameHeader.classList.remove('show-title');
             this.controlButtons.classList.add('active');
-            this.scoreContainer.classList.add('active');
+            this.scoreContainer.classList.remove('active');  // Hide HTML score, we render on canvas now
         } else {
             // In menus, show header and hide controls/score
             this.gameHeader.classList.add('show-title');
@@ -2117,7 +2117,7 @@ class LtDanRunner {
                 
                 // Launch player high in the air like a jump pad
                 // Adjusted to land just below the score UI (approximately 160px from top)
-                this.player.velocityY = -23;  // Reduced boost to stay below score UI
+                this.player.velocityY = -25;  // Reduced boost to stay below score UI
                 this.player.isJumping = true;
             }
         }
@@ -2460,6 +2460,64 @@ class LtDanRunner {
         }, 600); // Match the animation duration
     }
     
+    renderScoreUI() {
+        // Only render score UI during gameplay
+        if (this.gameState !== 'playing' && this.gameState !== 'paused') return;
+        
+        // Save context for score UI rendering
+        this.ctx.save();
+        
+        // Center positions on screen
+        const centerX = this.canvas.width / 2;
+        const topY = 40;
+        
+        // Draw "VOTES" label with block black shadow (bigger and yellow)
+        this.ctx.font = 'bold 32px Tiny5';
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
+        // Black shadow offset
+        this.ctx.fillStyle = '#000000';
+        this.ctx.fillText('VOTES', centerX + 3, topY + 3);
+        // Yellow text on top
+        this.ctx.fillStyle = '#ffd700';
+        this.ctx.fillText('VOTES', centerX, topY);
+        
+        // Draw score number with block black shadow (centered, even bigger)
+        this.ctx.font = 'bold 80px Tiny5';
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
+        // Black shadow offset
+        this.ctx.fillStyle = '#000000';
+        this.ctx.fillText(this.score.toString(), centerX + 4, topY + 74);
+        // White text on top
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.fillText(this.score.toString(), centerX, topY + 70);
+        
+        // Add milestone animation effect (centered)
+        if (this.score > 0 && this.score % 100 === 0) {
+            const time = Date.now() % 600;
+            if (time < 300) {
+                // Pulse effect around the score
+                const scale = 1 + (Math.sin(time / 300 * Math.PI) * 0.15);
+                this.ctx.save();
+                this.ctx.translate(centerX, topY + 60);
+                this.ctx.scale(scale, scale);
+                this.ctx.strokeStyle = '#ffd700';
+                this.ctx.lineWidth = 3;
+                this.ctx.globalAlpha = 0.6;
+                this.ctx.shadowColor = 'rgba(255, 215, 0, 0.4)';
+                this.ctx.shadowBlur = 8;
+                // Draw a circle around the score instead of rectangle
+                this.ctx.beginPath();
+                this.ctx.arc(0, 0, 80, 0, Math.PI * 2);
+                this.ctx.stroke();
+                this.ctx.restore();
+            }
+        }
+        
+        this.ctx.restore();
+    }
+    
     render() {
         // Apply screen shake if active
         this.ctx.save();
@@ -2486,6 +2544,9 @@ class LtDanRunner {
         this.ctx.moveTo(0, this.player.groundY);
         this.ctx.lineTo(this.canvas.width, this.player.groundY);
         this.ctx.stroke();
+        
+        // Draw Score UI FIRST (before player and other entities)
+        this.renderScoreUI();
         
         // Draw player or ragdoll depending on state
         if (this.gameState === 'crashing' && this.ragdoll) {
@@ -2562,11 +2623,18 @@ class LtDanRunner {
                 if (this.player.timerX && this.player.timerY) {
                     this.ctx.save();
                     
-                    // Position timer above the smoothly animated position
+                    // Position timer above the smoothly animated position with bounds checking
                     const timerWidth = 120;
                     const timerHeight = 50;
-                    const timerX = this.player.timerX - timerWidth / 2;
-                    const timerY = this.player.timerY - timerHeight - 40; // Position above finger to avoid obstruction
+                    const padding = 10;
+                    
+                    // Calculate initial position
+                    let timerX = this.player.timerX - timerWidth / 2;
+                    let timerY = this.player.timerY - timerHeight - 40;
+                    
+                    // Ensure timer stays within screen bounds
+                    timerX = Math.max(padding, Math.min(timerX, this.canvas.width - timerWidth - padding));
+                    timerY = Math.max(padding, Math.min(timerY, this.canvas.height - timerHeight - padding));
                     
                     // Timer background with transparency
                     this.ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
@@ -2927,7 +2995,134 @@ class LtDanRunner {
 }
 
 // Initialize game when DOM is loaded
+// Orientation Detection and Management
+class OrientationManager {
+    constructor() {
+        this.orientationWarning = document.getElementById('orientationWarning');
+        this.gameContainer = document.querySelector('.game-container');
+        this.checkOrientation = this.checkOrientation.bind(this);
+        this.init();
+    }
+    
+    init() {
+        // Listen for orientation changes
+        window.addEventListener('orientationchange', () => {
+            // Delay check to allow browser to update orientation
+            setTimeout(this.checkOrientation, 100);
+        });
+        
+        // Listen for resize events (covers more cases)
+        window.addEventListener('resize', this.checkOrientation);
+        
+        // Initial check
+        this.checkOrientation();
+    }
+    
+    checkOrientation() {
+        const isLandscape = window.innerWidth > window.innerHeight;
+        const isMobile = window.innerWidth <= 1024; // Consider tablets as mobile too
+        
+        if (isLandscape && isMobile) {
+            // Show warning and hide game
+            this.showOrientationWarning();
+        } else {
+            // Hide warning and show game
+            this.hideOrientationWarning();
+        }
+    }
+    
+    showOrientationWarning() {
+        this.orientationWarning.classList.remove('hidden');
+        this.gameContainer.style.display = 'none';
+        
+        // Pause game if it's running
+        if (window.gameInstance && window.gameInstance.gameState === 'playing') {
+            window.gameInstance.pauseGame();
+        }
+    }
+    
+    hideOrientationWarning() {
+        this.orientationWarning.classList.add('hidden');
+        this.gameContainer.style.display = 'flex';
+    }
+    
+    // Add haptic feedback if available
+    vibrate(pattern = [100]) {
+        if ('vibrate' in navigator) {
+            navigator.vibrate(pattern);
+        }
+    }
+}
+
+// Enhanced Touch Feedback
+class TouchFeedbackManager {
+    constructor() {
+        this.init();
+    }
+    
+    init() {
+        // Add touch feedback to all buttons
+        document.addEventListener('touchstart', this.handleTouchStart.bind(this));
+        document.addEventListener('touchend', this.handleTouchEnd.bind(this));
+        
+        // Add visual feedback classes
+        this.addTouchStyles();
+    }
+    
+    handleTouchStart(e) {
+        const button = e.target.closest('button');
+        if (button) {
+            button.classList.add('touch-active');
+            this.vibrate([50]); // Light haptic feedback
+        }
+    }
+    
+    handleTouchEnd(e) {
+        const button = e.target.closest('button');
+        if (button) {
+            // Remove the class after a short delay to allow for visual feedback
+            setTimeout(() => {
+                button.classList.remove('touch-active');
+            }, 150);
+        }
+    }
+    
+    addTouchStyles() {
+        // Add styles for touch feedback if not already added
+        if (!document.querySelector('#touch-feedback-styles')) {
+            const style = document.createElement('style');
+            style.id = 'touch-feedback-styles';
+            style.textContent = `
+                button.touch-active {
+                    transform: scale(0.95) !important;
+                    box-shadow: 1px 1px 0 var(--px-shadow) !important;
+                    transition: all 0.1s ease !important;
+                }
+                
+                .control-btn.touch-active {
+                    transform: scale(0.9) !important;
+                    filter: drop-shadow(1px 1px 2px rgba(0,0,0,0.8)) !important;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+    }
+    
+    vibrate(pattern) {
+        if ('vibrate' in navigator) {
+            navigator.vibrate(pattern);
+        }
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+    // Initialize orientation management
+    window.orientationManager = new OrientationManager();
+    
+    // Initialize touch feedback
+    window.touchFeedbackManager = new TouchFeedbackManager();
+    
+    // Initialize game
     window.gameInstance = new LtDanRunner();
 });
 
