@@ -2116,7 +2116,8 @@ class LtDanRunner {
                 this.player.parachuteUsedThisJump = false;
                 
                 // Launch player high in the air like a jump pad
-                this.player.velocityY = -28;  // Super strong jump pad boost
+                // Adjusted to land just below the score UI (approximately 160px from top)
+                this.player.velocityY = -25;  // Reduced boost to stay below score UI
                 this.player.isJumping = true;
             }
         }
