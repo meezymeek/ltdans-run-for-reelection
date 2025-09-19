@@ -1,0 +1,65 @@
+/* Pagination Controls - Mobile First */
+.pagination-controls {
+    margin-top: 1rem;
+    padding: 0 1rem;
+}
+
+.pagination-buttons {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.pagination-btn {
+    flex: 1;
+    padding: 0.75rem 1rem !important;
+    font-size: 1rem !important;
+    background: linear-gradient(135deg, #ff6b6b, #ff8080) !important;
+    color: white !important;
+    border: 2px solid #000 !important;
+    border-radius: 0 !important;
+    cursor: pointer;
+    font-family: 'Tiny5', monospace !important;
+    font-weight: bold !important;
+    text-transform: uppercase;
+    transition: all 0.3s ease;
+    box-shadow: 4px 4px 0 #000 !important;
+    min-width: 120px !important;
+    width: auto !important;
+}
+
+.pagination-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    background: linear-gradient(135deg, #ff8080, #ff9999) !important;
+    box-shadow: 6px 6px 0 #000 !important;
+}
+
+.pagination-btn:disabled {
+    opacity: 0.5 !important;
+    cursor: not-allowed !important;
+    transform: none !important;
+    background: #666 !important;
+}
+
+.pagination-info {
+    text-align: center;
+    color: #ffd700;
+    font-size: 1rem;
+    font-weight: bold;
+    margin-top: 0.5rem;
+}
+
+/* Ensure buttons stay side by side on all mobile sizes */
+@media (max-width: 480px) {
+    .pagination-buttons {
+        flex-direction: row !important;
+    }
+    
+    .pagination-btn {
+        min-width: 100px !important;
+        font-size: 0.9rem !important;
+        padding: 0.6rem 0.8rem !important;
+    }
+}

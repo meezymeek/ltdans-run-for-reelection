@@ -411,6 +411,15 @@ class LtDanRunner {
         this.recentTabButton = document.getElementById('recentTabButton');
         this.refreshLeaderboardButton = document.getElementById('refreshLeaderboardButton');
         this.leaderboardContent = document.getElementById('leaderboardContent');
+        
+        // Pagination state
+        this.leaderboardPagination = {
+            currentPage: 1,
+            itemsPerPage: 10,
+            totalItems: 0,
+            totalPages: 1,
+            currentData: []
+        };
 
         // Add Dev Menu button to pause screen
         this.devMenuButton = document.createElement('div');
@@ -1250,27 +1259,35 @@ class LtDanRunner {
     }
 
     // Leaderboard Display Methods
-    async showGlobalLeaderboard() {
+    async showGlobalLeaderboard(page = 1) {
         this.setActiveTab('global');
         this.leaderboard.currentView = 'global';
+        this.leaderboardPagination.currentPage = page;
         this.showLoadingState();
 
         try {
             const data = await this.leaderboard.getGlobalLeaderboard(50);
-            this.renderLeaderboard(data.leaderboard, 'Global Top 50');
+            this.leaderboardPagination.currentData = data.leaderboard || [];
+            this.leaderboardPagination.totalItems = this.leaderboardPagination.currentData.length;
+            this.leaderboardPagination.totalPages = Math.ceil(this.leaderboardPagination.totalItems / this.leaderboardPagination.itemsPerPage);
+            this.renderPaginatedLeaderboard('Global Leaderboard');
         } catch (error) {
             this.showErrorState('Failed to load leaderboard. Please try again.');
         }
     }
 
-    async showRecentScores() {
+    async showRecentScores(page = 1) {
         this.setActiveTab('recent');
         this.leaderboard.currentView = 'recent';
+        this.leaderboardPagination.currentPage = page;
         this.showLoadingState();
 
         try {
-            const data = await this.leaderboard.getRecentScores(20);
-            this.renderRecentScores(data.recentScores, 'Recent 20 Scores');
+            const data = await this.leaderboard.getRecentScores(50);
+            this.leaderboardPagination.currentData = data.recentScores || [];
+            this.leaderboardPagination.totalItems = this.leaderboardPagination.currentData.length;
+            this.leaderboardPagination.totalPages = Math.ceil(this.leaderboardPagination.totalItems / this.leaderboardPagination.itemsPerPage);
+            this.renderPaginatedLeaderboard('Recent Scores');
         } catch (error) {
             this.showErrorState('Failed to load recent scores. Please try again.');
         }
@@ -1310,8 +1327,10 @@ class LtDanRunner {
         `;
     }
 
-    renderLeaderboard(entries, title) {
-        if (!entries || entries.length === 0) {
+    renderPaginatedLeaderboard(title) {
+        const { currentPage, itemsPerPage, totalItems, totalPages, currentData } = this.leaderboardPagination;
+        
+        if (!currentData || currentData.length === 0) {
             this.leaderboardContent.innerHTML = `
                 <div style="text-align: center; color: #ffd700; padding: 2rem;">
                     <p>No scores yet!</p>
@@ -1321,24 +1340,70 @@ class LtDanRunner {
             return;
         }
 
+        // Calculate slice indices for pagination
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
+        const pageEntries = currentData.slice(startIndex, endIndex);
+
         let html = `<div class="leaderboard-table">`;
         
-        entries.forEach((entry, index) => {
-            const rankDisplay = entry.rank || (index + 1);
+        // Render the current page entries
+        pageEntries.forEach((entry, index) => {
+            const actualIndex = startIndex + index;
+            const rankDisplay = entry.rank || (actualIndex + 1);
             const medal = rankDisplay === 1 ? '🥇' : rankDisplay === 2 ? '🥈' : rankDisplay === 3 ? '🥉' : '';
             
             html += `
                 <div class="leaderboard-entry">
                     <span class="leaderboard-rank">${medal} #${rankDisplay}</span>
-                    <span class="leaderboard-name">${this.escapeHtml(entry.player_name)}</span>
+                    <span class="leaderboard-name">${this.escapeHtml(entry.player_name || entry.playerName)}</span>
                     <span class="leaderboard-score">${this.leaderboard.formatScore(entry.score)}</span>
-                    <span class="leaderboard-date">${this.leaderboard.formatDate(entry.submitted_at)}</span>
+                    <span class="leaderboard-date">${this.leaderboard.formatDate(entry.submitted_at || entry.submittedAt)}</span>
                 </div>
             `;
         });
         
         html += `</div>`;
+        
+        // Add pagination controls if there's more than one page
+        if (totalPages > 1) {
+            html += `<div class="pagination-controls">`;
+            html += `<div class="pagination-buttons">`;
+            
+            // Previous button
+            if (currentPage > 1) {
+                html += `<button class="pagination-btn" onclick="window.gameInstance.changePage(${currentPage - 1})">&lt; Previous</button>`;
+            } else {
+                html += `<button class="pagination-btn" disabled>&lt; Previous</button>`;
+            }
+            
+            // Next button
+            if (currentPage < totalPages) {
+                html += `<button class="pagination-btn" onclick="window.gameInstance.changePage(${currentPage + 1})">Next &gt;</button>`;
+            } else {
+                html += `<button class="pagination-btn" disabled>Next &gt;</button>`;
+            }
+            
+            html += `</div>`;
+            
+            // Page indicator
+            html += `<div class="pagination-info">Page ${currentPage} of ${totalPages}</div>`;
+            
+            html += `</div>`;
+        }
+        
         this.leaderboardContent.innerHTML = html;
+    }
+    
+    changePage(page) {
+        // Update page and re-render the leaderboard with the new page
+        this.leaderboardPagination.currentPage = page;
+        this.renderPaginatedLeaderboard(this.leaderboard.currentView === 'global' ? 'Global Leaderboard' : 'Recent Scores');
+    }
+
+    renderLeaderboard(entries, title) {
+        // Legacy method kept for compatibility
+        this.renderPaginatedLeaderboard(title);
     }
 
     renderRecentScores(entries, title) {
