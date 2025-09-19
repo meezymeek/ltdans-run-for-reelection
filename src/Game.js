@@ -832,6 +832,9 @@ export class LtDanRunner {
             return;
         }
 
+        // Set the data-tab attribute for CSS styling
+        this.leaderboardContent.setAttribute('data-tab', this.leaderboard.currentView);
+
         const startIndex = (currentPage - 1) * itemsPerPage;
         const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
         const pageEntries = currentData.slice(startIndex, endIndex);
@@ -841,7 +844,11 @@ export class LtDanRunner {
         pageEntries.forEach((entry, index) => {
             const actualIndex = startIndex + index;
             const rankDisplay = entry.rank || (actualIndex + 1);
-            const medal = rankDisplay === 1 ? '🥇' : rankDisplay === 2 ? '🥈' : rankDisplay === 3 ? '🥉' : '';
+            
+            // Only show medals in Global Top 100, NOT in Recent Scores
+            const medal = (this.leaderboard.currentView === 'global' && rankDisplay <= 3) 
+                ? (rankDisplay === 1 ? '🥇' : rankDisplay === 2 ? '🥈' : rankDisplay === 3 ? '🥉' : '')
+                : '';
             
             html += `
                 <div class="leaderboard-entry">

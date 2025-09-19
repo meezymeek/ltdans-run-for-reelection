@@ -804,15 +804,35 @@ button:active {
     margin-left: 0.5rem;
 }
 
-/* Top 3 special styling */
-.leaderboard-entry:nth-child(1) .leaderboard-rank { color: #FFD700; }
-.leaderboard-entry:nth-child(2) .leaderboard-rank { color: #C0C0C0; }
-.leaderboard-entry:nth-child(3) .leaderboard-rank { color: #CD7F32; }
+/* Top 3 special styling - ONLY for Global Top 100, NOT for Recent Scores */
+.leaderboard-content[data-tab="global"] .leaderboard-entry:nth-child(1) .leaderboard-rank,
+.leaderboard-content.global-tab .leaderboard-entry:nth-child(1) .leaderboard-rank { 
+    color: #FFD700; 
+}
 
-.leaderboard-entry:nth-child(1) .leaderboard-name,
-.leaderboard-entry:nth-child(2) .leaderboard-name,
-.leaderboard-entry:nth-child(3) .leaderboard-name {
+.leaderboard-content[data-tab="global"] .leaderboard-entry:nth-child(2) .leaderboard-rank,
+.leaderboard-content.global-tab .leaderboard-entry:nth-child(2) .leaderboard-rank { 
+    color: #C0C0C0; 
+}
+
+.leaderboard-content[data-tab="global"] .leaderboard-entry:nth-child(3) .leaderboard-rank,
+.leaderboard-content.global-tab .leaderboard-entry:nth-child(3) .leaderboard-rank { 
+    color: #CD7F32; 
+}
+
+.leaderboard-content[data-tab="global"] .leaderboard-entry:nth-child(1) .leaderboard-name,
+.leaderboard-content[data-tab="global"] .leaderboard-entry:nth-child(2) .leaderboard-name,
+.leaderboard-content[data-tab="global"] .leaderboard-entry:nth-child(3) .leaderboard-name,
+.leaderboard-content.global-tab .leaderboard-entry:nth-child(1) .leaderboard-name,
+.leaderboard-content.global-tab .leaderboard-entry:nth-child(2) .leaderboard-name,
+.leaderboard-content.global-tab .leaderboard-entry:nth-child(3) .leaderboard-name {
     font-weight: bold;
+}
+
+/* Recent Scores should have normal styling - no medals */
+.leaderboard-content[data-tab="recent"] .leaderboard-entry .leaderboard-rank,
+.leaderboard-content.recent-tab .leaderboard-entry .leaderboard-rank {
+    color: #ffd700 !important; /* All ranks same color in recent */
 }
 
 /* Loading State */
