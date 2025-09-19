@@ -2766,17 +2766,21 @@ class LtDanRunner {
             // Floating animation
             const floatY = Math.sin(bribe.animationFrame) * 3;
             
-            // Draw dollar sign
-            this.ctx.fillStyle = bribe.color;
+            // Set font and alignment
             this.ctx.font = 'bold 24px Arial';
             this.ctx.textAlign = 'center';
             this.ctx.textBaseline = 'middle';
-            this.ctx.fillText('$', bribe.x + bribe.width/2, bribe.y + bribe.height/2 + floatY);
             
-            // Add glow effect
-            this.ctx.shadowColor = bribe.color;
-            this.ctx.shadowBlur = 10;
-            this.ctx.fillText('$', bribe.x + bribe.width/2, bribe.y + bribe.height/2 + floatY);
+            const centerX = bribe.x + bribe.width/2;
+            const centerY = bribe.y + bribe.height/2 + floatY;
+            
+            // Draw black drop shadow first (same as score/votes text)
+            this.ctx.fillStyle = '#000000';
+            this.ctx.fillText('$', centerX + 3, centerY + 3);
+            
+            // Draw gold dollar sign on top
+            this.ctx.fillStyle = bribe.color;
+            this.ctx.fillText('$', centerX, centerY);
             
             this.ctx.restore();
         }
