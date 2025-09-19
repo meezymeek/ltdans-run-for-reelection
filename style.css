@@ -1354,3 +1354,151 @@ button:focus {
         flex: 1 1 auto;
     }
 }
+
+/* Pixel Art Scrollbar Styles - 8-bit/Retro Theme */
+/* Webkit Scrollbar Customization (Chrome, Safari, Edge) */
+::-webkit-scrollbar {
+    width: 14px;
+    height: 14px;
+    background: var(--color-surface);
+    border: var(--px-border-1) solid var(--px-border);
+}
+
+::-webkit-scrollbar-track {
+    background: var(--color-surface);
+    border: var(--px-border-1) solid var(--px-border);
+    box-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.3);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--color-accent);
+    border: var(--px-border-1) solid var(--px-border);
+    box-shadow: var(--px-shadow-offset) var(--px-shadow-offset) 0 var(--px-shadow);
+    min-height: 20px;
+    cursor: pointer;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--color-accent-bright);
+    box-shadow: calc(var(--px-shadow-offset) + 1px) calc(var(--px-shadow-offset) + 1px) 0 var(--px-shadow);
+}
+
+::-webkit-scrollbar-thumb:active {
+    background: color-mix(in srgb, var(--color-accent) 80%, black 20%);
+    box-shadow: 2px 2px 0 var(--px-shadow);
+}
+
+::-webkit-scrollbar-corner {
+    background: var(--color-surface);
+    border: var(--px-border-1) solid var(--px-border);
+}
+
+/* Mobile scrollbar sizing */
+@media (max-width: 768px) {
+    ::-webkit-scrollbar {
+        width: 16px;
+        height: 16px;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+        min-height: 24px;
+    }
+}
+
+/* Fallback for Firefox and other browsers */
+.leaderboard-content,
+#pauseScreen,
+#leaderboardScreen,
+.screen {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-accent) var(--color-surface);
+}
+
+/* Visual scroll indicators for better UX */
+.leaderboard-content {
+    position: relative;
+}
+
+.leaderboard-content::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 16px; /* Account for scrollbar width */
+    height: 20px;
+    background: linear-gradient(transparent 0%, var(--color-surface-light) 100%);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.leaderboard-content:hover::after {
+    opacity: 1;
+}
+
+/* Force scrollbar to always show on scrollable containers */
+.leaderboard-content,
+#pauseScreen,
+#leaderboardScreen {
+    overflow-y: scroll !important;
+}
+
+/* Pixel art scrollbar styling for specific containers */
+#leaderboardScreen::-webkit-scrollbar,
+.leaderboard-content::-webkit-scrollbar {
+    width: 12px;
+    background: rgba(0, 0, 0, 0.8);
+    border: var(--px-border-1) solid var(--px-border);
+}
+
+#leaderboardScreen::-webkit-scrollbar-track,
+.leaderboard-content::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.8);
+    border: none;
+    box-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.5);
+}
+
+#leaderboardScreen::-webkit-scrollbar-thumb,
+.leaderboard-content::-webkit-scrollbar-thumb {
+    background: var(--color-accent);
+    border: var(--px-border-1) solid var(--px-border);
+    box-shadow: 2px 2px 0 var(--px-shadow);
+    min-height: 24px;
+}
+
+#leaderboardScreen::-webkit-scrollbar-thumb:hover,
+.leaderboard-content::-webkit-scrollbar-thumb:hover {
+    background: var(--color-accent-bright);
+    box-shadow: 3px 3px 0 var(--px-shadow);
+}
+
+#leaderboardScreen::-webkit-scrollbar-thumb:active,
+.leaderboard-content::-webkit-scrollbar-thumb:active {
+    background: color-mix(in srgb, var(--color-accent) 85%, black 15%);
+    box-shadow: 1px 1px 0 var(--px-shadow);
+}
+
+/* Audio controls scrollbar styling */
+.audio-controls::-webkit-scrollbar {
+    width: 8px;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid var(--px-border);
+}
+
+.audio-controls::-webkit-scrollbar-thumb {
+    background: rgba(255, 215, 0, 0.7);
+    border: 1px solid var(--px-border);
+    box-shadow: 1px 1px 0 var(--px-shadow);
+}
+
+/* High contrast theme scrollbar adjustments */
+[data-theme="high-contrast"] ::-webkit-scrollbar-thumb {
+    background: #ffff00;
+    border: 3px solid #000000;
+    box-shadow: var(--px-shadow-offset) var(--px-shadow-offset) 0 #000000;
+}
+
+[data-theme="high-contrast"] ::-webkit-scrollbar-track {
+    background: #1a1a1a;
+    border: 3px solid #000000;
+}
