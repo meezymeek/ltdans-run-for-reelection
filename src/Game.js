@@ -845,14 +845,19 @@ export class LtDanRunner {
             const actualIndex = startIndex + index;
             const rankDisplay = entry.rank || (actualIndex + 1);
             
-            // Only show medals in Global Top 100, NOT in Recent Scores
-            const medal = (this.leaderboard.currentView === 'global' && rankDisplay <= 3) 
-                ? (rankDisplay === 1 ? '🥇' : rankDisplay === 2 ? '🥈' : rankDisplay === 3 ? '🥉' : '')
-                : '';
+            // Show medals ONLY in Global Top 100 for ranks 1, 2, 3
+            // Use actualIndex instead of rankDisplay for more reliable medal assignment
+            let medal = '';
+            if (this.leaderboard.currentView === 'global' && currentPage === 1) {
+                // Only show medals on the first page (where top 3 would be)
+                if (actualIndex === 0) medal = '🥇'; // Rank #1
+                else if (actualIndex === 1) medal = '🥈'; // Rank #2  
+                else if (actualIndex === 2) medal = '🥉'; // Rank #3
+            }
             
             html += `
                 <div class="leaderboard-entry">
-                    <span class="leaderboard-rank">${medal} #${rankDisplay}</span>
+                    <span class="leaderboard-rank">${medal}${medal ? ' ' : ''}#${rankDisplay}</span>
                     <span class="leaderboard-name">${this.escapeHtml(entry.player_name || entry.playerName)}</span>
                     <span class="leaderboard-score">${this.leaderboard.formatScore(entry.score)}</span>
                     <span class="leaderboard-date">${this.leaderboard.formatDate(entry.submitted_at || entry.submittedAt)}</span>
