@@ -1,21 +1,30 @@
 // Bribe Entity Class (Collectible Power-up)
-import { ENTITY_DIMENSIONS, VISUAL_CONFIG } from '../constants/GameConfig.js';
+import { ENTITY_DIMENSIONS, ENTITY_DIMENSIONS_PERCENT, VISUAL_CONFIG } from '../constants/GameConfig.js';
+import { getScaleManager } from '../utils/ScaleManager.js';
 
 export class Bribe {
     constructor(canvas) {
         this.canvas = canvas;
+        this.scaleManager = getScaleManager();
         
-        // Dimensions
-        const dimensions = ENTITY_DIMENSIONS.bribe;
-        this.width = dimensions.width;
-        this.height = dimensions.height;
+        // Dimensions (percentage-based)
+        const dimensions = ENTITY_DIMENSIONS_PERCENT.bribe;
+        this.widthPercent = dimensions.widthPercent;
+        this.heightPercent = dimensions.heightPercent;
         
-        // Position
-        this.x = canvas.width + 50;
-        this.y = 0; // Will be set based on spawn height
+        // Position (percentages)
+        this.xPercent = 1.083; // 108.3% (off-screen right)
+        this.yPercent = 0; // Will be set based on spawn height
+        this.speedPercent = 0; // Will be set by game speed
+        
+        // Pixel values (computed from percentages for rendering)
+        this.width = this.scaleManager.toPixelsX(this.widthPercent);
+        this.height = this.scaleManager.toPixelsY(this.heightPercent);
+        this.x = this.scaleManager.toPixelsX(this.xPercent);
+        this.y = this.scaleManager.toPixelsY(this.yPercent);
+        this.speed = this.scaleManager.velocityToPixels(this.speedPercent, 'width');
         
         // Movement
-        this.speed = 0; // Will be set by game speed
         this.animationFrame = Math.random() * Math.PI * 2;
         
         // Visual
@@ -24,25 +33,31 @@ export class Bribe {
     }
     
     setPosition(x, y) {
+        this.xPercent = this.scaleManager.toPercentageX(x);
+        this.yPercent = this.scaleManager.toPercentageY(y);
         this.x = x;
         this.y = y;
     }
     
     setSpeed(speed) {
-        this.speed = speed;
+        this.speedPercent = this.scaleManager.velocityToPercentage(speed, 'width');
+        this.speed = speed; // Keep pixel speed for compatibility
     }
     
     update() {
-        // Move left with the game
-        this.x -= this.speed;
+        // Move left with the game in percentage space
+        this.xPercent -= this.speedPercent;
+        this.x = this.scaleManager.toPixelsX(this.xPercent);
         
         // Floating animation
         this.animationFrame += 0.1;
-        this.y += Math.sin(this.animationFrame) * 0.5;
+        const floatOffset = Math.sin(this.animationFrame) * 0.5;
+        this.yPercent += this.scaleManager.toPercentageY(floatOffset);
+        this.y = this.scaleManager.toPixelsY(this.yPercent);
     }
     
     isOffScreen() {
-        return this.x + this.width < 0;
+        return this.xPercent + this.widthPercent < 0;
     }
     
     checkCollision(player) {
@@ -84,13 +99,25 @@ export class BribePatternFactory {
         const patterns = [];
         const startX = canvas.width + 50;
         
+        // Use percentage-based heights that work well with 70% scaled player
+        const canvasHeight = canvas.height;
+        const jumpHeights = {
+            veryLow: canvasHeight * 0.05,    // 5% of screen height above ground
+            low: canvasHeight * 0.08,        // 8% of screen height above ground
+            medium: canvasHeight * 0.12,     // 12% of screen height above ground
+            high: canvasHeight * 0.18,       // 18% of screen height above ground
+            veryHigh: canvasHeight * 0.25,   // 25% of screen height above ground
+            extreme: canvasHeight * 0.35,    // 35% of screen height above ground
+            space: canvasHeight * 0.45       // 45% of screen height above ground
+        };
+        
         switch(patternType) {
             case 'arch':
                 // Create an arch of 5 bribes
-                const archHeight = groundY - 180;
+                const archHeight = groundY - jumpHeights.high;
                 for (let i = 0; i < 5; i++) {
                     const angle = (i / 4) * Math.PI; // 0 to PI
-                    const height = Math.sin(angle) * 60; // Arc height variation
+                    const height = Math.sin(angle) * jumpHeights.medium; // Arc height variation
                     const bribe = new Bribe(canvas);
                     bribe.setPosition(startX + i * 60, archHeight - height);
                     bribe.setSpeed(speed);
@@ -102,7 +129,7 @@ export class BribePatternFactory {
             case 'wave':
                 // Create a sine wave of bribes
                 for (let i = 0; i < 6; i++) {
-                    const waveY = groundY - 140 + Math.sin(i * 0.8) * 50;
+                    const waveY = groundY - jumpHeights.medium + Math.sin(i * 0.8) * jumpHeights.low;
                     const bribe = new Bribe(canvas);
                     bribe.setPosition(startX + i * 55, waveY);
                     bribe.setSpeed(speed);
@@ -116,8 +143,8 @@ export class BribePatternFactory {
                 const rising = Math.random() > 0.5;
                 for (let i = 0; i < 4; i++) {
                     const diagY = rising ? 
-                        groundY - 80 - i * 40 :
-                        groundY - 200 + i * 40;
+                        groundY - jumpHeights.veryLow - i * jumpHeights.veryLow :
+                        groundY - jumpHeights.high + i * jumpHeights.veryLow;
                     const bribe = new Bribe(canvas);
                     bribe.setPosition(startX + i * 70, diagY);
                     bribe.setSpeed(speed);
@@ -128,12 +155,12 @@ export class BribePatternFactory {
                 
             case 'cluster':
                 // Random cluster of 3 bribes at varying heights
-                const clusterBase = groundY - 100 - Math.random() * 100;
+                const clusterBase = groundY - jumpHeights.low - Math.random() * jumpHeights.medium;
                 for (let i = 0; i < 3; i++) {
                     const bribe = new Bribe(canvas);
                     bribe.setPosition(
                         startX + i * 45 + Math.random() * 20,
-                        clusterBase + (Math.random() * 60 - 30)
+                        clusterBase + (Math.random() * jumpHeights.veryLow - jumpHeights.veryLow/2)
                     );
                     bribe.setSpeed(speed);
                     bribe.animationFrame = Math.random() * Math.PI * 2;
@@ -145,8 +172,8 @@ export class BribePatternFactory {
                 // Staircase pattern going up then down
                 for (let i = 0; i < 6; i++) {
                     const stairY = i < 3 ?
-                        groundY - 80 - i * 35 :
-                        groundY - 185 + (i - 3) * 35;
+                        groundY - jumpHeights.veryLow - i * (jumpHeights.low * 0.7) :
+                        groundY - jumpHeights.high + (i - 3) * (jumpHeights.low * 0.7);
                     const bribe = new Bribe(canvas);
                     bribe.setPosition(startX + i * 55, stairY);
                     bribe.setSpeed(speed);
@@ -157,15 +184,15 @@ export class BribePatternFactory {
                 
             case 'single':
             default:
-                // Single bribe at various heights
+                // Single bribe at various heights - scaled to work with 70% player
                 const heights = [
-                    groundY - 80,   // Low (easy jump)
-                    groundY - 140,  // Mid (high jump)
-                    groundY - 200,  // High (needs good timing)
-                    groundY - 260,  // Very high (parachute recommended)
-                    groundY - 320,  // Super high (parachute essential)
-                    groundY - 380,  // Sky high
-                    groundY - 440   // Near space!
+                    groundY - jumpHeights.veryLow,  // Very low (easy jump)
+                    groundY - jumpHeights.low,      // Low (normal jump)
+                    groundY - jumpHeights.medium,   // Medium (high jump)
+                    groundY - jumpHeights.high,     // High (needs good timing)
+                    groundY - jumpHeights.veryHigh, // Very high (parachute recommended)
+                    groundY - jumpHeights.extreme,  // Extreme (parachute essential)
+                    groundY - jumpHeights.space     // Space (parachute required)
                 ];
                 const chosenHeight = heights[Math.floor(Math.random() * heights.length)];
                 const bribe = new Bribe(canvas);

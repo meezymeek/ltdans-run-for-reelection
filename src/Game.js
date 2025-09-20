@@ -22,8 +22,11 @@ export class LtDanRunner {
         this.scoreElement = document.getElementById('scoreBadge');
         this.finalScoreElement = document.getElementById('finalScore');
         
-        // Initialize Scale Manager for percentage-based coordinates
-        this.scaleManager = initializeScaleManager(this.canvas);
+        // Configuration
+        this.config = GAME_CONFIG;
+        
+        // Initialize Scale Manager for percentage-based coordinates with global zoom
+        this.scaleManager = initializeScaleManager(this.canvas, this.config.globalZoom);
         
         // Initialize managers
         this.soundManager = new SoundManager();
@@ -32,9 +35,6 @@ export class LtDanRunner {
         
         // Initialize game systems (GameLoop and Renderer use static methods)
         this.gameLogic = new GameLogic(this);
-        
-        // Configuration
-        this.config = GAME_CONFIG;
         
         // Initialize entities using percentage coordinates
         this.player = new Player(this.canvas);
@@ -133,6 +133,8 @@ export class LtDanRunner {
         this.obstacles = [];
         this.constituents = [];
         this.bribes = [];
+        this.gerrymanderExpresses = [];
+        this.trailSegments = [];
         
         // Active effects tracking
         this.activeEffects = {
@@ -141,6 +143,12 @@ export class LtDanRunner {
             currentSpeedMod: 1,
             currentScoreMod: 1
         };
+        
+        // Speed lerping for train mode
+        this.targetGameSpeed = this.config.gameSpeed;
+        this.targetObstacleSpeed = this.config.obstacleSpeed;
+        this.speedLerpRate = 0.1; // Smooth transition speed
+        this.trainSpeedMultiplier = 2.0;
         
         // Unified spawn tracking
         this.lastSpawnDistance = 0;
@@ -187,23 +195,33 @@ export class LtDanRunner {
         this.devMenu.style.top = '50%';
         this.devMenu.style.left = '50%';
         this.devMenu.style.transform = 'translate(-50%, -50%)';
-        this.devMenu.style.background = 'rgba(0,0,0,0.9)';
+        this.devMenu.style.background = 'rgba(0,0,0,0.95)';
         this.devMenu.style.color = '#fff';
-        this.devMenu.style.padding = '20px';
+        this.devMenu.style.padding = '15px';
         this.devMenu.style.border = '2px solid #ffd700';
         this.devMenu.style.zIndex = '9999';
         this.devMenu.style.borderRadius = '8px';
+        this.devMenu.style.maxWidth = '300px';
+        this.devMenu.style.maxHeight = '80vh';
+        this.devMenu.style.overflowY = 'auto';
+        this.devMenu.style.fontSize = '14px';
         this.devMenu.innerHTML = `
-            <h3 style="margin-top:0;">Dev Menu</h3>
-            <label style="display:block; margin: 10px 0;">
-                <input type="checkbox" id="toggleHitboxes">
+            <h3 style="margin:0 0 10px 0; font-size: 16px; text-align: center;">Dev Menu</h3>
+            <label style="display:block; margin: 8px 0; font-size: 12px;">
+                <input type="checkbox" id="toggleHitboxes" style="margin-right: 5px;">
                 Show Hitboxes
             </label>
-            <label style="display:block; margin: 10px 0;">
-                <input type="checkbox" id="toggleSpeed">
+            <label style="display:block; margin: 8px 0; font-size: 12px;">
+                <input type="checkbox" id="toggleSpeed" style="margin-right: 5px;">
                 Show Speed
             </label>
-            <button id="closeDevMenu" style="margin-top:10px;">Close</button>
+            <div style="margin: 8px 0; padding: 8px; background: rgba(0,255,0,0.1); border-radius: 4px;">
+                <div style="font-size: 12px; text-align: center; color: #00ff88;">
+                    ✅ Assets scaled to 70%<br>
+                    (Baked into percentage values)
+                </div>
+            </div>
+            <button id="closeDevMenu" style="width: 100%; margin-top: 10px; padding: 8px; font-size: 12px;">Close</button>
         `;
         document.body.appendChild(this.devMenu);
 
@@ -592,6 +610,7 @@ export class LtDanRunner {
         this.toggleSpeedCheckbox.onchange = (e) => {
             this.showSpeed = e.target.checked;
         };
+        
         this.closeDevMenuButton.onclick = () => {
             this.devMenu.classList.add('hidden');
         };
@@ -634,12 +653,13 @@ export class LtDanRunner {
         this.obstacles = [];
         this.constituents = [];
         this.bribes = [];
+        this.gerrymanderExpresses = [];
         
         // Reset spawn counters
         this.constituentSpawnCounter = 0;
         this.bribeSpawnCounter = 0;
         
-        // Reset player
+        // Reset player (including train mode)
         this.player.reset(this.canvas.height * this.config.groundLevel);
         
         // Reset game speed
@@ -684,12 +704,13 @@ export class LtDanRunner {
         
         this.soundManager.playEffect('crash');
         
+        // Use scaled dimensions for ragdoll (current player size with zoom applied)
         this.ragdoll = new RagdollSystem({
             x: this.player.x,
             y: this.player.y,
-            width: this.player.width,
-            height: this.player.height,
-            groundY: this.player.groundY
+            width: this.player.width,  // Already scaled
+            height: this.player.height, // Already scaled
+            groundY: this.canvas.height * 0.8 // Fixed ground position
         }, this.skinImages);
         
         const collisionForceX = -3 - Math.random() * 2;
@@ -1019,6 +1040,7 @@ export class LtDanRunner {
             this.scoreBadge.classList.remove('shake');
         }, 600);
     }
+    
     
     // Main Game Loop
     gameLoop() {

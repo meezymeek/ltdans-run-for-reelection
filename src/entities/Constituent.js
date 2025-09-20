@@ -142,6 +142,23 @@ export class Constituent {
         this.stompAnimationTime = 0;
     }
     
+    triggerTrainRagdoll() {
+        // Skip stomp animation and go straight to launch physics
+        this.isBeingStomped = true;
+        this.stompAnimationTime = 250; // Jump to launch phase
+        
+        // Apply stronger forces for train collision
+        this.launchVelocityX = -15 - Math.random() * 8;  // Much stronger backward force
+        this.launchVelocityY = -30 - Math.random() * 12; // Much stronger upward force
+        this.rotationSpeed = (Math.random() - 0.5) * 0.8;  // More dramatic spinning
+        
+        // Set scale values for dramatic effect
+        this.scaleX = 0.6;
+        this.scaleY = 1.5;
+        this.targetScaleX = 0.6;
+        this.targetScaleY = 1.5;
+    }
+    
     isOffScreen() {
         if (this.isBeingStomped) {
             // Check if animation is complete and off-screen

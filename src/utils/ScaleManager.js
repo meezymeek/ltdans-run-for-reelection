@@ -3,11 +3,14 @@
 // Ensures consistent gameplay across all screen sizes
 
 export class ScaleManager {
-    constructor(canvas) {
+    constructor(canvas, globalZoom = 1.0) {
         // Reference dimensions - these are our "base" screen size
         // All percentages are calculated relative to these dimensions
         this.baseWidth = 600;
         this.baseHeight = 600;
+        
+        // Global zoom factor - allows scaling all game elements uniformly
+        this.globalZoom = globalZoom;
         
         // Current canvas dimensions
         this.canvas = canvas;
@@ -32,13 +35,32 @@ export class ScaleManager {
         this.uniformScale = Math.min(this.scaleX, this.scaleY);
     }
     
-    // Convert percentage (0.0-1.0) to pixel coordinates
+    // Global zoom control methods
+    setGlobalZoom(zoom) {
+        this.globalZoom = Math.max(0.1, Math.min(3.0, zoom)); // Clamp between 10% and 300%
+        console.log(`Global zoom set to: ${(this.globalZoom * 100).toFixed(1)}%`);
+    }
+    
+    getGlobalZoom() {
+        return this.globalZoom;
+    }
+    
+    // Convert percentage (0.0-1.0) to pixel coordinates (positions - NO zoom applied)
     toPixelsX(percentage) {
         return percentage * this.canvasWidth;
     }
     
     toPixelsY(percentage) {
         return percentage * this.canvasHeight;
+    }
+    
+    // Convert percentage dimensions to pixels (dimensions - WITH zoom applied)
+    dimensionToPixelsX(percentage) {
+        return percentage * this.canvasWidth * this.globalZoom;
+    }
+    
+    dimensionToPixelsY(percentage) {
+        return percentage * this.canvasHeight * this.globalZoom;
     }
     
     // Convert pixel coordinates to percentage (0.0-1.0)
@@ -52,23 +74,23 @@ export class ScaleManager {
     
     // Scale a value based on reference dimensions (for maintaining proportions)
     scaleWidth(value) {
-        return value * this.scaleX;
+        return value * this.scaleX * this.globalZoom;
     }
     
     scaleHeight(value) {
-        return value * this.scaleY;
+        return value * this.scaleY * this.globalZoom;
     }
     
     // Uniform scaling (for elements that should maintain aspect ratio)
     scaleUniform(value) {
-        return value * this.uniformScale;
+        return value * this.uniformScale * this.globalZoom;
     }
     
-    // Convert percentage-based dimensions to pixels
+    // Convert percentage-based dimensions to pixels (with zoom applied)
     dimensionsToPixels(widthPercent, heightPercent) {
         return {
-            width: this.toPixelsX(widthPercent),
-            height: this.toPixelsY(heightPercent)
+            width: this.dimensionToPixelsX(widthPercent),
+            height: this.dimensionToPixelsY(heightPercent)
         };
     }
     
@@ -149,6 +171,7 @@ export class ScaleManager {
             baseSize: `${this.baseWidth}x${this.baseHeight}`,
             scaleFactors: `X:${this.scaleX.toFixed(3)}, Y:${this.scaleY.toFixed(3)}`,
             uniformScale: this.uniformScale.toFixed(3),
+            globalZoom: `${(this.globalZoom * 100).toFixed(1)}%`,
             aspectRatio: this.getAspectRatio().toFixed(3),
             orientation: this.isPortrait() ? 'Portrait' : 'Landscape'
         };
@@ -158,8 +181,8 @@ export class ScaleManager {
 // Singleton instance - can be imported and used globally
 let globalScaleManager = null;
 
-export function initializeScaleManager(canvas) {
-    globalScaleManager = new ScaleManager(canvas);
+export function initializeScaleManager(canvas, globalZoom = 1.0) {
+    globalScaleManager = new ScaleManager(canvas, globalZoom);
     return globalScaleManager;
 }
 
@@ -174,6 +197,12 @@ export function getScaleManager() {
 export function px(percentage, dimension = 'width') {
     const sm = getScaleManager();
     return dimension === 'width' ? sm.toPixelsX(percentage) : sm.toPixelsY(percentage);
+}
+
+// Helper functions for dimension conversions (with zoom applied)
+export function pxDim(percentage, dimension = 'width') {
+    const sm = getScaleManager();
+    return dimension === 'width' ? sm.dimensionToPixelsX(percentage) : sm.dimensionToPixelsY(percentage);
 }
 
 export function percent(pixels, dimension = 'width') {

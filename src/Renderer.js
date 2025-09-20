@@ -21,24 +21,35 @@ export class Renderer {
             ctx.fillRect(element.x, element.y, element.width, element.height);
         }
         
-        // Draw ground line
+        // Draw ground line (fixed position regardless of zoom)
+        const groundY = game.canvas.height * 0.8; // Always 80% down from top
         ctx.strokeStyle = '#8B4513';
         ctx.lineWidth = 3;
         ctx.beginPath();
-        ctx.moveTo(0, game.player.groundY);
-        ctx.lineTo(game.canvas.width, game.player.groundY);
+        ctx.moveTo(0, groundY);
+        ctx.lineTo(game.canvas.width, groundY);
         ctx.stroke();
         
         // Draw Score UI FIRST (before player and other entities)
         this.renderScoreUI(game);
+        
+        // Draw TRON-style trail segments BEFORE player (so they appear behind)
+        if (game.gameState === 'playing' && game.trailSegments.length > 0) {
+            this.drawTrailSegments(game);
+        }
         
         // Draw player or ragdoll depending on state
         if (game.gameState === 'crashing' && game.ragdoll) {
             // Draw ragdoll
             game.ragdoll.render(ctx);
         } else if (game.gameState === 'playing') {
-            // Draw articulated player (Lt. Dan)
-            this.drawArticulatedPlayer(game);
+            // Draw player based on mode
+            if (game.player.isTrainMode) {
+                this.drawTrainPlayer(game);
+            } else {
+                // Draw articulated player (Lt. Dan)
+                this.drawArticulatedPlayer(game);
+            }
             
             // Draw parachute if active AND has time remaining
             if (game.player.hasParachute && game.player.parachuteTimeLeft > 0) {
@@ -54,6 +65,11 @@ export class Renderer {
         // Draw bribes (gold floating money)
         for (let bribe of game.bribes) {
             bribe.render(ctx);
+        }
+        
+        // Draw gerrymander expresses (special train collectibles)
+        for (let gerrymanderExpress of game.gerrymanderExpresses) {
+            gerrymanderExpress.render(ctx);
         }
         
         // Draw obstacles (keep them visible during crash)
@@ -73,6 +89,11 @@ export class Renderer {
         
         // Restore context after screen shake
         ctx.restore();
+        
+        // Draw train mode UI (if active)
+        if (game.gameState === 'playing' && game.player.isTrainMode) {
+            this.drawTrainModeUI(game);
+        }
         
         // Draw popups LAST (on top of everything)
         this.renderPopups(game);
@@ -276,6 +297,151 @@ export class Renderer {
         game.ctx.restore();
     }
     
+    static drawTrainPlayer(game) {
+        const ctx = game.ctx;
+        ctx.save();
+        
+        // Train dimensions
+        const trainWidth = game.player.width;
+        const trainHeight = game.player.height;
+        const centerX = game.player.x + trainWidth / 2;
+        const centerY = game.player.y + trainHeight / 2;
+        
+        // No glow effect for cleaner look
+        const glowIntensity = 0.8; // Static value for speed lines
+        
+        // Train colors
+        const trainBlue = '#4A90E2';
+        const trainGold = '#FFD700';
+        const trainSilver = '#C0C0C0';
+        const trainDark = '#2C5D8A';
+        
+        // Main train body
+        ctx.fillStyle = trainBlue;
+        ctx.fillRect(
+            game.player.x + trainWidth * 0.1,
+            game.player.y + trainHeight * 0.2,
+            trainWidth * 0.7,
+            trainHeight * 0.6
+        );
+        
+        // Train front nose (cowcatcher)
+        ctx.fillStyle = trainSilver;
+        ctx.beginPath();
+        ctx.moveTo(game.player.x + trainWidth * 0.8, game.player.y + trainHeight * 0.2);
+        ctx.lineTo(game.player.x + trainWidth * 0.95, game.player.y + trainHeight * 0.5);
+        ctx.lineTo(game.player.x + trainWidth * 0.8, game.player.y + trainHeight * 0.8);
+        ctx.closePath();
+        ctx.fill();
+        
+        // Smokestack
+        const stackWidth = trainWidth * 0.12;
+        const stackHeight = trainHeight * 0.4;
+        ctx.fillStyle = trainDark;
+        ctx.fillRect(
+            game.player.x + trainWidth * 0.25,
+            game.player.y - stackHeight * 0.5,
+            stackWidth,
+            stackHeight
+        );
+        
+        // Smoke effect (simple particles)
+        if (game.gameFrame % 5 === 0) {
+            ctx.fillStyle = 'rgba(200, 200, 200, 0.7)';
+            for (let i = 0; i < 3; i++) {
+                const smokeX = game.player.x + trainWidth * 0.31 + (Math.random() - 0.5) * 10;
+                const smokeY = game.player.y - stackHeight * 0.7 - i * 5;
+                const smokeSize = 3 + i;
+                ctx.fillRect(smokeX, smokeY, smokeSize, smokeSize);
+            }
+        }
+        
+        // Wheels (4 wheels for train)
+        const wheelRadius = trainHeight * 0.15;
+        const wheelY = game.player.y + trainHeight * 0.85;
+        
+        ctx.fillStyle = '#333333';
+        // Front wheels
+        ctx.beginPath();
+        ctx.arc(game.player.x + trainWidth * 0.75, wheelY, wheelRadius, 0, Math.PI * 2);
+        ctx.fill();
+        
+        ctx.beginPath();
+        ctx.arc(game.player.x + trainWidth * 0.6, wheelY, wheelRadius, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Rear wheels
+        ctx.beginPath();
+        ctx.arc(game.player.x + trainWidth * 0.45, wheelY, wheelRadius, 0, Math.PI * 2);
+        ctx.fill();
+        
+        ctx.beginPath();
+        ctx.arc(game.player.x + trainWidth * 0.3, wheelY, wheelRadius, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Wheel spokes (rotating effect)
+        const rotationAngle = (game.gameFrame * 0.3) % (Math.PI * 2);
+        ctx.strokeStyle = '#666666';
+        ctx.lineWidth = 2;
+        
+        [0.75, 0.6, 0.45, 0.3].forEach(position => {
+            const wheelX = game.player.x + trainWidth * position;
+            ctx.save();
+            ctx.translate(wheelX, wheelY);
+            ctx.rotate(rotationAngle);
+            ctx.beginPath();
+            ctx.moveTo(-wheelRadius * 0.7, 0);
+            ctx.lineTo(wheelRadius * 0.7, 0);
+            ctx.moveTo(0, -wheelRadius * 0.7);
+            ctx.lineTo(0, wheelRadius * 0.7);
+            ctx.stroke();
+            ctx.restore();
+        });
+        
+        // Gold trim and details
+        ctx.strokeStyle = trainGold;
+        ctx.lineWidth = 3;
+        ctx.strokeRect(
+            game.player.x + trainWidth * 0.1,
+            game.player.y + trainHeight * 0.2,
+            trainWidth * 0.7,
+            trainHeight * 0.6
+        );
+        
+        // Cab windows
+        ctx.fillStyle = '#87CEEB';
+        ctx.fillRect(
+            game.player.x + trainWidth * 0.15,
+            game.player.y + trainHeight * 0.3,
+            trainWidth * 0.25,
+            trainHeight * 0.3
+        );
+        
+        // Window frames
+        ctx.strokeStyle = trainGold;
+        ctx.lineWidth = 2;
+        ctx.strokeRect(
+            game.player.x + trainWidth * 0.15,
+            game.player.y + trainHeight * 0.3,
+            trainWidth * 0.25,
+            trainHeight * 0.3
+        );
+        
+        // Speed lines effect
+        ctx.strokeStyle = `rgba(255, 255, 255, ${glowIntensity * 0.8})`;
+        ctx.lineWidth = 2;
+        for (let i = 0; i < 5; i++) {
+            const lineX = game.player.x - (i + 1) * 15;
+            const lineY = game.player.y + trainHeight * 0.3 + i * 10;
+            ctx.beginPath();
+            ctx.moveTo(lineX, lineY);
+            ctx.lineTo(lineX - 20, lineY);
+            ctx.stroke();
+        }
+        
+        ctx.restore();
+    }
+    
     static drawPlayerLimb(game, startX, startY, angle1, length1, angle2, length2, width, upperSkin, lowerSkin) {
         const ctx = game.ctx;
         ctx.save();
@@ -382,8 +548,8 @@ export class Renderer {
         
         ctx.restore();
         
-        // Draw parachute timer at smoothly animated position (if player has tapped)
-        if (game.player.timerX && game.player.timerY) {
+        // Draw parachute timer at smoothly animated position (if player has tapped and not in train mode)
+        if (game.player.timerX && game.player.timerY && !game.player.isTrainMode) {
             this.drawParachuteTimer(game);
         }
     }
@@ -535,6 +701,210 @@ export class Renderer {
         
         // Max Speed
         ctx.fillText(`MAX: ${game.config.maxGameSpeed}`, 25, 90);
+        
+        ctx.restore();
+    }
+    
+    static drawTrainModeUI(game) {
+        const ctx = game.ctx;
+        ctx.save();
+        
+        // Calculate train mode time remaining
+        const timeRemaining = Math.max(0, game.player.trainModeDuration - game.player.trainModeTimer);
+        const timePercent = timeRemaining / game.player.trainModeDuration;
+        const secondsLeft = Math.ceil(timeRemaining / 1000);
+        
+        // Position timer directly on top of the train, centered
+        const timerX = game.player.x + game.player.width / 2;
+        const timerY = game.player.y + game.player.height / 2; // Centered on train
+        const timerRadius = 39; // 25% larger again (31 * 1.25 = 38.75, rounded to 39)
+        
+        // Color based on time remaining (starting with green)
+        let circleColor, progressColor, textColor;
+        if (timePercent > 0.5) {
+            circleColor = '#00CC44'; // Green when plenty of time
+            progressColor = '#00FF55'; // Bright green progress
+            textColor = '#00FF55'; // Bright green text
+        } else if (timePercent > 0.2) {
+            circleColor = '#FF8C00'; // Orange when getting low
+            progressColor = '#FF8C00'; // Orange progress
+            textColor = '#FF8C00'; // Orange text
+        } else {
+            circleColor = '#FF4444'; // Red when almost out
+            progressColor = '#FF4444'; // Red progress
+            textColor = '#FF4444'; // Red text
+        }
+        
+        // Draw timer background (completely transparent)
+        ctx.beginPath();
+        ctx.arc(timerX, timerY, timerRadius, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(0, 0, 0, 0)'; // Completely transparent
+        ctx.fill();
+        ctx.strokeStyle = circleColor;
+        ctx.lineWidth = 3;
+        ctx.stroke();
+        
+        // Draw progress arc (train mode remaining time)
+        if (timePercent > 0) {
+            ctx.beginPath();
+            const startAngle = -Math.PI / 2;
+            const endAngle = startAngle + (Math.PI * 2 * timePercent);
+            ctx.arc(timerX, timerY, timerRadius - 2, startAngle, endAngle);
+            ctx.strokeStyle = progressColor;
+            ctx.lineWidth = 6;
+            ctx.lineCap = 'round';
+            ctx.stroke();
+        }
+        
+        // Draw timer text with black drop shadow and color-changing based on time remaining
+        ctx.font = 'bold 14px Tiny5';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        
+        // Position countdown text based on whether parachute is also active
+        const hasParachute = game.player.hasParachute && game.player.parachuteTimeLeft > 0;
+        const countdownOffsetY = hasParachute ? 70 : -70; // Below circle if parachute active, above if not
+        
+        // Draw countdown using popup message style
+        ctx.save();
+        ctx.font = 'bold 32px Tiny5';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = '#000000';
+        ctx.shadowColor = 'rgba(0,0,0,0.8)';
+        ctx.shadowBlur = 6;
+        
+        // Black drop shadow
+        ctx.fillStyle = '#000000';
+        ctx.fillText(`${secondsLeft}s`, timerX + 3, timerY + countdownOffsetY + 3);
+        
+        // Colored text on top
+        ctx.fillStyle = textColor;
+        ctx.fillText(`${secondsLeft}s`, timerX, timerY + countdownOffsetY);
+        ctx.restore();
+        
+        // Draw "2X POINTS!" text centered and lower with glow effect
+        const multiplierX = game.canvas.width / 2; // Centered horizontally
+        const multiplierY = game.canvas.height * 0.3; // 30% down from top (50% lower than before)
+        
+        // Faster pulsing scale effect for attention
+        const pulseTime = Date.now() % 800; // Faster pulse
+        const pulseScale = 1 + 0.2 * Math.sin(pulseTime / 800 * Math.PI * 2);
+        
+        ctx.save();
+        ctx.translate(multiplierX, multiplierY);
+        ctx.scale(pulseScale, pulseScale);
+        ctx.rotate(15 * Math.PI / 180); // Tilt 15 degrees
+        
+        // Add yellow glow effect
+        ctx.shadowColor = '#FFD700';
+        ctx.shadowBlur = 20;
+        
+        // Use same formatting as "VOTES" text
+        ctx.font = 'bold 36px Tiny5'; // Bigger than VOTES
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        
+        // Black shadow offset (same as VOTES)
+        ctx.fillStyle = '#000000';
+        ctx.fillText('2X POINTS!', 3, 3);
+        
+        // Yellow text on top with glow
+        ctx.fillStyle = '#ffd700';
+        ctx.fillText('2X POINTS!', 0, 0);
+        
+        ctx.restore();
+        
+        ctx.restore();
+    }
+    
+    static drawTronTrail(game) {
+        const ctx = game.ctx;
+        
+        ctx.save();
+        
+        // Simple TRON-style trail: just a line from start to current position
+        const currentX = game.player.x + game.player.width / 2;
+        const currentY = game.player.y + game.player.height / 2;
+        
+        // Main trail line (dark red)
+        ctx.strokeStyle = '#8B0000';
+        ctx.lineWidth = 8;
+        ctx.lineCap = 'butt';
+        
+        ctx.beginPath();
+        ctx.moveTo(game.player.trailStartX, game.player.trailStartY);
+        ctx.lineTo(currentX, currentY);
+        ctx.stroke();
+        
+        // Inner highlight line (gold)
+        ctx.strokeStyle = '#FFD700';
+        ctx.lineWidth = 4;
+        
+        ctx.beginPath();
+        ctx.moveTo(game.player.trailStartX, game.player.trailStartY);
+        ctx.lineTo(currentX, currentY);
+        ctx.stroke();
+        
+        ctx.restore();
+    }
+    
+    static drawTrailSegments(game) {
+        const ctx = game.ctx;
+        
+        ctx.save();
+        
+        // Calculate timer colors to match trail
+        const timeRemaining = Math.max(0, game.player.trainModeDuration - game.player.trainModeTimer);
+        const timePercent = timeRemaining / game.player.trainModeDuration;
+        
+        let trailColor, glowColor;
+        if (timePercent > 0.5) {
+            trailColor = '#00FF55'; // Bright green like timer
+            glowColor = '#00CC44';  // Green glow
+        } else if (timePercent > 0.2) {
+            trailColor = '#FF8C00'; // Orange like timer
+            glowColor = '#FF8C00';  // Orange glow
+        } else {
+            trailColor = '#FF4444'; // Red like timer
+            glowColor = '#FF4444';  // Red glow
+        }
+        
+        // Draw connecting lines between segments for continuous effect
+        if (game.trailSegments.length > 1) {
+            ctx.strokeStyle = trailColor;
+            ctx.lineWidth = 4;
+            ctx.lineCap = 'round';
+            ctx.shadowColor = glowColor;
+            ctx.shadowBlur = 10;
+            
+            ctx.beginPath();
+            ctx.moveTo(game.trailSegments[0].x, game.trailSegments[0].y);
+            for (let i = 1; i < game.trailSegments.length; i++) {
+                ctx.lineTo(game.trailSegments[i].x, game.trailSegments[i].y);
+            }
+            ctx.stroke();
+        }
+        
+        // Draw each trail segment with glow effect
+        for (let segment of game.trailSegments) {
+            // Outer glow
+            ctx.shadowColor = glowColor;
+            ctx.shadowBlur = 15;
+            ctx.fillStyle = glowColor;
+            ctx.fillRect(segment.x - segment.width/2, segment.y - segment.height/2, segment.width, segment.height);
+            
+            // Inner core (brighter)
+            ctx.shadowBlur = 8;
+            ctx.fillStyle = trailColor;
+            ctx.fillRect(segment.x - segment.width/3, segment.y - segment.height/3, segment.width/1.5, segment.height/1.5);
+            
+            // Bright center
+            ctx.shadowBlur = 4;
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(segment.x - segment.width/4, segment.y - segment.height/4, segment.width/2, segment.height/2);
+        }
         
         ctx.restore();
     }

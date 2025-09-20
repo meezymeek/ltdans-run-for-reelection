@@ -6,94 +6,99 @@ export class RagdollSystem {
         this.bounce = 0.6;
         this.skinImages = skinImages;
         
-        // Initialize body parts with physics properties
+        // Initialize body parts with physics properties scaled to player size
         const x = initialPosition.x + initialPosition.width / 2;
         const y = initialPosition.y;
+        const playerWidth = initialPosition.width;
+        const playerHeight = initialPosition.height;
+        
+        // Scale all dimensions proportionally to the actual player size
+        const scale = Math.min(playerWidth / 40, playerHeight / 60); // Based on original 40x60 player
         
         this.parts = {
             head: {
-                x: x, y: y + 10,
+                x: x, y: y + 10 * scale,
                 vx: Math.random() * 4 - 2, vy: -Math.random() * 5,
-                width: 32, height: 20,
+                width: 32 * scale, height: 20 * scale,
                 angle: 0, angleVel: Math.random() * 0.3 - 0.15,
                 mass: 0.8
             },
             torso: {
-                x: x, y: y + 30,
+                x: x, y: y + 30 * scale,
                 vx: Math.random() * 3 - 1.5, vy: -Math.random() * 3,
-                width: 30, height: 20,
+                width: 30 * scale, height: 20 * scale,
                 angle: 0, angleVel: Math.random() * 0.2 - 0.1,
                 mass: 1.2
             },
             leftUpperArm: {
-                x: x - 5, y: y + 32,
+                x: x - 5 * scale, y: y + 32 * scale,
                 vx: Math.random() * 5 - 2.5, vy: -Math.random() * 4,
-                width: 8, height: 12,
+                width: 8 * scale, height: 12 * scale,
                 angle: 0, angleVel: Math.random() * 0.4 - 0.2,
                 mass: 0.3
             },
             leftForearm: {
-                x: x - 8, y: y + 42,
+                x: x - 8 * scale, y: y + 42 * scale,
                 vx: Math.random() * 6 - 3, vy: -Math.random() * 3,
-                width: 6, height: 10,
+                width: 6 * scale, height: 10 * scale,
                 angle: 0, angleVel: Math.random() * 0.5 - 0.25,
                 mass: 0.2
             },
             rightUpperArm: {
-                x: x + 5, y: y + 32,
+                x: x + 5 * scale, y: y + 32 * scale,
                 vx: Math.random() * 5 - 2.5, vy: -Math.random() * 4,
-                width: 8, height: 12,
+                width: 8 * scale, height: 12 * scale,
                 angle: 0, angleVel: Math.random() * 0.4 - 0.2,
                 mass: 0.3
             },
             rightForearm: {
-                x: x + 8, y: y + 42,
+                x: x + 8 * scale, y: y + 42 * scale,
                 vx: Math.random() * 6 - 3, vy: -Math.random() * 3,
-                width: 6, height: 10,
+                width: 6 * scale, height: 10 * scale,
                 angle: 0, angleVel: Math.random() * 0.5 - 0.25,
                 mass: 0.2
             },
             leftThigh: {
-                x: x - 5, y: y + 50,
+                x: x - 5 * scale, y: y + 50 * scale,
                 vx: Math.random() * 4 - 2, vy: -Math.random() * 2,
-                width: 10, height: 15,
+                width: 10 * scale, height: 15 * scale,
                 angle: 0, angleVel: Math.random() * 0.3 - 0.15,
                 mass: 0.5
             },
             leftShin: {
-                x: x - 7, y: y + 63,
+                x: x - 7 * scale, y: y + 63 * scale,
                 vx: Math.random() * 5 - 2.5, vy: -Math.random() * 2,
-                width: 8, height: 12,
+                width: 8 * scale, height: 12 * scale,
                 angle: 0, angleVel: Math.random() * 0.4 - 0.2,
                 mass: 0.3
             },
             rightThigh: {
-                x: x + 5, y: y + 50,
+                x: x + 5 * scale, y: y + 50 * scale,
                 vx: Math.random() * 4 - 2, vy: -Math.random() * 2,
-                width: 10, height: 15,
+                width: 10 * scale, height: 15 * scale,
                 angle: 0, angleVel: Math.random() * 0.3 - 0.15,
                 mass: 0.5
             },
             rightShin: {
-                x: x + 7, y: y + 63,
+                x: x + 7 * scale, y: y + 63 * scale,
                 vx: Math.random() * 5 - 2.5, vy: -Math.random() * 2,
-                width: 8, height: 12,
+                width: 8 * scale, height: 12 * scale,
                 angle: 0, angleVel: Math.random() * 0.4 - 0.2,
                 mass: 0.3
             }
         };
         
-        // Define joint connections (for constraint solving)
+        // Define joint connections (for constraint solving) - scaled to match player size
         this.joints = [
-            { partA: 'head', partB: 'torso', length: 15, stiffness: 0.7 },
-            { partA: 'torso', partB: 'leftUpperArm', length: 12, stiffness: 0.5 },
-            { partA: 'leftUpperArm', partB: 'leftForearm', length: 10, stiffness: 0.4 },
-            { partA: 'torso', partB: 'rightUpperArm', length: 12, stiffness: 0.5 },
-            { partA: 'rightUpperArm', partB: 'rightForearm', length: 10, stiffness: 0.4 },
-            { partA: 'torso', partB: 'leftThigh', length: 15, stiffness: 0.6 },
-            { partA: 'leftThigh', partB: 'leftShin', length: 12, stiffness: 0.4 },
-            { partA: 'torso', partB: 'rightThigh', length: 15, stiffness: 0.6 },
-            { partA: 'rightThigh', partB: 'rightShin', length: 12, stiffness: 0.4 }
+            { partA: 'head', partB: 'torso', length: 15 * scale, stiffness: 0.7 },
+            { partA: 'torso', partB: 'leftUpperArm', length: 12 * scale, stiffness: 0.5 },
+            { partA: 'leftUpperArm', partB: 'leftForearm', length: 10 * scale, stiffness: 0.4 },
+            { partA: 'torso', partB: 'rightUpperArm', length: 12 * scale, stiffness: 0.5 },
+            { partA: 'rightUpperArm', partB: 'rightForearm', length: 10 * scale, stiffness: 0.4 },
+            { partA: 'torso', partB: 'leftThigh', length: 15 * scale, stiffness: 0.6 },
+            { partA: 'leftThigh', partB: 'leftShin', length: 12 * scale, stiffness: 0.4 },
+            { partA: 'torso', partB: 'rightThigh', length: 15 * scale, stiffness: 0.6 },
+            { partA: 'rightThigh', partB: 'rightShin', length: 12 * scale, stiffness: 0.4 }
         ];
         
         this.groundY = initialPosition.groundY;

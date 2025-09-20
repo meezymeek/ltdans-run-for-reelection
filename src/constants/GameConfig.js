@@ -1,5 +1,8 @@
 // Game Configuration
 export const GAME_CONFIG = {
+    // Global zoom factor - disabled in favor of direct percentage adjustments
+    globalZoom: 1.0,  // No dynamic zoom - sizes baked into percentages
+    
     // Physics (pixels - legacy)
     gravity: 0.8,
     jumpPower: -15,
@@ -62,10 +65,10 @@ export const PLAYER_CONFIG = {
     startX: 100,
     color: '#ff6b6b',
     
-    // Dimensions (percentages - based on 600x600 reference)
-    widthPercent: 0.0667,     // 6.67% of screen width
-    heightPercent: 0.1,       // 10% of screen height
-    startXPercent: 0.06,     // 13.3% from left edge (moved left by 20%)
+    // Dimensions (percentages - adjusted to 70% scale for proper sizing)
+    widthPercent: 0.0467,     // 4.67% of screen width (was 6.67% * 0.7)
+    heightPercent: 0.07,      // 7% of screen height (was 10% * 0.7)
+    startXPercent: 0.06,      // 6% from left edge (unchanged)
     
     // Animation speeds
     animationSpeed: 0.15,
@@ -124,24 +127,24 @@ export const ENTITY_DIMENSIONS = {
     }
 };
 
-// Entity Dimensions (Percentages - based on 600x600 reference)
+// Entity Dimensions (Percentages - adjusted to 70% scale for proper sizing)
 export const ENTITY_DIMENSIONS_PERCENT = {
     obstacle: {
         low: { 
-            widthPercent: 0.05,      // 5% of screen width
-            heightPercent: 0.0667    // 6.67% of screen height
+            widthPercent: 0.035,     // 3.5% of screen width (was 5% * 0.7)
+            heightPercent: 0.0467    // 4.67% of screen height (was 6.67% * 0.7)
         },
         tall: { 
-            widthPercent: 0.0583,    // 5.83% of screen width
-            heightPercent: 0.133     // 13.3% of screen height
+            widthPercent: 0.0408,    // 4.08% of screen width (was 5.83% * 0.7)
+            heightPercent: 0.0931    // 9.31% of screen height (was 13.3% * 0.7)
         }
     },
     constituent: {
-        widthPercent: 0.0667,        // 6.67% of screen width
-        heightPercent: 0.1           // 10% of screen height
+        widthPercent: 0.0467,        // 4.67% of screen width (was 6.67% * 0.7)
+        heightPercent: 0.07          // 7% of screen height (was 10% * 0.7)
     },
     bribe: {
-        widthPercent: 0.05,          // 5% of screen width
-        heightPercent: 0.05          // 5% of screen height
+        widthPercent: 0.035,         // 3.5% of screen width (was 5% * 0.7)
+        heightPercent: 0.035         // 3.5% of screen height (was 5% * 0.7)
     }
 };

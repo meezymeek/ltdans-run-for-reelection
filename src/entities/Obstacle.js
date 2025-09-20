@@ -32,6 +32,15 @@ export class Obstacle {
         this.color = type === 'tall' ? 
             VISUAL_CONFIG.obstacleColors.tall : 
             VISUAL_CONFIG.obstacleColors.low;
+        
+        // Ragdoll properties
+        this.isRagdolled = false;
+        this.velocityX = 0;
+        this.velocityY = 0;
+        this.rotation = 0;
+        this.rotationSpeed = 0;
+        this.gravity = 0.5;
+        this.groundY = 0; // Will be set when ragdolled
     }
     
     setPosition(groundY) {
@@ -45,22 +54,78 @@ export class Obstacle {
         this.speed = speed; // Keep pixel speed for compatibility
     }
     
+    triggerRagdoll(impactX, impactY) {
+        if (this.isRagdolled) return;
+        
+        this.isRagdolled = true;
+        this.groundY = this.canvas.height * 0.8; // Ground level
+        
+        // Apply impact forces based on collision point
+        this.velocityX = -8 - Math.random() * 4; // Strong backward force
+        this.velocityY = -12 - Math.random() * 8; // Upward force
+        this.rotationSpeed = (Math.random() - 0.5) * 0.4; // Random rotation
+    }
+    
     update() {
-        this.xPercent -= this.speedPercent;
-        this.x = this.scaleManager.toPixelsX(this.xPercent);
+        if (this.isRagdolled) {
+            // Ragdoll physics
+            this.x += this.velocityX;
+            this.y += this.velocityY;
+            this.velocityY += this.gravity; // Apply gravity
+            this.rotation += this.rotationSpeed;
+            
+            // Ground collision for ragdoll
+            if (this.y + this.height >= this.groundY) {
+                this.y = this.groundY - this.height;
+                this.velocityY *= -0.3; // Bounce with damping
+                this.velocityX *= 0.8; // Friction
+                this.rotationSpeed *= 0.9; // Damping
+                
+                // Stop bouncing if velocity is too low
+                if (Math.abs(this.velocityY) < 1) {
+                    this.velocityY = 0;
+                }
+            }
+        } else {
+            // Normal movement
+            this.xPercent -= this.speedPercent;
+            this.x = this.scaleManager.toPixelsX(this.xPercent);
+        }
     }
     
     isOffScreen() {
+        if (this.isRagdolled) {
+            // For ragdolled obstacles, check if they've fallen off screen
+            return this.x + this.width < -100 || this.y > this.canvas.height + 100;
+        }
         return this.xPercent + this.widthPercent < 0;
     }
     
     render(ctx) {
-        ctx.fillStyle = this.color;
-        ctx.fillRect(this.x, this.y, this.width, this.height);
+        ctx.save();
         
-        // Add simple pattern to obstacles
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-        ctx.fillRect(this.x + 5, this.y + 5, this.width - 10, 3);
+        if (this.isRagdolled) {
+            // Render ragdolled obstacle with rotation
+            ctx.translate(this.x + this.width/2, this.y + this.height/2);
+            ctx.rotate(this.rotation);
+            
+            ctx.fillStyle = this.color;
+            ctx.fillRect(-this.width/2, -this.height/2, this.width, this.height);
+            
+            // Add pattern with rotation
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.fillRect(-this.width/2 + 5, -this.height/2 + 5, this.width - 10, 3);
+        } else {
+            // Normal rendering
+            ctx.fillStyle = this.color;
+            ctx.fillRect(this.x, this.y, this.width, this.height);
+            
+            // Add simple pattern to obstacles
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.fillRect(this.x + 5, this.y + 5, this.width - 10, 3);
+        }
+        
+        ctx.restore();
     }
     
     checkCollision(player) {

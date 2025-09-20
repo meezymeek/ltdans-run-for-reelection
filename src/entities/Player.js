@@ -76,6 +76,25 @@ export class Player {
         // Breathing animation
         this.breathingCycle = 0;
         this.isBreathingOut = false;
+        
+        // Train mode properties
+        this.isTrainMode = false;
+        this.trainModeTimer = 0;
+        this.trainModeDuration = 5000; // 5 seconds in milliseconds
+        this.originalWidthPercent = this.widthPercent;
+        this.trainWidthPercent = this.widthPercent * 2; // Double width
+        this.trainModeStartTime = 0;
+        
+        // Position lerping for train mode
+        this.originalXPercent = this.xPercent;
+        this.trainXPercent = 0.15; // Move forward to 15% from left (closer to middle)
+        this.targetXPercent = this.xPercent;
+        this.positionLerpRate = 0.03; // Slower transition rate for more dramatic effect
+        
+        // Simple TRON-style trail (just track position history)
+        this.trailStartX = 0;
+        this.trailStartY = 0;
+        this.isDrawingTrail = false;
     }
     
     setGroundY(groundY) {
@@ -83,6 +102,9 @@ export class Player {
         this.groundY = groundY;
         this.yPercent = this.groundYPercent - this.heightPercent;
         this.y = this.scaleManager.toPixelsY(this.yPercent);
+        // Update dimensions
+        this.width = this.scaleManager.toPixelsX(this.widthPercent);
+        this.height = this.scaleManager.toPixelsY(this.heightPercent);
     }
     
     jump() {
@@ -153,6 +175,57 @@ export class Player {
         return false; // Already had parachute
     }
     
+    activateTrainMode() {
+        // Activate train mode transformation
+        if (!this.isTrainMode) {
+            this.isTrainMode = true;
+            this.trainModeStartTime = Date.now();
+            this.trainModeTimer = 0;
+            
+            // Transform to train width
+            this.widthPercent = this.trainWidthPercent;
+            this.width = this.scaleManager.toPixelsX(this.widthPercent);
+            
+            // Set target position to move forward
+            this.targetXPercent = this.trainXPercent;
+            
+            // Start TRON trail at current position
+            this.trailStartX = this.x + this.width / 2;
+            this.trailStartY = this.y + this.height / 2;
+            this.isDrawingTrail = true;
+            
+            // If player has parachute, sync parachute timer to train timer
+            if (this.hasParachute && this.parachuteTimeLeft > 0) {
+                this.parachuteTimeLeft = this.trainModeDuration / 1000; // Convert to seconds
+                console.log('Syncing parachute timer to train mode duration:', this.parachuteTimeLeft, 'seconds');
+            }
+            
+            return true; // Train mode activated
+        }
+        return false; // Already in train mode
+    }
+    
+    deactivateTrainMode() {
+        // Deactivate train mode transformation
+        if (this.isTrainMode) {
+            this.isTrainMode = false;
+            this.trainModeTimer = 0;
+            
+            // Restore original width
+            this.widthPercent = this.originalWidthPercent;
+            this.width = this.scaleManager.toPixelsX(this.widthPercent);
+            
+            // Set target position to return to original
+            this.targetXPercent = this.originalXPercent;
+            
+            // Stop drawing trail
+            this.isDrawingTrail = false;
+            
+            return true; // Train mode deactivated
+        }
+        return false; // Wasn't in train mode
+    }
+    
     update(config, deltaTime) {
         // Smoothly animate timer position
         const timerLerpSpeed = 0.18;
@@ -174,6 +247,20 @@ export class Player {
         // Smooth pulse scale animation
         const pulseLerpSpeed = 0.25;
         this.tapPulseScale += (this.tapPulseTarget - this.tapPulseScale) * pulseLerpSpeed;
+        
+        // Update train mode timer
+        if (this.isTrainMode) {
+            this.trainModeTimer += deltaTime;
+            
+            if (this.trainModeTimer >= this.trainModeDuration) {
+                // Train mode expired
+                this.deactivateTrainMode();
+            }
+        }
+        
+        // Lerp player position for train mode visual effect
+        this.xPercent += (this.targetXPercent - this.xPercent) * this.positionLerpRate;
+        this.x = this.scaleManager.toPixelsX(this.xPercent);
         
         // Update parachute state
         if (this.hasParachute && this.parachuteTimeLeft > 0) {
@@ -224,6 +311,8 @@ export class Player {
         
         // Sync pixel values for rendering
         this.y = this.scaleManager.toPixelsY(this.yPercent);
+        this.width = this.scaleManager.toPixelsX(this.widthPercent);
+        this.height = this.scaleManager.toPixelsY(this.heightPercent);
         this.velocityY = this.scaleManager.velocityToPixels(this.velocityYPercent);
         
         // Ground collision
@@ -334,6 +423,10 @@ export class Player {
             this.y = this.scaleManager.toPixelsY(this.yPercent);
         }
         
+        // Update dimensions
+        this.width = this.scaleManager.toPixelsX(this.widthPercent);
+        this.height = this.scaleManager.toPixelsY(this.heightPercent);
+        
         this.velocityYPercent = 0;
         this.velocityY = 0;
         this.isJumping = false;
@@ -352,6 +445,19 @@ export class Player {
         this.tapPulseScale = 1.0;
         this.tapPulseTarget = 1.0;
         this.tapEffectActive = false;
+        
+        // Reset train mode and position
+        this.isTrainMode = false;
+        this.trainModeTimer = 0;
+        this.trainModeStartTime = 0;
+        this.widthPercent = this.originalWidthPercent;
+        this.xPercent = this.originalXPercent;
+        this.targetXPercent = this.originalXPercent;
+        
+        // Clear trail
+        this.isDrawingTrail = false;
+        this.trailStartX = 0;
+        this.trailStartY = 0;
     }
     
     launchHigh() {

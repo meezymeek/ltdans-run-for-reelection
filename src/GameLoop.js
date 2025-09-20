@@ -2,6 +2,7 @@
 import { Obstacle, createObstacle } from './entities/Obstacle.js';
 import { Constituent } from './entities/Constituent.js';
 import { Bribe, BribePatternFactory } from './entities/Bribe.js';
+import { GerrymanderExpress } from './entities/GerrymanderExpress.js';
 import { GameLogic } from './GameLogic.js';
 import { PLAYER_CONFIG } from './constants/GameConfig.js';
 
@@ -12,6 +13,20 @@ export class GameLoop {
         if (game.gameState === 'playing') {
             game.gameFrame++;
             
+            // Update speed targets based on train mode
+            if (game.player.isTrainMode) {
+                game.targetGameSpeed = game.config.baseGameSpeed * game.trainSpeedMultiplier;
+                game.targetObstacleSpeed = game.config.baseObstacleSpeed * game.trainSpeedMultiplier;
+            } else {
+                // When not in train mode, return to base speeds (not current speeds which may be higher)
+                game.targetGameSpeed = game.config.baseGameSpeed;
+                game.targetObstacleSpeed = game.config.baseObstacleSpeed;
+            }
+            
+            // Lerp current speed to target for smooth transitions
+            game.config.gameSpeed += (game.targetGameSpeed - game.config.gameSpeed) * game.speedLerpRate;
+            game.config.obstacleSpeed += (game.targetObstacleSpeed - game.config.obstacleSpeed) * game.speedLerpRate;
+            
             // Track distance moved since last spawn
             game.lastSpawnDistance += game.config.obstacleSpeed;
             
@@ -19,15 +34,20 @@ export class GameLoop {
             this.spawnObstacle(game);
             this.spawnConstituent(game);
             this.spawnBribe(game);
+            this.spawnGerrymanderExpress(game);
             this.updateObstacles(game);
             this.updateConstituents(game);
             this.updateBribes(game);
+            this.updateGerrymanderExpresses(game);
             this.updateBackground(game);
+            this.updateTrailSegments(game);
             this.updatePopups(game);
             
-            // Continuous scoring
+            // Continuous scoring with train mode multiplier
             if (game.gameFrame % 10 === 0) {
-                game.score += 1;
+                const basePoints = 1;
+                const multiplier = game.player.isTrainMode ? 2 : 1;
+                game.score += basePoints * multiplier;
                 GameLogic.updateScore(game);
             }
         } else if (game.gameState === 'crashing') {
@@ -107,24 +127,46 @@ export class GameLoop {
             if (obstacle.x + obstacle.width < 0) {
                 game.obstacles.splice(i, 1);
                 if (obstacle.type === 'tall') {
-                    game.score += game.config.tallPoints;
+                    const basePoints = game.config.tallPoints;
+                    const multiplier = game.player.isTrainMode ? 2 : 1;
+                    const points = basePoints * multiplier;
+                    game.score += points;
                     GameLogic.updateScore(game);
-                    GameLogic.addPopup(game, "+" + game.config.tallPoints, 
+                    const displayText = game.player.isTrainMode ? `+${points} (2X!)` : `+${points}`;
+                    GameLogic.addPopup(game, displayText, 
                                   game.player.x + game.player.width/2, game.player.y - 20);
                     game.soundManager.playPointTall();
                 } else {
-                    game.score += game.config.lowPoints;
+                    const basePoints = game.config.lowPoints;
+                    const multiplier = game.player.isTrainMode ? 2 : 1;
+                    const points = basePoints * multiplier;
+                    game.score += points;
                     GameLogic.updateScore(game);
-                    GameLogic.addPopup(game, "+" + game.config.lowPoints, 
+                    const displayText = game.player.isTrainMode ? `+${points} (2X!)` : `+${points}`;
+                    GameLogic.addPopup(game, displayText, 
                                   game.player.x + game.player.width/2, game.player.y - 20);
                     game.soundManager.playPointLow();
                 }
             }
 
-            // Collision detection - FIXED: Use GameLogic.triggerCrash instead of game.triggerCrash
+            // Collision detection - Skip if player is invincible (train mode)
             if (this.checkCollision(game.player, obstacle)) {
-                GameLogic.triggerCrash(game, obstacle);
-                return;
+                if (game.player.isTrainMode) {
+                    // Train mode - player is invincible, add visual effect and points
+                    const basePoints = obstacle.type === 'tall' ? game.config.tallPoints : game.config.lowPoints;
+                    const points = basePoints * 2; // Double points for plowing through
+                    game.score += points;
+                    GameLogic.updateScore(game);
+                    // No popup message for train hits
+                    
+                    // Ragdoll the obstacle instead of just removing it
+                    obstacle.triggerRagdoll(game.player.x + game.player.width/2, game.player.y + game.player.height/2);
+                    continue;
+                } else {
+                    // Normal collision - trigger crash
+                    GameLogic.triggerCrash(game, obstacle);
+                    return;
+                }
             }
         }
     }
@@ -170,7 +212,24 @@ export class GameLoop {
                 continue;
             }
             
-            // Check if player is stomping on constituent
+            // Check for train collision first (if player is in train mode)
+            if (game.player.isTrainMode && this.checkCollision(game.player, constituent) && !constituent.isBeingStomped) {
+                // Train collision - ragdoll the constituent
+                constituent.triggerTrainRagdoll();
+                
+                // Add bonus points for train collision
+                const bonusPoints = 15;
+                game.score += bonusPoints;
+                GameLogic.updateScore(game);
+                
+                // No popup message for train hits
+                
+                // Play impact sound
+                game.soundManager.playJump();
+                continue;
+            }
+            
+            // Check if player is stomping on constituent (normal behavior)
             const isStomping = constituent.checkStomp(game.player);
             if (isStomping && !constituent.isBeingStomped) {
                 // Trigger stomp animation (this will handle the squash animation automatically)
@@ -244,12 +303,60 @@ export class GameLoop {
         }
     }
     
+    static spawnGerrymanderExpress(game) {
+        // Only spawn when player has an active parachute AND not currently in train mode
+        if (game.player.hasParachute && game.player.parachuteTimeLeft > 0 && !game.player.isTrainMode) {
+            // Spawn every 2 seconds when parachute is active (reduced frequency)
+            if (game.gameFrame % 120 === 0) {
+                const gerrymanderExpress = new GerrymanderExpress(game.canvas);
+                gerrymanderExpress.setPosition(game.player.groundY);
+                gerrymanderExpress.setSpeed(game.config.obstacleSpeed);
+                game.gerrymanderExpresses.push(gerrymanderExpress);
+            }
+        }
+        // No spawning when no parachute is active or train mode is active
+    }
     
     static updateBribes(game) {
         for (let i = game.bribes.length - 1; i >= 0; i--) {
             const bribe = game.bribes[i];
             
-            // Update bribe
+            // Apply magnetic attraction if player is in train mode (BEFORE normal update)
+            if (game.player.isTrainMode) {
+                const playerCenterX = game.player.x + game.player.width / 2;
+                const playerCenterY = game.player.y + game.player.height / 2;
+                
+                // Calculate distance
+                const dx = playerCenterX - bribe.x;
+                const dy = playerCenterY - bribe.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                // Magnetic range (40% of screen width for balanced attraction)
+                const magneticRangePercent = 0.4; // 40% of screen width
+                const magneticRange = game.canvas.width * magneticRangePercent;
+                
+                if (distance < magneticRange && distance > 5) {
+                    console.log('Magnetic attraction applied to bribe at distance:', distance);
+                    
+                    // Use lerp approach like popup system
+                    const magneticStrength = (magneticRange - distance) / magneticRange;
+                    const lerpSpeed = magneticStrength * 0.2; // Stronger lerp when closer
+                    
+                    // Update both pixel and percentage coordinates for bribe
+                    const newX = bribe.x + (playerCenterX - bribe.x) * lerpSpeed;
+                    const newY = bribe.y + (playerCenterY - bribe.y) * lerpSpeed;
+                    
+                    // Set position using bribe's setPosition method if available
+                    if (bribe.setPosition) {
+                        bribe.setPosition(newX, newY);
+                    } else {
+                        bribe.x = newX;
+                        bribe.y = newY;
+                    }
+                }
+            }
+            
+            // Update bribe normally (after magnetic attraction)
             bribe.update();
             
             // Remove if off screen
@@ -263,15 +370,58 @@ export class GameLoop {
                 // Remove bribe
                 game.bribes.splice(i, 1);
                 
-                // Add 5 votes to score
-                game.score += 5;
+                // Add 5 votes to score with train mode multiplier
+                const basePoints = 5;
+                const multiplier = game.player.isTrainMode ? 2 : 1;
+                const points = basePoints * multiplier;
+                game.score += points;
                 GameLogic.updateScore(game);
                 
                 // Visual feedback
-                GameLogic.addPopup(game, "+5 VOTES!", bribe.x, bribe.y, {icon: '💰'});
+                const displayText = game.player.isTrainMode ? `+${points} VOTES! (2X!)` : `+${points} VOTES!`;
+                GameLogic.addPopup(game, displayText, bribe.x, bribe.y, {icon: '💰'});
                 
                 // Play collect sound (use point sound for now)
                 game.soundManager.playPointTall();
+            }
+        }
+    }
+    
+    static updateGerrymanderExpresses(game) {
+        for (let i = game.gerrymanderExpresses.length - 1; i >= 0; i--) {
+            const gerrymanderExpress = game.gerrymanderExpresses[i];
+            
+            // Update gerrymander express
+            gerrymanderExpress.update();
+            
+            // Remove if off screen
+            if (gerrymanderExpress.isOffScreen()) {
+                game.gerrymanderExpresses.splice(i, 1);
+                continue;
+            }
+            
+            // Check collision with player
+            if (gerrymanderExpress.checkCollision(game.player)) {
+                // Remove gerrymander express
+                game.gerrymanderExpresses.splice(i, 1);
+                gerrymanderExpress.collect();
+                
+                // Activate train mode
+                if (game.player.activateTrainMode()) {
+                    // Clear all remaining gerrymander express pickups to prevent multiple collection
+                    for (let j = game.gerrymanderExpresses.length - 1; j >= 0; j--) {
+                        if (j !== i) { // Don't remove the one we just collected
+                            game.gerrymanderExpresses.splice(j, 1);
+                        }
+                    }
+                    
+                    // Visual feedback
+                    GameLogic.addPopup(game, "GERRYMANDER EXPRESS!", 
+                                      game.player.x + game.player.width/2, game.player.y - 50, {icon: '🚂'});
+                    
+                    // Play special collect sound (use victory fanfare for now)
+                    game.soundManager.playEffect('victory-fanfare');
+                }
             }
         }
     }
@@ -335,6 +485,33 @@ export class GameLoop {
                player.y + player.height > object.y;
     }
     
+    
+    static updateTrailSegments(game) {
+        // Spawn trail segments when in train mode
+        if (game.player.isTrainMode && game.gameFrame % 3 === 0) { // Every 3 frames
+            const centerX = game.player.x + game.player.width / 2;
+            const centerY = game.player.y + game.player.height / 2;
+            
+            game.trailSegments.push({
+                x: centerX,
+                y: centerY,
+                width: 8,
+                height: 8,
+                speed: game.config.obstacleSpeed
+            });
+        }
+        
+        // Update and remove trail segments
+        for (let i = game.trailSegments.length - 1; i >= 0; i--) {
+            const segment = game.trailSegments[i];
+            segment.x -= segment.speed; // Move left like other elements
+            
+            // Remove if off screen
+            if (segment.x + segment.width < 0) {
+                game.trailSegments.splice(i, 1);
+            }
+        }
+    }
     
     static easeOutBack(t) {
         const c1 = 1.70158, c3 = c1 + 1;
