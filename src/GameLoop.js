@@ -336,8 +336,6 @@ export class GameLoop {
                 const magneticRange = game.canvas.width * magneticRangePercent;
                 
                 if (distance < magneticRange && distance > 5) {
-                    console.log('Magnetic attraction applied to bribe at distance:', distance);
-                    
                     // Use lerp approach like popup system
                     const magneticStrength = (magneticRange - distance) / magneticRange;
                     const lerpSpeed = magneticStrength * 0.2; // Stronger lerp when closer

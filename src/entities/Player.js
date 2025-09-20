@@ -197,7 +197,6 @@ export class Player {
             // If player has parachute, sync parachute timer to train timer
             if (this.hasParachute && this.parachuteTimeLeft > 0) {
                 this.parachuteTimeLeft = this.trainModeDuration / 1000; // Convert to seconds
-                console.log('Syncing parachute timer to train mode duration:', this.parachuteTimeLeft, 'seconds');
             }
             
             return true; // Train mode activated
