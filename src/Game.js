@@ -178,7 +178,34 @@ export class LtDanRunner {
         this.debugHitboxes = false;
         this.showSpeed = false;
         
+        // Pre-loaded assets (will be set by AssetLoader)
+        this.preloadedAssets = null;
+        
         this.init();
+    }
+    
+    // Method to receive pre-loaded assets from AssetLoader
+    setPreloadedAssets(loadedAssets) {
+        this.preloadedAssets = loadedAssets;
+        console.log('Game received pre-loaded assets:', loadedAssets);
+        
+        // Use pre-loaded skin images if available
+        if (loadedAssets.images && loadedAssets.images.skins) {
+            this.skinImages = { ...loadedAssets.images.skins };
+            this.skinsLoaded = true;
+            console.log('Using pre-loaded skin images');
+        }
+        
+        // Use pre-loaded parachute images if available
+        if (loadedAssets.images && loadedAssets.images.parachutes) {
+            this.loadedParachuteSkins = [...loadedAssets.images.parachutes];
+            console.log('Using pre-loaded parachute skins');
+        }
+        
+        // Pass audio assets to SoundManager if available
+        if (loadedAssets.audio && this.soundManager) {
+            this.soundManager.setPreloadedAudio(loadedAssets.audio);
+        }
     }
     
     setupDevMenu() {

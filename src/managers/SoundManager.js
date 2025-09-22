@@ -93,9 +93,93 @@ export class SoundManager {
         this.initialized = false;
         this.initPromise = null;
         
+        // Pre-loaded audio assets
+        this.preloadedAudio = null;
+        
         // Page visibility tracking
         this.wasPlayingBeforeHidden = false;
         this.setupPageVisibilityHandlers();
+    }
+    
+    // Method to receive pre-loaded audio from AssetLoader
+    setPreloadedAudio(preloadedAudio) {
+        this.preloadedAudio = preloadedAudio;
+        console.log('SoundManager received pre-loaded audio:', preloadedAudio);
+        
+        // Copy pre-loaded sounds to our loaded sounds and configure them
+        if (preloadedAudio.music) {
+            for (const [name, audio] of Object.entries(preloadedAudio.music)) {
+                // Configure music properties
+                audio.loop = true;
+                audio.volume = this.volumes.music * this.volumes.master;
+                this.loadedSounds.music[name] = audio;
+            }
+        }
+        
+        if (preloadedAudio.effects) {
+            for (const [name, audio] of Object.entries(preloadedAudio.effects)) {
+                // Configure effect properties
+                audio.loop = false;
+                audio.volume = this.volumes.effects * this.volumes.master;
+                this.loadedSounds.effects[name] = audio;
+            }
+            
+            // Create audio pools for pre-loaded effects
+            for (const [name, audio] of Object.entries(preloadedAudio.effects)) {
+                this.createAudioPool(name, audio);
+            }
+        }
+        
+        console.log('Pre-loaded audio integrated and configured for immediate playback');
+    }
+    
+    // Enhanced audio preparation after user interaction
+    async prepareAudioForPlayback() {
+        console.log('Preparing audio for immediate playback...');
+        
+        // Ensure all audio elements are properly configured
+        for (const [name, audio] of Object.entries(this.loadedSounds.music)) {
+            audio.loop = true;
+            audio.volume = this.volumes.music * this.volumes.master;
+            audio.preload = 'auto';
+            
+            // Try to load the audio data
+            try {
+                audio.load();
+                console.log(`Music '${name}' prepared for playback`);
+            } catch (e) {
+                console.warn(`Could not prepare music '${name}':`, e);
+            }
+        }
+        
+        for (const [name, audio] of Object.entries(this.loadedSounds.effects)) {
+            audio.loop = false;
+            audio.volume = this.volumes.effects * this.volumes.master;
+            audio.preload = 'auto';
+            
+            // Try to load the audio data
+            try {
+                audio.load();
+                console.log(`Effect '${name}' prepared for playback`);
+            } catch (e) {
+                console.warn(`Could not prepare effect '${name}':`, e);
+            }
+        }
+        
+        // Also prepare pooled audio
+        for (const [name, pool] of Object.entries(this.audioPools)) {
+            for (const audio of pool) {
+                audio.volume = this.volumes.effects * this.volumes.master;
+                audio.preload = 'auto';
+                try {
+                    audio.load();
+                } catch (e) {
+                    // Ignore load errors for pooled audio
+                }
+            }
+        }
+        
+        console.log('Audio preparation complete - ready for immediate playback');
     }
     
     // Setup page visibility API to pause audio when page is hidden
@@ -230,8 +314,14 @@ export class SoundManager {
         }
     }
     
-    // Load all sound files
+    // Load all sound files (only used if no pre-loaded assets available)
     async loadAllSounds() {
+        // Skip loading if we already have pre-loaded audio
+        if (this.preloadedAudio) {
+            console.log('Using pre-loaded audio, skipping individual sound loading');
+            return;
+        }
+        
         this.isLoading = true;
         const soundPromises = [];
         

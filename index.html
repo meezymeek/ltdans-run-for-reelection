@@ -45,6 +45,39 @@
         </div>
     </div>
     
+    <!-- Loading Screen -->
+    <div id="loadingScreen" class="loading-screen">
+        <div class="loading-content">
+            <h1>Lt. Dan's Run for Re-Election</h1>
+            <div class="loading-message">Loading Campaign Assets...</div>
+            <div class="loading-bar-container">
+                <div class="loading-bar">
+                    <div class="loading-progress" id="loadingProgress"></div>
+                </div>
+                <div class="loading-percentage" id="loadingPercentage">0%</div>
+            </div>
+            <div class="loading-details" id="loadingDetails">Preparing for the campaign...</div>
+        </div>
+    </div>
+
+    <!-- Click to Start Screen -->
+    <div id="clickToStartScreen" class="loading-screen hidden">
+        <div class="loading-content">
+            <h1>Lt. Dan's Run for Re-Election</h1>
+            <div class="click-to-start-message">
+                <div class="ready-icon">🎮</div>
+                <p>Assets loaded successfully!</p>
+                <p>Audio system ready for initialization.</p>
+            </div>
+            <button id="clickToStartButton" class="click-to-start-btn">
+                🔊 Click to Start Campaign!
+            </button>
+            <div class="click-to-start-hint">
+                (Required to enable game audio)
+            </div>
+        </div>
+    </div>
+
     <div class="game-container">
         <!-- Game Header - Only shows title when not playing -->
         <div class="game-header">
