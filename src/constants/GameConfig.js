@@ -13,21 +13,21 @@ export const GAME_CONFIG = {
     jumpPowerPercent: -0.025,   // -2.5% of screen height
     groundLevelPercent: 0.8,    // 80% down from top
     
-    // Speed settings (pixels - legacy)
-    baseGameSpeed: 4,
-    gameSpeed: 4,
-    baseObstacleSpeed: 4,
-    obstacleSpeed: 4,
-    speedIncreaseRate: 0.0002,
-    maxGameSpeed: 8,
+    // Speed settings (pixels - legacy) - doubled for proper game feel
+    baseGameSpeed: 6,
+    gameSpeed: 6,
+    baseObstacleSpeed: 6,
+    obstacleSpeed: 6,
+    speedIncreaseRate: 0.0004,
+    maxGameSpeed: 16,
     
-    // Speed settings (percentages)
-    baseGameSpeedPercent: 0.0067,    // 0.67% of screen width per frame
-    gameSpeedPercent: 0.0067,
-    baseObstacleSpeedPercent: 0.0067,
-    obstacleSpeedPercent: 0.0067,
-    speedIncreaseRatePercent: 0.0000003, // Very small percentage increase
-    maxGameSpeedPercent: 0.0133,     // 1.33% of screen width per frame
+    // Speed settings (percentages) - doubled for proper game feel
+    baseGameSpeedPercent: 0.0134,    // 1.34% of screen width per frame
+    gameSpeedPercent: 0.0134,
+    baseObstacleSpeedPercent: 0.0134,
+    obstacleSpeedPercent: 0.0134,
+    speedIncreaseRatePercent: 0.0000006, // Doubled percentage increase
+    maxGameSpeedPercent: 0.0266,     // 2.66% of screen width per frame
     
     // Scoring
     scoreMultiplier: 1,
@@ -75,9 +75,9 @@ export const PLAYER_CONFIG = {
     breathingRate: 0.08,
     
     // Parachute settings (pixels - legacy)
-    parachuteBoostForce: 2,
+    parachuteBoostForce: 3,
     parachuteActivationThreshold: 0.4, // % of screen height
-    parachuteTapWindow: 300, // ms
+    parachuteTapWindow: 600, // ms
     
     // Parachute settings (percentages)
     parachuteBoostForcePercent: 0.0033, // 0.33% of screen height

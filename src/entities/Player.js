@@ -20,8 +20,8 @@ export class Player {
         // Pixel values (computed from percentages for rendering)
         this.x = this.scaleManager.toPixelsX(this.xPercent);
         this.y = this.scaleManager.toPixelsY(this.yPercent);
-        this.width = this.scaleManager.toPixelsX(this.widthPercent);
-        this.height = this.scaleManager.toPixelsY(this.heightPercent);
+        this.width = this.scaleManager.uniformDimensionToPixelsX(this.widthPercent);
+        this.height = this.scaleManager.uniformDimensionToPixelsY(this.heightPercent);
         this.velocityY = this.scaleManager.velocityToPixels(this.velocityYPercent);
         this.groundY = this.scaleManager.toPixelsY(this.groundYPercent);
         
@@ -103,8 +103,8 @@ export class Player {
         this.yPercent = this.groundYPercent - this.heightPercent;
         this.y = this.scaleManager.toPixelsY(this.yPercent);
         // Update dimensions
-        this.width = this.scaleManager.toPixelsX(this.widthPercent);
-        this.height = this.scaleManager.toPixelsY(this.heightPercent);
+        this.width = this.scaleManager.uniformDimensionToPixelsX(this.widthPercent);
+        this.height = this.scaleManager.uniformDimensionToPixelsY(this.heightPercent);
     }
     
     jump() {
@@ -184,7 +184,7 @@ export class Player {
             
             // Transform to train width
             this.widthPercent = this.trainWidthPercent;
-            this.width = this.scaleManager.toPixelsX(this.widthPercent);
+            this.width = this.scaleManager.uniformDimensionToPixelsX(this.widthPercent);
             
             // Set target position to move forward
             this.targetXPercent = this.trainXPercent;
@@ -212,7 +212,7 @@ export class Player {
             
             // Restore original width
             this.widthPercent = this.originalWidthPercent;
-            this.width = this.scaleManager.toPixelsX(this.widthPercent);
+            this.width = this.scaleManager.uniformDimensionToPixelsX(this.widthPercent);
             
             // Set target position to return to original
             this.targetXPercent = this.originalXPercent;
@@ -310,8 +310,8 @@ export class Player {
         
         // Sync pixel values for rendering
         this.y = this.scaleManager.toPixelsY(this.yPercent);
-        this.width = this.scaleManager.toPixelsX(this.widthPercent);
-        this.height = this.scaleManager.toPixelsY(this.heightPercent);
+        this.width = this.scaleManager.uniformDimensionToPixelsX(this.widthPercent);
+        this.height = this.scaleManager.uniformDimensionToPixelsY(this.heightPercent);
         this.velocityY = this.scaleManager.velocityToPixels(this.velocityYPercent);
         
         // Ground collision
@@ -423,8 +423,8 @@ export class Player {
         }
         
         // Update dimensions
-        this.width = this.scaleManager.toPixelsX(this.widthPercent);
-        this.height = this.scaleManager.toPixelsY(this.heightPercent);
+        this.width = this.scaleManager.uniformDimensionToPixelsX(this.widthPercent);
+        this.height = this.scaleManager.uniformDimensionToPixelsY(this.heightPercent);
         
         this.velocityYPercent = 0;
         this.velocityY = 0;

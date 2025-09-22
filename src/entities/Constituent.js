@@ -20,8 +20,8 @@ export class Constituent {
         this.speedPercent = 0; // Will be set by game speed
         
         // Pixel values (computed from percentages for rendering)
-        this.width = this.scaleManager.toPixelsX(this.widthPercent);
-        this.height = this.scaleManager.toPixelsY(this.heightPercent);
+        this.width = this.scaleManager.uniformDimensionToPixelsX(this.widthPercent);
+        this.height = this.scaleManager.uniformDimensionToPixelsY(this.heightPercent);
         this.originalWidth = this.width;
         this.originalHeight = this.height;
         this.x = this.scaleManager.toPixelsX(this.xPercent);

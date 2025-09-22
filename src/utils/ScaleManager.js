@@ -63,6 +63,25 @@ export class ScaleManager {
         return percentage * this.canvasHeight * this.globalZoom;
     }
     
+    // NEW: Uniform dimension scaling methods that maintain aspect ratios
+    // These should be used for entity dimensions to prevent elongation
+    // Scale both dimensions based on height to maintain proportions
+    uniformDimensionToPixelsX(percentage) {
+        return percentage * this.canvasHeight * this.globalZoom;
+    }
+    
+    uniformDimensionToPixelsY(percentage) {
+        return percentage * this.canvasHeight * this.globalZoom;
+    }
+    
+    // Helper method to get uniform dimensions as an object
+    getUniformDimensions(widthPercent, heightPercent) {
+        return {
+            width: this.uniformDimensionToPixelsX(widthPercent),
+            height: this.uniformDimensionToPixelsY(heightPercent)
+        };
+    }
+    
     // Convert pixel coordinates to percentage (0.0-1.0)
     toPercentageX(pixels) {
         return pixels / this.canvasWidth;
@@ -132,7 +151,8 @@ export class ScaleManager {
     // Convert velocity from percentage/frame to current pixels/frame
     velocityToPixels(percentageVelocity, dimension = 'height') {
         if (dimension === 'width') {
-            return percentageVelocity * this.canvasWidth;
+            // For width velocities, scale based on height to match entity scaling
+            return percentageVelocity * this.canvasHeight;
         } else {
             return percentageVelocity * this.canvasHeight;
         }

@@ -11,8 +11,8 @@ export class GerrymanderExpress {
         this.heightPercent = 0.04;  // 4% of screen height (slightly larger than bribe's 3.5%)
         
         // Convert to actual pixels
-        this.width = this.scaleManager.toPixelsX(this.widthPercent);
-        this.height = this.scaleManager.toPixelsY(this.heightPercent);
+        this.width = this.scaleManager.uniformDimensionToPixelsX(this.widthPercent);
+        this.height = this.scaleManager.uniformDimensionToPixelsY(this.heightPercent);
         
         // Position (will be set by spawn logic)
         this.x = canvas.width;
