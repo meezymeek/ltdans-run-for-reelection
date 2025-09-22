@@ -370,27 +370,16 @@ export class LtDanRunner {
     }
     
     setupCanvas() {
-        const container = this.canvas.parentElement || document.body;
-        const rect = container.getBoundingClientRect();
-        let cssW = Math.max(1, Math.round(rect.width));
-        let cssH = Math.max(1, Math.round(rect.height));
-
-        // Fallback to viewport if rect is 0 (rare)
-        if (!cssW || !cssH) {
-            const vv = window.visualViewport;
-            cssW = Math.max(1, Math.round(vv?.width || window.innerWidth));
-            cssH = Math.max(1, Math.round(vv?.height || window.innerHeight));
-        }
-
-        const dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 2));
-        const pxW = Math.round(cssW * dpr);
-        const pxH = Math.round(cssH * dpr);
-
-        // Only touch DOM when needed
-        if (this.canvas.width !== pxW) this.canvas.width = pxW;
-        if (this.canvas.height !== pxH) this.canvas.height = pxH;
-        if (this.canvas.style.width !== `${cssW}px`) this.canvas.style.width = `${cssW}px`;
-        if (this.canvas.style.height !== `${cssH}px`) this.canvas.style.height = `${cssH}px`;
+        // Use current viewport dimensions (preserving original logic)
+        const vv = window.visualViewport;
+        const width = Math.round(vv?.width || window.innerWidth);
+        const height = Math.round(vv?.height || window.innerHeight);
+        
+        // Only update when dimensions actually change
+        if (this.canvas.width !== width) this.canvas.width = width;
+        if (this.canvas.height !== height) this.canvas.height = height;
+        if (this.canvas.style.width !== `${width}px`) this.canvas.style.width = `${width}px`;
+        if (this.canvas.style.height !== `${height}px`) this.canvas.style.height = `${height}px`;
     }
     
     calculatePositions() {

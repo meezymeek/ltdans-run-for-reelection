@@ -21,6 +21,18 @@ A mobile-first endless runner game where you help Lt. Dan win his re-election ca
 - **Responsive Design**: Works on all screen sizes and orientations
 - **Performance Optimized**: 60fps gameplay with efficient rendering
 - **Configurable Architecture**: Easy to adjust difficulty and game parameters
+- **Mobile Viewport/Canvas Sizing**: Robust handling of mobile viewport changes, including on-screen keyboard interactions
+
+### Mobile Viewport Handling
+
+The game includes specialized handling for mobile viewport changes to prevent canvas distortion:
+
+- **Automatic Re-measurement**: Canvas is re-measured before each new game and when returning to menu
+- **Keyboard Detection**: Uses `visualViewport` API to detect mobile keyboard open/close events
+- **Viewport Hardening**: Uses `100dvh` CSS units with fallbacks for consistent mobile viewport behavior
+- **Debug Mode**: Add `?debug=viewport` to URL for viewport debugging information
+
+This prevents the "squish" effect that can occur on mobile devices when the on-screen keyboard opens during score submission.
 
 ## Game Controls
 
