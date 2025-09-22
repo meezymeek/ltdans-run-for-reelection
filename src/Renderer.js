@@ -526,12 +526,13 @@ export class Renderer {
         const shoulderY = torsoY + 6;
         const armLength = torsoHeight * 0.55; // Slightly different proportions
 
+        // Per feedback: the 90° arm (leftArmAngle) should be below the body layer
         this.drawObstacleLimb(game, obstacle,
             centerX + 2, // Slight offset
             shoulderY,
-            obstacle.rightArmAngle,
+            obstacle.leftArmAngle,
             armLength,
-            obstacle.rightElbowAngle,
+            obstacle.leftElbowAngle,
             armLength * 0.75,
             10, // Thicker than player arms
             'upper_arm',
@@ -539,9 +540,12 @@ export class Renderer {
         );
 
         // 3. Draw torso (center)
-        if (obstacle.skinsLoaded && obstacle.skinImages.torso && obstacle.skinImages.torso.complete) {
+        const torsoImage = (obstacle.skinImages.torso && obstacle.skinImages.torso.complete)
+            ? obstacle.skinImages.torso
+            : ((game.skinImages && game.skinImages.torso && game.skinImages.torso.complete) ? game.skinImages.torso : null);
+        if (torsoImage) {
             game.ctx.drawImage(
-                obstacle.skinImages.torso,
+                torsoImage,
                 centerX - obstacle.width/2 + 3,
                 torsoY,
                 obstacle.width - 6,
@@ -577,9 +581,11 @@ export class Renderer {
         
         // Choose which head to use based on breathing state
         const headImageName = obstacle.isBreathingOut ? 'head-open-mouth' : 'head';
-        const headImage = obstacle.skinsLoaded && obstacle.skinImages[headImageName];
+        const headImage = (obstacle.skinImages[headImageName] && obstacle.skinImages[headImageName].complete)
+            ? obstacle.skinImages[headImageName]
+            : ((game.skinImages && game.skinImages[headImageName] && game.skinImages[headImageName].complete) ? game.skinImages[headImageName] : null);
         
-        if (headImage && headImage.complete) {
+        if (headImage) {
             game.ctx.drawImage(
                 headImage,
                 headX,
@@ -602,12 +608,13 @@ export class Renderer {
         game.ctx.restore();
         
         // 4. Draw front arm (in front of torso)
+        // Per feedback: the other arm (rightArmAngle) should be above the body layer
         this.drawObstacleLimb(game, obstacle,
             centerX,
             shoulderY,
-            obstacle.leftArmAngle,
+            obstacle.rightArmAngle,
             armLength,
-            obstacle.leftElbowAngle,
+            obstacle.rightElbowAngle,
             armLength * 0.75,
             10, // Thicker than player arms
             'upper_arm',
@@ -638,7 +645,9 @@ export class Renderer {
         ctx.translate(startX, startY);
         ctx.rotate(angle1 * Math.PI / 180);
         
-        const upperSkin = obstacle.skinsLoaded && obstacle.skinImages[upperSkinName];
+        const upperSkin = (obstacle.skinImages[upperSkinName] && obstacle.skinImages[upperSkinName].complete)
+            ? obstacle.skinImages[upperSkinName]
+            : ((game.skinImages && game.skinImages[upperSkinName] && game.skinImages[upperSkinName].complete) ? game.skinImages[upperSkinName] : null);
         if (upperSkin && upperSkin.complete) {
             // Draw skinned upper limb
             ctx.drawImage(upperSkin, -width/2, 0, width, length1);
@@ -657,7 +666,9 @@ export class Renderer {
         ctx.translate(0, length1);
         ctx.rotate(angle2 * Math.PI / 180);
         
-        const lowerSkin = obstacle.skinsLoaded && obstacle.skinImages[lowerSkinName];
+        const lowerSkin = (obstacle.skinImages[lowerSkinName] && obstacle.skinImages[lowerSkinName].complete)
+            ? obstacle.skinImages[lowerSkinName]
+            : ((game.skinImages && game.skinImages[lowerSkinName] && game.skinImages[lowerSkinName].complete) ? game.skinImages[lowerSkinName] : null);
         if (lowerSkin && lowerSkin.complete) {
             // Draw skinned lower limb
             ctx.drawImage(lowerSkin, -width/2, 0, width, length2);
