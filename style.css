@@ -183,7 +183,9 @@ body {
 
 .game-container {
     width: 100vw;
-    height: 100vh;
+    height: 100dvh;     /* dynamic viewport height (modern browsers) */
+    min-height: 100dvh;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -193,6 +195,15 @@ body {
     padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
     padding-top: max(env(safe-area-inset-top), var(--space-md));
     padding-bottom: max(env(safe-area-inset-bottom), var(--space-md));
+}
+
+/* Fallback for browsers without dvh support */
+@supports not (height: 100dvh) {
+    :root { --vh: 1vh; }
+    .game-container { 
+        height: calc(var(--vh) * 100);
+        min-height: calc(var(--vh) * 100); 
+    }
 }
 
 /* Game Header - Only show title when not playing */
@@ -372,13 +383,20 @@ body {
     /* Full screen canvas - no borders or constraints */
     background: linear-gradient(to bottom, #87CEEB 0%, #98FB98 100%);
     width: 100vw;
-    height: 100vh;
+    height: 100dvh;
     touch-action: none;
     display: block;
     position: fixed;
     top: 0;
     left: 0;
     z-index: 1;
+}
+
+/* Fallback for canvas on browsers without dvh support */
+@supports not (height: 100dvh) {
+    #gameCanvas { 
+        height: calc(var(--vh) * 100);
+    }
 }
 
 .game-ui {

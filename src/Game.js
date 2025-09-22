@@ -25,6 +25,15 @@ export class LtDanRunner {
         // Configuration
         this.config = GAME_CONFIG;
         
+        // Viewport resize handling
+        this._resizeDebounce = null;
+        this._onWindowResize = this._handleWindowResize.bind(this);
+        this._onVVResize = this._handleVVResize.bind(this);
+        
+        // Optional debug logging via ?debug=viewport
+        const params = new URLSearchParams(location.search);
+        this._debugViewport = params.get('debug') === 'viewport';
+        
         // Initialize Scale Manager for percentage-based coordinates with global zoom
         this.scaleManager = initializeScaleManager(this.canvas, this.config.globalZoom);
         
@@ -230,6 +239,45 @@ export class LtDanRunner {
         this.closeDevMenuButton = this.devMenu.querySelector('#closeDevMenu');
     }
     
+    /**
+     * Idempotent: measure viewport/container, size canvas, update scale & positions.
+     * Call this whenever the viewport may have changed (e.g., keyboard open/close).
+     */
+    forceRemeasure() {
+        // 1) Size canvas to container/viewport
+        this.setupCanvas();
+        // 2) Update ScaleManager with new canvas dimensions
+        this.scaleManager.updateCanvas(this.canvas);
+        // 3) Recompute any cached positions/rects
+        this.calculatePositions();
+        
+        if (this._debugViewport) {
+            const vv = window.visualViewport;
+            console.log('[Viewport]', {
+                inner: [window.innerWidth, window.innerHeight],
+                vv: vv ? [vv.width, vv.height] : null,
+                canvasCSS: [this.canvas.style.width, this.canvas.style.height],
+                canvasPx: [this.canvas.width, this.canvas.height],
+                dpr: window.devicePixelRatio
+            });
+        }
+    }
+
+    _debouncedRemeasure(delay = 120) {
+        clearTimeout(this._resizeDebounce);
+        this._resizeDebounce = setTimeout(() => this.forceRemeasure(), delay);
+    }
+
+    _handleWindowResize() {
+        this._debouncedRemeasure(120);
+    }
+
+    _handleVVResize() {
+        // Some mobile browsers don't fire window resize on keyboard close.
+        // visualViewport resize/scroll will, so treat them the same.
+        this._debouncedRemeasure(120);
+    }
+    
     initializeSkins() {
         const bodyParts = ['head', 'head-open-mouth', 'torso', 'upper_arm', 'forearm', 'thigh', 'shin'];
         
@@ -322,10 +370,27 @@ export class LtDanRunner {
     }
     
     setupCanvas() {
-        this.canvas.width = window.innerWidth;
-        this.canvas.height = window.innerHeight;
-        this.canvas.style.width = window.innerWidth + 'px';
-        this.canvas.style.height = window.innerHeight + 'px';
+        const container = this.canvas.parentElement || document.body;
+        const rect = container.getBoundingClientRect();
+        let cssW = Math.max(1, Math.round(rect.width));
+        let cssH = Math.max(1, Math.round(rect.height));
+
+        // Fallback to viewport if rect is 0 (rare)
+        if (!cssW || !cssH) {
+            const vv = window.visualViewport;
+            cssW = Math.max(1, Math.round(vv?.width || window.innerWidth));
+            cssH = Math.max(1, Math.round(vv?.height || window.innerHeight));
+        }
+
+        const dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 2));
+        const pxW = Math.round(cssW * dpr);
+        const pxH = Math.round(cssH * dpr);
+
+        // Only touch DOM when needed
+        if (this.canvas.width !== pxW) this.canvas.width = pxW;
+        if (this.canvas.height !== pxH) this.canvas.height = pxH;
+        if (this.canvas.style.width !== `${cssW}px`) this.canvas.style.width = `${cssW}px`;
+        if (this.canvas.style.height !== `${cssH}px`) this.canvas.style.height = `${cssH}px`;
     }
     
     calculatePositions() {
@@ -380,17 +445,15 @@ export class LtDanRunner {
             this.showDevMenu();
         });
         
-        // Window resize handler
-        window.addEventListener('resize', () => {
-            setTimeout(() => {
-                this.setupCanvas();
-                
-                // Update ScaleManager with new canvas dimensions
-                this.scaleManager.updateCanvas(this.canvas);
-                
-                this.calculatePositions();
-            }, 100);
-        });
+        // Window/UI chrome changes
+        window.addEventListener('resize', this._onWindowResize);
+        window.addEventListener('orientationchange', this._onWindowResize);
+
+        // VisualViewport tracks on-screen keyboard; some browsers won't raise window.resize on close
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', this._onVVResize);
+            window.visualViewport.addEventListener('scroll', this._onVVResize);
+        }
     }
     
     setupNavigationListeners() {
@@ -642,6 +705,9 @@ export class LtDanRunner {
     }
     
     async startGame() {
+        // Ensure canvas/scale match the *current* viewport before play begins
+        this.forceRemeasure();
+        
         this.gameState = 'playing';
         this.gameStartTime = Date.now();
         this.hideAllScreens();
@@ -753,6 +819,9 @@ export class LtDanRunner {
     }
     
     showStartScreen() {
+        // When falling back to menu after submitting/skipping, re-measure again
+        this.forceRemeasure();
+        
         this.gameState = 'start';
         this.hideAllScreens();
         this.updateHUDVisibility();
@@ -987,12 +1056,20 @@ export class LtDanRunner {
         } finally {
             this.submitScoreButton.disabled = false;
             this.submitScoreButton.textContent = 'Submit Score';
+            
+            // Close on-screen keyboard and re-measure
+            this.playerNameInput?.blur?.();
+            // Next microtask: avoid racing layout
+            setTimeout(() => this.forceRemeasure(), 0);
         }
     }
     
     skipScoreSubmission() {
         this.scoreSubmissionForm.classList.add('hidden');
         this.scoreResult.classList.add('hidden');
+        
+        this.playerNameInput?.blur?.();
+        setTimeout(() => this.forceRemeasure(), 0);
     }
     
     showSubmissionResult(message, isError) {

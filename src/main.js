@@ -3,6 +3,13 @@ import { LtDanRunner } from './Game.js';
 import { OrientationManager } from './managers/OrientationManager.js';
 import { TouchFeedbackManager } from './managers/TouchFeedbackManager.js';
 
+// Optional: legacy fallback for dvh
+function updateLegacyVhVar() {
+    document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`);
+}
+updateLegacyVhVar();
+window.addEventListener('resize', updateLegacyVhVar);
+
 // Initialize game when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     // Initialize orientation management
