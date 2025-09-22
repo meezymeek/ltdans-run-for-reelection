@@ -2,6 +2,12 @@
 import { ENTITY_DIMENSIONS, ENTITY_DIMENSIONS_PERCENT, VISUAL_CONFIG, GAME_CONFIG } from '../constants/GameConfig.js';
 import { getScaleManager } from '../utils/ScaleManager.js';
 
+// Available obstacle character skin folders (static list of directories)
+const OBSTACLE_SKIN_NAMES = [
+    'Abi','Adan','Elijah','Garret','Haven','Hayden','Jackson',
+    'Jake','Javi','Jess','M','Mina','Nate','Randi','Tilly'
+];
+
 export class Obstacle {
     constructor(type, canvas) {
         this.canvas = canvas;
@@ -28,10 +34,43 @@ export class Obstacle {
         this.y = this.scaleManager.toPixelsY(this.yPercent);
         this.speed = this.scaleManager.velocityToPixels(this.speedPercent, 'width');
         
-        // Visual
+        // Visual (fallback colors for low obstacles and when skins fail to load)
         this.color = type === 'tall' ? 
             VISUAL_CONFIG.obstacleColors.tall : 
             VISUAL_CONFIG.obstacleColors.low;
+        
+        // Animation properties for tall obstacles (articulated characters)
+        if (type === 'tall') {
+            this.animationFrame = 0;
+            this.animationSpeed = 0.15; // Slightly slower than player
+            
+            // Joint angles for animation
+            this.leftLegAngle = 0;
+            this.rightLegAngle = 0;
+            this.leftKneeAngle = 0;
+            this.rightKneeAngle = 0;
+            this.leftArmAngle = 0;
+            this.rightArmAngle = 0;
+            this.leftElbowAngle = 0;
+            this.rightElbowAngle = 0;
+            
+            // Head animation properties
+            this.headYOffset = 0;
+            this.headXOffset = 0;
+            this.headRotation = 0;
+            this.headYOffsetTarget = 0;
+            this.headXOffsetTarget = 0;
+            this.headRotationTarget = 0;
+            
+            // Breathing animation
+            this.breathingCycle = 0;
+            this.isBreathingOut = false;
+            
+            // Skin properties
+            this.skinName = null; // Will be set randomly
+            this.skinImages = {}; // Will be loaded by AssetLoader
+            this.skinsLoaded = false;
+        }
         
         // Ragdoll properties
         this.isRagdolled = false;
@@ -43,6 +82,50 @@ export class Obstacle {
         this.groundY = 0; // Will be set when ragdolled
     }
     
+    // Initialize random articulated skin for tall obstacles
+    initRandomSkin() {
+        try {
+            // Pick a random character folder
+            const idx = Math.floor(Math.random() * OBSTACLE_SKIN_NAMES.length);
+            this.skinName = OBSTACLE_SKIN_NAMES[idx];
+
+            // Prepare image map
+            this.skinImages = this.skinImages || {};
+            const parts = ['head', 'head-open-mouth', 'torso', 'upper_arm', 'forearm', 'thigh', 'shin'];
+            let loadedCount = 0;
+            let attemptedCount = 0;
+
+            parts.forEach(part => {
+                const img = new Image();
+                img.onload = () => {
+                    loadedCount++;
+                    // Mark loaded part
+                    this.skinImages[part] = img;
+                    // Consider skins ready after a few critical parts load
+                    if (loadedCount >= 3) {
+                        this.skinsLoaded = true;
+                    }
+                };
+                img.onerror = () => {
+                    attemptedCount++;
+                };
+                img.src = `skins/obstacles/${this.skinName}/${part}.png`;
+                // Assign even before load for renderer checks
+                this.skinImages[part] = img;
+            });
+
+            // Fallback: after short delay, if nothing loaded, keep rectangle rendering
+            setTimeout(() => {
+                if (!this.skinsLoaded) {
+                    this.skinsLoaded = loadedCount > 0;
+                }
+            }, 400);
+        } catch (e) {
+            // Safe fallback to simple rectangle
+            this.skinsLoaded = false;
+        }
+    }
+
     setPosition(groundY) {
         const groundYPercent = this.scaleManager.toPercentageY(groundY);
         this.yPercent = groundYPercent - this.heightPercent;
@@ -90,7 +173,48 @@ export class Obstacle {
             // Normal movement
             this.xPercent -= this.speedPercent;
             this.x = this.scaleManager.toPixelsX(this.xPercent);
+            
+            // Update animation for tall obstacles
+            if (this.type === 'tall') {
+                this.updateAnimation();
+            }
         }
+    }
+    
+    updateAnimation() {
+        // Running animation for tall obstacles
+        this.animationFrame += this.animationSpeed;
+        const runPhase = (this.animationFrame % 4) / 4 * Math.PI * 2;
+        
+        // Leg animation (slightly different from player for variety)
+        this.leftLegAngle = -Math.sin(runPhase + Math.PI) * 25; // Opposite to player
+        this.rightLegAngle = -Math.sin(runPhase) * 25;
+        this.leftKneeAngle = Math.max(0, Math.sin(runPhase + Math.PI) * 40);
+        this.rightKneeAngle = Math.max(0, Math.sin(runPhase) * 40);
+        
+        // Arm swing (more exaggerated for obstacles)
+        const leftSwing = Math.sin(runPhase);
+        const rightSwing = Math.sin(runPhase + Math.PI);
+        this.leftArmAngle = 45 + (leftSwing > 0 ? leftSwing * 40 : leftSwing * 45);
+        this.rightArmAngle = 45 + (rightSwing > 0 ? rightSwing * 40 : rightSwing * 45);
+        this.leftElbowAngle = -Math.abs(Math.sin(runPhase)) * 80;
+        this.rightElbowAngle = -Math.abs(Math.sin(runPhase + Math.PI)) * 80;
+        
+        // Breathing animation
+        this.breathingCycle += 0.08; // Slightly different rate than player
+        const breathPhase = Math.sin(this.breathingCycle);
+        this.isBreathingOut = breathPhase > 0.2;
+        
+        // Head animation (more pronounced for obstacles)
+        this.headYOffsetTarget = Math.abs(Math.sin(runPhase)) * 4;
+        this.headXOffsetTarget = Math.sin(runPhase * 0.7) * 3;
+        this.headRotationTarget = Math.sin(runPhase * 0.6) * 5;
+        
+        // Apply lerp for smoother head movement
+        const lerpFactor = 0.12;
+        this.headYOffset += (this.headYOffsetTarget - this.headYOffset) * lerpFactor;
+        this.headXOffset += (this.headXOffsetTarget - this.headXOffset) * lerpFactor;
+        this.headRotation += (this.headRotationTarget - this.headRotation) * lerpFactor;
     }
     
     isOffScreen() {
@@ -141,5 +265,11 @@ export function createObstacle(type, canvas, groundY, speed) {
     const obstacle = new Obstacle(type, canvas);
     obstacle.setPosition(groundY);
     obstacle.setSpeed(speed);
+
+    // For tall obstacles, assign a random articulated skin
+    if (type === 'tall') {
+        obstacle.initRandomSkin();
+    }
+
     return obstacle;
 }

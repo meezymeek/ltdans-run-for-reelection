@@ -74,7 +74,13 @@ export class Renderer {
         
         // Draw obstacles (keep them visible during crash)
         for (let obstacle of game.obstacles) {
-            obstacle.render(ctx);
+            if (obstacle.type === 'tall' && !obstacle.isRagdolled) {
+                // Draw articulated tall obstacles (animated characters)
+                this.drawArticulatedObstacle(game, obstacle);
+            } else {
+                // Draw simple obstacles (low obstacles or ragdolled tall obstacles)
+                obstacle.render(ctx);
+            }
         }
         
         // Debug: draw hitboxes
@@ -476,6 +482,178 @@ export class Renderer {
             ctx.lineWidth = width;
             ctx.lineCap = 'round';
             ctx.strokeStyle = game.player.color;
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(0, length2);
+            ctx.stroke();
+        }
+        
+        ctx.restore();
+    }
+    
+    static drawArticulatedObstacle(game, obstacle) {
+        const centerX = obstacle.x + obstacle.width / 2;
+        const topY = obstacle.y;
+        
+        // Body proportions (slightly different from player for variety)
+        const headHeight = obstacle.height * 0.35; // Slightly bigger head
+        const torsoHeight = obstacle.height * 0.32; // Slightly smaller torso
+        const legHeight = obstacle.height * 0.33;
+        
+        // Save context
+        game.ctx.save();
+        
+        // Draw layers in correct z-order for side profile
+        const hipY = topY + headHeight + torsoHeight;
+        const thighLength = legHeight * 0.5;
+        const shinLength = legHeight * 0.5;
+        
+        // 1. Draw right leg FIRST (behind torso)
+        this.drawObstacleLimb(game, obstacle,
+            centerX + 3, // Slightly different offset than player
+            hipY,
+            obstacle.rightLegAngle,
+            thighLength,
+            obstacle.rightKneeAngle,
+            shinLength,
+            12, // Slightly thicker than player limbs
+            'thigh',
+            'shin'
+        );
+        
+        // 2. Draw torso (center)
+        const torsoY = topY + headHeight;
+        if (obstacle.skinsLoaded && obstacle.skinImages.torso && obstacle.skinImages.torso.complete) {
+            game.ctx.drawImage(
+                obstacle.skinImages.torso,
+                centerX - obstacle.width/2 + 3,
+                torsoY,
+                obstacle.width - 6,
+                torsoHeight
+            );
+        } else {
+            // Fallback to solid color
+            game.ctx.fillStyle = obstacle.color;
+            game.ctx.fillRect(
+                centerX - obstacle.width/2 + 3,
+                torsoY,
+                obstacle.width - 6,
+                torsoHeight
+            );
+        }
+        
+        // 3. Draw head (shifted right for side profile with animation)
+        const headOffset = 6;
+        
+        // Save context for head transformation
+        game.ctx.save();
+        
+        // Apply head animation transformations
+        const headX = centerX - obstacle.width/2 + headOffset + obstacle.headXOffset;
+        const headY = topY - obstacle.headYOffset;
+        
+        // Apply rotation around the head center
+        const headCenterX = headX + (obstacle.width - headOffset) / 2;
+        const headCenterY = headY + headHeight / 2;
+        game.ctx.translate(headCenterX, headCenterY);
+        game.ctx.rotate(obstacle.headRotation * Math.PI / 180);
+        game.ctx.translate(-headCenterX, -headCenterY);
+        
+        // Choose which head to use based on breathing state
+        const headImageName = obstacle.isBreathingOut ? 'head-open-mouth' : 'head';
+        const headImage = obstacle.skinsLoaded && obstacle.skinImages[headImageName];
+        
+        if (headImage && headImage.complete) {
+            game.ctx.drawImage(
+                headImage,
+                headX,
+                headY,
+                obstacle.width - headOffset,
+                headHeight
+            );
+        } else {
+            // Fallback to solid color
+            game.ctx.fillStyle = obstacle.color;
+            game.ctx.fillRect(
+                headX,
+                headY,
+                obstacle.width - headOffset,
+                headHeight
+            );
+        }
+        
+        // Restore context after head transformation
+        game.ctx.restore();
+        
+        // 4. Draw arm
+        const shoulderY = torsoY + 6;
+        const armLength = torsoHeight * 0.55; // Slightly different proportions
+        
+        // Single arm for side profile
+        this.drawObstacleLimb(game, obstacle,
+            centerX,
+            shoulderY,
+            obstacle.leftArmAngle,
+            armLength,
+            obstacle.leftElbowAngle,
+            armLength * 0.75,
+            10, // Thicker than player arms
+            'upper_arm',
+            'forearm'
+        );
+        
+        // 5. Draw left leg LAST (in front)
+        this.drawObstacleLimb(game, obstacle,
+            centerX - 3, // Slightly different offset than player
+            hipY,
+            obstacle.leftLegAngle,
+            thighLength,
+            obstacle.leftKneeAngle,
+            shinLength,
+            12,
+            'thigh',
+            'shin'
+        );
+        
+        game.ctx.restore();
+    }
+    
+    static drawObstacleLimb(game, obstacle, startX, startY, angle1, length1, angle2, length2, width, upperSkinName, lowerSkinName) {
+        const ctx = game.ctx;
+        ctx.save();
+        
+        // Upper limb
+        ctx.translate(startX, startY);
+        ctx.rotate(angle1 * Math.PI / 180);
+        
+        const upperSkin = obstacle.skinsLoaded && obstacle.skinImages[upperSkinName];
+        if (upperSkin && upperSkin.complete) {
+            // Draw skinned upper limb
+            ctx.drawImage(upperSkin, -width/2, 0, width, length1);
+        } else {
+            // Fallback to solid color
+            ctx.lineWidth = width;
+            ctx.lineCap = 'round';
+            ctx.strokeStyle = obstacle.color;
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(0, length1);
+            ctx.stroke();
+        }
+        
+        // Lower limb
+        ctx.translate(0, length1);
+        ctx.rotate(angle2 * Math.PI / 180);
+        
+        const lowerSkin = obstacle.skinsLoaded && obstacle.skinImages[lowerSkinName];
+        if (lowerSkin && lowerSkin.complete) {
+            // Draw skinned lower limb
+            ctx.drawImage(lowerSkin, -width/2, 0, width, length2);
+        } else {
+            // Fallback to solid color
+            ctx.lineWidth = width;
+            ctx.lineCap = 'round';
+            ctx.strokeStyle = obstacle.color;
             ctx.beginPath();
             ctx.moveTo(0, 0);
             ctx.lineTo(0, length2);

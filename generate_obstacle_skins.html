@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generate Obstacle Skins</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        .controls {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            font-size: 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #e8f5e8;
+            border-radius: 4px;
+            display: none;
+        }
+        .character-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .character-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .character-preview {
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+        .body-part {
+            width: 20px;
+            height: 30px;
+            border: 1px solid #ccc;
+            display: inline-block;
+        }
+        canvas {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>Generate Obstacle Character Skins</h1>
+    
+    <div class="controls">
+        <h2>Generate Body Parts for All Obstacle Characters</h2>
+        <p>This will create individual body part images for each obstacle character. Each character will have different colors to make them visually distinct.</p>
+        <button onclick="generateAllObstacleSkins()">Generate All Obstacle Skins</button>
+        <button onclick="downloadAll()">Download All Generated Images</button>
+        <div class="status" id="status"></div>
+    </div>
+
+    <div class="character-grid" id="characterGrid"></div>
+
+    <canvas id="canvas" width="200" height="200"></canvas>
+
+    <script>
+        const obstacleCharacters = [
+            { name: 'Abi', colors: { head: '#FFB6C1', torso: '#FF69B4', limbs: '#FF1493' } },
+            { name: 'Adan', colors: { head: '#87CEEB', torso: '#4169E1', limbs: '#0000CD' } },
+            { name: 'Elijah', colors: { head: '#98FB98', torso: '#32CD32', limbs: '#228B22' } },
+            { name: 'Garret', colors: { head: '#DDA0DD', torso: '#9370DB', limbs: '#8A2BE2' } },
+            { name: 'Haven', colors: { head: '#F0E68C', torso: '#FFD700', limbs: '#FFA500' } },
+            { name: 'Hayden', colors: { head: '#FFA07A', torso: '#FF6347', limbs: '#DC143C' } },
+            { name: 'Jackson', colors: { head: '#20B2AA', torso: '#008B8B', limbs: '#006666' } },
+            { name: 'Jake', colors: { head: '#F4A460', torso: '#CD853F', limbs: '#A0522D' } },
+            { name: 'Javi', colors: { head: '#9ACD32', torso: '#7FFF00', limbs: '#6B8E23' } },
+            { name: 'Jess', colors: { head: '#FF6B6B', torso: '#FF4757', limbs: '#FF3838' } },
+            { name: 'M', colors: { head: '#4ECDC4', torso: '#45B7B8', limbs: '#3D9CB0' } },
+            { name: 'Mina', colors: { head: '#A8E6CF', torso: '#88D8A3', limbs: '#68C177' } },
+            { name: 'Nate', colors: { head: '#FFD93D', torso: '#FFC312', limbs: '#F79F1F' } },
+            { name: 'Randi', colors: { head: '#74B9FF', torso: '#0984E3', limbs: '#2D3436' } },
+            { name: 'Tilly', colors: { head: '#FDCB6E', torso: '#E17055', limbs: '#D63031' } }
+        ];
+
+        const bodyParts = [
+            { name: 'head', width: 60, height: 50, shape: 'oval' },
+            { name: 'head-open-mouth', width: 60, height: 50, shape: 'oval-mouth' },
+            { name: 'torso', width: 50, height: 80, shape: 'rectangle' },
+            { name: 'upper_arm', width: 25, height: 60, shape: 'rectangle' },
+            { name: 'forearm', width: 22, height: 55, shape: 'rectangle' },
+            { name: 'thigh', width: 30, height: 70, shape: 'rectangle' },
+            { name: 'shin', width: 25, height: 65, shape: 'rectangle' }
+        ];
+
+        let generatedImages = {};
+
+        function generateAllObstacleSkins() {
+            const status = document.getElementById('status');
+            status.style.display = 'block';
+            status.innerHTML = 'Generating obstacle skins...';
+            
+            generatedImages = {};
+            const characterGrid = document.getElementById('characterGrid');
+            characterGrid.innerHTML = '';
+
+            obstacleCharacters.forEach(character => {
+                generateCharacterSkins(character);
+                createCharacterCard(character);
+            });
+
+            status.innerHTML = 'All obstacle skins generated successfully! Click "Download All" to save them.';
+        }
+
+        function generateCharacterSkins(character) {
+            generatedImages[character.name] = {};
+
+            bodyParts.forEach(part => {
+                const canvas = document.getElementById('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                // Clear canvas
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // Set canvas size for this part (scaled up for tall obstacles)
+                canvas.width = part.width * 1.5; // 50% larger than player parts
+                canvas.height = part.height * 1.5;
+                
+                // Get appropriate color
+                let color = character.colors.limbs;
+                if (part.name.includes('head')) {
+                    color = character.colors.head;
+                } else if (part.name === 'torso') {
+                    color = character.colors.torso;
+                }
+
+                // Draw the body part
+                ctx.fillStyle = color;
+                
+                if (part.shape === 'oval' || part.shape === 'oval-mouth') {
+                    // Draw oval head
+                    const centerX = canvas.width / 2;
+                    const centerY = canvas.height / 2;
+                    const radiusX = canvas.width / 2 - 2;
+                    const radiusY = canvas.height / 2 - 2;
+                    
+                    ctx.beginPath();
+                    ctx.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, 2 * Math.PI);
+                    ctx.fill();
+                    
+                    // Add simple face features
+                    if (part.shape === 'oval-mouth') {
+                        // Open mouth
+                        ctx.fillStyle = 'black';
+                        ctx.beginPath();
+                        ctx.ellipse(centerX, centerY + 8, 8, 12, 0, 0, 2 * Math.PI);
+                        ctx.fill();
+                    } else {
+                        // Closed mouth
+                        ctx.strokeStyle = 'black';
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        ctx.moveTo(centerX - 8, centerY + 8);
+                        ctx.lineTo(centerX + 8, centerY + 8);
+                        ctx.stroke();
+                    }
+                    
+                    // Eyes
+                    ctx.fillStyle = 'black';
+                    ctx.beginPath();
+                    ctx.arc(centerX - 10, centerY - 5, 3, 0, 2 * Math.PI);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.arc(centerX + 10, centerY - 5, 3, 0, 2 * Math.PI);
+                    ctx.fill();
+                    
+                } else {
+                    // Draw rectangle with rounded corners
+                    const radius = 8;
+                    ctx.beginPath();
+                    ctx.roundRect(2, 2, canvas.width - 4, canvas.height - 4, radius);
+                    ctx.fill();
+                    
+                    // Add some shading/detail
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                    ctx.beginPath();
+                    ctx.roundRect(4, 4, canvas.width - 8, 6, 3);
+                    ctx.fill();
+                }
+
+                // Store the generated image
+                generatedImages[character.name][part.name] = canvas.toDataURL('image/png');
+            });
+        }
+
+        function createCharacterCard(character) {
+            const characterGrid = document.getElementById('characterGrid');
+            const card = document.createElement('div');
+            card.className = 'character-card';
+            
+            const preview = document.createElement('div');
+            preview.className = 'character-preview';
+            
+            // Create mini previews of each body part
+            bodyParts.forEach(part => {
+                const partDiv = document.createElement('div');
+                partDiv.className = 'body-part';
+                partDiv.style.backgroundColor = part.name.includes('head') ? character.colors.head : 
+                                              part.name === 'torso' ? character.colors.torso : character.colors.limbs;
+                partDiv.title = part.name;
+                preview.appendChild(partDiv);
+            });
+            
+            const name = document.createElement('h3');
+            name.textContent = character.name;
+            
+            card.appendChild(name);
+            card.appendChild(preview);
+            characterGrid.appendChild(card);
+        }
+
+        function downloadAll() {
+            if (Object.keys(generatedImages).length === 0) {
+                alert('Please generate the skins first!');
+                return;
+            }
+
+            Object.entries(generatedImages).forEach(([characterName, parts]) => {
+                Object.entries(parts).forEach(([partName, dataUrl]) => {
+                    downloadImage(dataUrl, `${characterName}_${partName}.png`);
+                });
+            });
+
+            alert('All images have been downloaded! Please organize them into their respective character folders in skins/obstacles/');
+        }
+
+        function downloadImage(dataUrl, filename) {
+            const link = document.createElement('a');
+            link.href = dataUrl;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Add roundRect method if not supported
+        if (!CanvasRenderingContext2D.prototype.roundRect) {
+            CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
+                if (w < 2 * r) r = w / 2;
+                if (h < 2 * r) r = h / 2;
+                this.beginPath();
+                this.moveTo(x + r, y);
+                this.arcTo(x + w, y, x + w, y + h, r);
+                this.arcTo(x + w, y + h, x, y + h, r);
+                this.arcTo(x, y + h, x, y, r);
+                this.arcTo(x, y, x + w, y, r);
+                this.closePath();
+                return this;
+            };
+        }
+    </script>
+</body>
+</html>
