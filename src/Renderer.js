@@ -521,8 +521,24 @@ export class Renderer {
             'shin'
         );
         
-        // 2. Draw torso (center)
+        // 2. Draw back arm (behind torso)
         const torsoY = topY + headHeight;
+        const shoulderY = torsoY + 6;
+        const armLength = torsoHeight * 0.55; // Slightly different proportions
+
+        this.drawObstacleLimb(game, obstacle,
+            centerX + 2, // Slight offset
+            shoulderY,
+            obstacle.rightArmAngle,
+            armLength,
+            obstacle.rightElbowAngle,
+            armLength * 0.75,
+            10, // Thicker than player arms
+            'upper_arm',
+            'forearm'
+        );
+
+        // 3. Draw torso (center)
         if (obstacle.skinsLoaded && obstacle.skinImages.torso && obstacle.skinImages.torso.complete) {
             game.ctx.drawImage(
                 obstacle.skinImages.torso,
@@ -585,11 +601,7 @@ export class Renderer {
         // Restore context after head transformation
         game.ctx.restore();
         
-        // 4. Draw arm
-        const shoulderY = torsoY + 6;
-        const armLength = torsoHeight * 0.55; // Slightly different proportions
-        
-        // Single arm for side profile
+        // 4. Draw front arm (in front of torso)
         this.drawObstacleLimb(game, obstacle,
             centerX,
             shoulderY,

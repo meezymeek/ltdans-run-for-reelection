@@ -70,6 +70,10 @@ export class Obstacle {
             this.skinName = null; // Will be set randomly
             this.skinImages = {}; // Will be loaded by AssetLoader
             this.skinsLoaded = false;
+
+            // Stationary pose configuration
+            this.animate = false; // keep tall obstacles stationary (no run cycle)
+            this.setStopPose();
         }
         
         // Ragdoll properties
@@ -170,17 +174,49 @@ export class Obstacle {
                 }
             }
         } else {
-            // Normal movement
+            // Normal movement (obstacles move left across screen)
             this.xPercent -= this.speedPercent;
             this.x = this.scaleManager.toPixelsX(this.xPercent);
             
-            // Update animation for tall obstacles
-            if (this.type === 'tall') {
+            // Tall obstacles: only update if animate flag is enabled
+            if (this.type === 'tall' && this.animate) {
                 this.updateAnimation();
             }
         }
     }
     
+    // Stationary STOP pose for tall obstacles:
+    // - Legs straight (standing)
+    // - Front arm held out to the left (stop gesture)
+    // - Back arm ~30 degrees from body
+    setStopPose() {
+        // Legs straight down
+        this.leftLegAngle = 0;
+        this.rightLegAngle = 0;
+        this.leftKneeAngle = 0;
+        this.rightKneeAngle = 0;
+
+        // Arms:
+        // Front arm (rendered in front of torso): hold out to the left like "STOP"
+        // Coordinate note: 0 = straight down; +90 = to the right; -90 = to the left; 180 = up
+        this.leftArmAngle = -90;     // horizontal to the left
+        this.leftElbowAngle = 0;     // straight arm
+
+        // Back arm (rendered behind torso): about 30 degrees from body (slightly forward)
+        this.rightArmAngle = 30;     // slight forward tilt
+        this.rightElbowAngle = 10;   // small bend
+
+        // Head neutral
+        this.headYOffset = 0;
+        this.headXOffset = 0;
+        this.headRotation = 0;
+
+        // Keep targets aligned (no animated lerp)
+        this.headYOffsetTarget = 0;
+        this.headXOffsetTarget = 0;
+        this.headRotationTarget = 0;
+    }
+
     updateAnimation() {
         // Running animation for tall obstacles
         this.animationFrame += this.animationSpeed;
