@@ -197,14 +197,14 @@ export class Obstacle {
         this.rightKneeAngle = 0;
 
         // Arms:
-        // Front arm (rendered in front of torso): hold out to the left like "STOP"
-        // Coordinate note: 0 = straight down; +90 = to the right; -90 = to the left; 180 = up
-        this.leftArmAngle = -90;     // horizontal to the left
-        this.leftElbowAngle = 0;     // straight arm
+        // Front arm (rendered in front of torso): about 30 degrees from body (slightly forward)
+        this.leftArmAngle = 30;      // slight forward tilt
+        this.leftElbowAngle = 10;    // small bend
 
-        // Back arm (rendered behind torso): about 30 degrees from body (slightly forward)
-        this.rightArmAngle = 30;     // slight forward tilt
-        this.rightElbowAngle = 10;   // small bend
+        // Back arm (rendered behind torso): hold out to the left like "STOP"
+        // Coordinate note: 0 = straight down; +90 = to the right; -90 = to the left; 180 = up
+        this.rightArmAngle = -90;    // horizontal to the left
+        this.rightElbowAngle = 0;    // straight arm
 
         // Head neutral
         this.headYOffset = 0;
