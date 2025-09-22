@@ -69,6 +69,8 @@
             display: none;
         }
     </style>
+    <!-- JSZip for ZIP download fallback -->
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 </head>
 <body>
     <h1>Generate Obstacle Character Skins</h1>
@@ -78,6 +80,8 @@
         <p>This will create individual body part images for each obstacle character. Each character will have different colors to make them visually distinct.</p>
         <button onclick="generateAllObstacleSkins()">Generate All Obstacle Skins</button>
         <button onclick="downloadAll()">Download All Generated Images</button>
+        <button onclick="saveToProjectFolders()">Save to Project Folders (recommended)</button>
+        <button onclick="downloadZip()">Download ZIP (organized folders)</button>
         <div class="status" id="status"></div>
     </div>
 
@@ -262,6 +266,99 @@
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+        }
+
+        // Convert dataURL to Blob
+        function dataURLToBlob(dataURL) {
+            const parts = dataURL.split(',');
+            const mimeMatch = parts[0].match(/:(.*?);/);
+            const mime = mimeMatch ? mimeMatch[1] : 'image/png';
+            const binary = atob(parts[1]);
+            const array = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) {
+                array[i] = binary.charCodeAt(i);
+            }
+            return new Blob([array], { type: mime });
+        }
+
+        // Save directly into project folders using the File System Access API
+        async function saveToProjectFolders() {
+            if (!generatedImages || Object.keys(generatedImages).length === 0) {
+                alert('Please generate the skins first!');
+                return;
+            }
+
+            if (!('showDirectoryPicker' in window)) {
+                alert('Your browser does not support saving directly to folders.\nUse the "Download ZIP" option instead.');
+                return;
+            }
+
+            try {
+                const status = document.getElementById('status');
+                status.style.display = 'block';
+                status.textContent = 'Select the skins/obstacles directory in your project...';
+
+                // Ask the user to pick the target directory (select skins/obstacles)
+                const dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+
+                // Optional: Check if the selected directory looks like skins/obstacles
+                // by probing a few known character directories (this will still work if not present).
+                let totalSaved = 0;
+                for (const [characterName, parts] of Object.entries(generatedImages)) {
+                    // Ensure character folder exists
+                    const characterDir = await dirHandle.getDirectoryHandle(characterName, { create: true });
+                    for (const [partName, dataUrl] of Object.entries(parts)) {
+                        const fileHandle = await characterDir.getFileHandle(`${partName}.png`, { create: true });
+                        const writable = await fileHandle.createWritable();
+                        const blob = dataURLToBlob(dataUrl);
+                        await writable.write(blob);
+                        await writable.close();
+                        totalSaved++;
+                    }
+                }
+
+                status.textContent = `Saved ${totalSaved} images into the selected directory (each character in its folder).`;
+                alert('All images saved into the selected directory.\nTip: Pick your project\'s skins/obstacles folder when prompted.');
+            } catch (e) {
+                console.error(e);
+                alert('Saving failed or was cancelled. If your browser blocks this, try "Download ZIP" instead.');
+            }
+        }
+
+        // Download a ZIP with the folder structure skins/obstacles/<Character>/<part>.png
+        async function downloadZip() {
+            if (!generatedImages || Object.keys(generatedImages).length === 0) {
+                alert('Please generate the skins first!');
+                return;
+            }
+
+            try {
+                const zip = new JSZip();
+                // Create root folder inside the zip for clarity
+                const root = zip.folder('skins').folder('obstacles');
+
+                for (const [characterName, parts] of Object.entries(generatedImages)) {
+                    const characterFolder = root.folder(characterName);
+                    for (const [partName, dataUrl] of Object.entries(parts)) {
+                        const blob = dataURLToBlob(dataUrl);
+                        const arrayBuffer = await blob.arrayBuffer();
+                        characterFolder.file(`${partName}.png`, arrayBuffer);
+                    }
+                }
+
+                const content = await zip.generateAsync({ type: 'blob' });
+                const url = URL.createObjectURL(content);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'obstacle-skins.zip';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            } catch (e) {
+                console.error(e);
+                alert('Failed to create ZIP file.');
+            }
         }
 
         // Add roundRect method if not supported
