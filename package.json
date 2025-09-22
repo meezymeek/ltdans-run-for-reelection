@@ -6,6 +6,8 @@
   "type": "module",
   "scripts": {
     "start": "python -m http.server 8000",
+    "prestart": "node scripts/generateObstacleSkins.mjs",
+    "gen:obstacle-skins": "node scripts/generateObstacleSkins.mjs",
     "build": "echo 'No build step required for static site'"
   },
   "keywords": [
