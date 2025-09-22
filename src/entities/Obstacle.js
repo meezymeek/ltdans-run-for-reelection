@@ -202,8 +202,8 @@ export class Obstacle {
         this.leftArmAngle = 90;      // horizontal to the right
         this.leftElbowAngle = 0;     // straight arm
 
-        // Back arm (rendered behind torso): about 30 degrees from body (slightly forward)
-        this.rightArmAngle = 30;     // slight forward tilt
+        // Back arm (rendered behind torso): rotate to 330°
+        this.rightArmAngle = 330;    // rotated to 330° per feedback
         this.rightElbowAngle = 10;   // small bend
 
         // Head neutral
