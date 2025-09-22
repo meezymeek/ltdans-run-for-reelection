@@ -57,6 +57,7 @@ export class SoundManager {
                 speedUp: 'sfx/effects/speed-up',
                 crowdCheer: 'sfx/effects/crowd-cheer',
                 'victory-fanfare': 'sfx/effects/victory-fanfare',
+                choochoo: 'sfx/effects/choochoo',
                 fail: 'sfx/effects/fail'
             }
         };

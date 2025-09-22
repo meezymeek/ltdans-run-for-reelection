@@ -48,6 +48,7 @@ export class AssetLoader {
             { name: 'jump', path: 'sfx/effects/jump' },
             { name: 'crash', path: 'sfx/effects/crash' },
             { name: 'victory-fanfare', path: 'sfx/effects/victory-fanfare' },
+            { name: 'choochoo', path: 'sfx/effects/choochoo' },
             { name: 'fail', path: 'sfx/effects/fail' }
         ];
         

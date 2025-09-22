@@ -417,8 +417,8 @@ export class GameLoop {
                     GameLogic.addPopup(game, "GERRYMANDER EXPRESS!", 
                                       game.player.x + game.player.width/2, game.player.y - 50, {icon: '🚂'});
                     
-                    // Play special collect sound (use victory fanfare for now)
-                    game.soundManager.playEffect('victory-fanfare');
+                    // Play train activation sound
+                    game.soundManager.playEffect('choochoo');
                 }
             }
         }
