@@ -91,6 +91,11 @@ export class Player {
         this.targetXPercent = this.xPercent;
         this.positionLerpRate = 0.03; // Slower transition rate for more dramatic effect
         
+        // Position lerping for parachute launch
+        this.parachuteOriginalXPercent = this.xPercent;
+        this.parachuteLaunchXPercent = this.xPercent + 0.05; // Move forward by 5% when parachute activates
+        this.parachutePositionActive = false;
+        
         // Simple TRON-style trail (just track position history)
         this.trailStartX = 0;
         this.trailStartY = 0;
@@ -174,6 +179,14 @@ export class Player {
             this.tapPulseScale = 1.0;
             this.tapPulseTarget = 1.0;
             this.tapEffectActive = false;
+            
+            // Activate parachute launch position effect (if not in train mode)
+            if (!this.isTrainMode) {
+                this.parachuteOriginalXPercent = this.xPercent; // Store current position
+                this.parachuteLaunchXPercent = this.xPercent + 0.05; // Move forward by 5%
+                this.parachutePositionActive = true;
+                this.targetXPercent = this.parachuteLaunchXPercent; // Set target to launch position
+            }
             
             // Notify tutorial manager of parachute deployment
             if (game && game.gameState === 'tutorial' && game.tutorialManager) {
@@ -278,12 +291,18 @@ export class Player {
             this.parachuteTimeLeft -= deltaSeconds;
             
             if (this.parachuteTimeLeft <= 0) {
-                // Parachute expired - force it to disappear
+                // Parachute expired - force it to disappear and restore position
                 this.hasParachute = false;
                 this.parachuteTimeLeft = 0;
                 this.parachuteTapping = false;
                 this.lastTapTime = 0;
                 this.velocityY = Math.max(this.velocityY, 2);
+                
+                // Restore original position if parachute position was active and not in train mode
+                if (this.parachutePositionActive && !this.isTrainMode) {
+                    this.targetXPercent = this.parachuteOriginalXPercent;
+                    this.parachutePositionActive = false;
+                }
             } else {
                 // Check tapping state
                 const now = Date.now();
@@ -334,11 +353,18 @@ export class Player {
             
             // Check if we had a parachute before landing (for tutorial)
             const hadParachute = this.hasParachute;
+            const hadParachutePositionActive = this.parachutePositionActive;
             
             this.isJumping = false;
             this.hasParachute = false;
             this.parachuteUsedThisJump = false;
             this.parachuteTimeLeft = 0;
+            
+            // Restore original position if parachute position was active and not in train mode
+            if (hadParachutePositionActive && !this.isTrainMode) {
+                this.targetXPercent = this.parachuteOriginalXPercent;
+                this.parachutePositionActive = false;
+            }
             
             // Notify tutorial manager if player landed with parachute (for stage 7 cycle reset)
             if (hadParachute && game && game.gameState === 'tutorial' && game.tutorialManager) {
@@ -471,6 +497,10 @@ export class Player {
         this.widthPercent = this.originalWidthPercent;
         this.xPercent = this.originalXPercent;
         this.targetXPercent = this.originalXPercent;
+        
+        // Reset parachute position state
+        this.parachutePositionActive = false;
+        this.parachuteOriginalXPercent = this.xPercent;
         
         // Clear trail
         this.isDrawingTrail = false;
