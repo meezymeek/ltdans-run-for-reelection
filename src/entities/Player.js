@@ -151,7 +151,12 @@ export class Player {
         return false;
     }
     
-    giveParachute() {
+    giveParachute(game = null) {
+        // Check if parachutes are disabled in tutorial mode
+        if (game && game.gameState === 'tutorial' && game.tutorialManager && game.tutorialManager.isParachuteDisabled()) {
+            return false; // Parachute disabled in this tutorial section
+        }
+        
         // Only give parachute if we don't already have one
         if (!this.hasParachute) {
             this.hasParachute = true;
@@ -169,6 +174,11 @@ export class Player {
             this.tapPulseScale = 1.0;
             this.tapPulseTarget = 1.0;
             this.tapEffectActive = false;
+            
+            // Notify tutorial manager of parachute deployment
+            if (game && game.gameState === 'tutorial' && game.tutorialManager) {
+                game.tutorialManager.handleParachuteDeployed();
+            }
             
             return true; // Parachute given
         }
@@ -225,7 +235,7 @@ export class Player {
         return false; // Wasn't in train mode
     }
     
-    update(config, deltaTime) {
+    update(config, deltaTime, game = null) {
         // Smoothly animate timer position
         const timerLerpSpeed = 0.18;
         this.timerX += (this.timerTargetX - this.timerX) * timerLerpSpeed;
@@ -321,10 +331,19 @@ export class Player {
             this.velocityYPercent = 0;
             this.y = this.scaleManager.toPixelsY(this.yPercent);
             this.velocityY = 0;
+            
+            // Check if we had a parachute before landing (for tutorial)
+            const hadParachute = this.hasParachute;
+            
             this.isJumping = false;
             this.hasParachute = false;
             this.parachuteUsedThisJump = false;
             this.parachuteTimeLeft = 0;
+            
+            // Notify tutorial manager if player landed with parachute (for stage 7 cycle reset)
+            if (hadParachute && game && game.gameState === 'tutorial' && game.tutorialManager) {
+                game.tutorialManager.handleParachuteLanded();
+            }
         }
         
         // Update animation
@@ -459,15 +478,15 @@ export class Player {
         this.trailStartY = 0;
     }
     
-    launchHigh() {
+    launchHigh(game = null) {
         // Used when stomping on constituent - also gives parachute
         this.velocityYPercent = -0.025; // Convert to percentage-based
         this.velocityY = this.scaleManager.velocityToPixels(this.velocityYPercent);
         this.isJumping = true;
-        this.giveParachute();
+        this.giveParachute(game);
     }
     
-    launchToHeight(targetHeightRatio) {
+    launchToHeight(targetHeightRatio, game = null) {
         // Percentage-based launch calculation
         const targetYPercent = targetHeightRatio;
         const distanceToTravelPercent = this.yPercent - targetYPercent;
@@ -477,7 +496,7 @@ export class Player {
             this.velocityYPercent = -0.0125; // Smaller boost for smoother feel
             this.isJumping = true;
             this.velocityY = this.scaleManager.velocityToPixels(this.velocityYPercent);
-            this.giveParachute();
+            this.giveParachute(game);
             return;
         }
         
@@ -493,6 +512,6 @@ export class Player {
         this.isJumping = true;
         
         // Give parachute
-        this.giveParachute();
+        this.giveParachute(game);
     }
 }

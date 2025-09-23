@@ -30,7 +30,7 @@ export class GameLoop {
             // Track distance moved since last spawn
             game.lastSpawnDistance += game.config.obstacleSpeed;
             
-            game.player.update(game.config, game.deltaTime);
+            game.player.update(game.config, game.deltaTime, game);
             this.spawnObstacle(game);
             this.spawnConstituent(game);
             this.spawnBribe(game);
@@ -82,6 +82,52 @@ export class GameLoop {
             
             // Continue updating popups
             this.updatePopups(game);
+        } else if (game.gameState === 'tutorial') {
+            // Tutorial mode - similar to playing mode when regular spawning enabled
+            if (game.tutorialManager && game.tutorialManager.regularSpawningEnabled) {
+                game.gameFrame++;
+                
+                // Update speed targets based on train mode (same as playing mode)
+                if (game.player.isTrainMode) {
+                    game.targetGameSpeed = game.config.baseGameSpeed * game.trainSpeedMultiplier;
+                    game.targetObstacleSpeed = game.config.baseObstacleSpeed * game.trainSpeedMultiplier;
+                } else {
+                    game.targetGameSpeed = game.config.baseGameSpeed;
+                    game.targetObstacleSpeed = game.config.baseObstacleSpeed;
+                }
+                
+                // Lerp current speed to target for smooth transitions
+                game.config.gameSpeed += (game.targetGameSpeed - game.config.gameSpeed) * game.speedLerpRate;
+                game.config.obstacleSpeed += (game.targetObstacleSpeed - game.config.obstacleSpeed) * game.speedLerpRate;
+                
+                // Track distance moved since last spawn
+                game.lastSpawnDistance += game.config.obstacleSpeed;
+            }
+            
+            game.player.update(game.config, game.deltaTime, game);
+            
+            // Update tutorial manager
+            if (game.tutorialManager) {
+                game.tutorialManager.update();
+            }
+            
+            // Update entities (allow normal spawning when enabled by tutorial)
+            if (game.tutorialManager && game.tutorialManager.regularSpawningEnabled) {
+                this.spawnObstacle(game);
+                this.spawnConstituent(game);
+                this.spawnBribe(game);
+                this.spawnGerrymanderExpress(game);
+            }
+            this.updateObstacles(game);
+            this.updateConstituents(game);
+            this.updateBribes(game);
+            this.updateGerrymanderExpresses(game);
+            this.updateBackground(game);
+            this.updateTrailSegments(game);
+            this.updatePopups(game);
+            
+            // Check for tutorial-specific collisions and events
+            this.handleTutorialCollisions(game);
         } else if (game.gameState === 'paused') {
             // When paused, only render the current frame without updates
         }
@@ -93,6 +139,9 @@ export class GameLoop {
     }
     
     static spawnObstacle(game) {
+        // Don't spawn in tutorial mode unless regular spawning is enabled
+        if (game.gameState === 'tutorial' && !game.tutorialManager?.regularSpawningEnabled) return;
+        
         // Check unified spawn spacing first
         if (!this.canSpawnEntity(game)) return;
         
@@ -126,31 +175,41 @@ export class GameLoop {
             // Remove obstacles that have gone off screen
             if (obstacle.x + obstacle.width < 0) {
                 game.obstacles.splice(i, 1);
-                if (obstacle.type === 'tall') {
-                    const basePoints = game.config.tallPoints;
-                    const multiplier = game.player.isTrainMode ? 2 : 1;
-                    const points = basePoints * multiplier;
-                    game.score += points;
-                    GameLogic.updateScore(game);
-                    const displayText = game.player.isTrainMode ? `+${points} (2X!)` : `+${points}`;
-                    GameLogic.addPopup(game, displayText, 
-                                  game.player.x + game.player.width/2, game.player.y - 20);
-                    game.soundManager.playPointTall();
-                } else {
-                    const basePoints = game.config.lowPoints;
-                    const multiplier = game.player.isTrainMode ? 2 : 1;
-                    const points = basePoints * multiplier;
-                    game.score += points;
-                    GameLogic.updateScore(game);
-                    const displayText = game.player.isTrainMode ? `+${points} (2X!)` : `+${points}`;
-                    GameLogic.addPopup(game, displayText, 
-                                  game.player.x + game.player.width/2, game.player.y - 20);
-                    game.soundManager.playPointLow();
+                
+                // Only add points and effects in normal gameplay, not tutorial
+                if (game.gameState === 'playing') {
+                    if (obstacle.type === 'tall') {
+                        const basePoints = game.config.tallPoints;
+                        const multiplier = game.player.isTrainMode ? 2 : 1;
+                        const points = basePoints * multiplier;
+                        game.score += points;
+                        GameLogic.updateScore(game);
+                        const displayText = game.player.isTrainMode ? `+${points} (2X!)` : `+${points}`;
+                        GameLogic.addPopup(game, displayText, 
+                                      game.player.x + game.player.width/2, game.player.y - 20);
+                        game.soundManager.playPointTall();
+                    } else {
+                        const basePoints = game.config.lowPoints;
+                        const multiplier = game.player.isTrainMode ? 2 : 1;
+                        const points = basePoints * multiplier;
+                        game.score += points;
+                        GameLogic.updateScore(game);
+                        const displayText = game.player.isTrainMode ? `+${points} (2X!)` : `+${points}`;
+                        GameLogic.addPopup(game, displayText, 
+                                      game.player.x + game.player.width/2, game.player.y - 20);
+                        game.soundManager.playPointLow();
+                    }
+                } else if (game.gameState === 'tutorial') {
+                    // In tutorial mode, notify tutorial manager
+                    if (game.tutorialManager) {
+                        game.tutorialManager.handleObstacleCleared();
+                    }
                 }
+                continue;
             }
 
-            // Collision detection - Skip if player is invincible (train mode)
-            if (this.checkCollision(game.player, obstacle)) {
+            // Collision detection - Only in playing mode (tutorial handles separately)
+            if (game.gameState === 'playing' && this.checkCollision(game.player, obstacle)) {
                 if (game.player.isTrainMode) {
                     // Train mode - player is invincible, add visual effect and points
                     const basePoints = obstacle.type === 'tall' ? game.config.tallPoints : game.config.lowPoints;
@@ -172,6 +231,9 @@ export class GameLoop {
     }
     
     static spawnConstituent(game) {
+        // Don't spawn in tutorial mode unless regular spawning is enabled
+        if (game.gameState === 'tutorial' && !game.tutorialManager?.regularSpawningEnabled) return;
+        
         // Check unified spawn spacing first
         if (!this.canSpawnEntity(game)) return;
         
@@ -241,17 +303,22 @@ export class GameLoop {
                 constituent.launchVelocityY = -25 - Math.random() * 10; // Much stronger upward launch
                 constituent.rotationSpeed = (Math.random() - 0.5) * 0.6;  // More spinning
                 
-                // Reduce score by 25 points
+                // Reduce score by 25 points (and track for tutorial)
                 const penalty = 25;
                 game.score = Math.max(0, game.score - penalty);  // Prevent negative scores
                 GameLogic.updateScore(game);
+                
+                // Tutorial mode: increment constituent counter when penalty is applied
+                if (game.gameState === 'tutorial' && game.tutorialManager) {
+                    game.tutorialManager.handleConstituentEncountered();
+                }
                 
                 // Play stomp sound (use jump sound for now)
                 game.soundManager.playJump();
                 
                 // Launch player to consistent height using target height system
-                game.player.launchToHeight(PLAYER_CONFIG.constituentLaunchTargetHeight);
-                // Note: launchToHeight already sets isJumping and gives parachute
+                game.player.launchToHeight(PLAYER_CONFIG.constituentLaunchTargetHeight, game);
+                // Note: launchToHeight already sets isJumping and gives parachute (if not disabled)
                 
                 // Select a random parachute skin
                 if (game.loadedParachuteSkins && game.loadedParachuteSkins.length > 0) {
@@ -260,13 +327,21 @@ export class GameLoop {
                     ];
                 }
                 
-                // Visual feedback
-                GameLogic.addPopup(game, "PARACHUTE!", game.player.x, game.player.y - 50, {icon: '🪂'});
+                // Visual feedback - check if parachute was actually given
+                const parachuteGiven = game.player.hasParachute && game.player.parachuteTimeLeft > 0;
+                if (parachuteGiven) {
+                    GameLogic.addPopup(game, "PARACHUTE!", game.player.x, game.player.y - 50, {icon: '🪂'});
+                } else {
+                    GameLogic.addPopup(game, "SUPER JUMP!", game.player.x, game.player.y - 50, {icon: '⬆️'});
+                }
             }
         }
     }
     
     static spawnBribe(game) {
+        // Don't spawn in tutorial mode unless regular spawning is enabled
+        if (game.gameState === 'tutorial' && !game.tutorialManager?.regularSpawningEnabled) return;
+        
         // Check for pattern spawning
         game.bribePatternCounter++;
         if (game.bribePatternCounter >= game.nextBribePattern) {
@@ -304,6 +379,9 @@ export class GameLoop {
     }
     
     static spawnGerrymanderExpress(game) {
+        // Don't spawn in tutorial mode unless regular spawning is enabled
+        if (game.gameState === 'tutorial' && !game.tutorialManager?.regularSpawningEnabled) return;
+        
         // Only spawn when player has an active parachute AND not currently in train mode
         if (game.player.hasParachute && game.player.parachuteTimeLeft > 0 && !game.player.isTrainMode) {
             // Spawn every 2 seconds when parachute is active (reduced frequency)
@@ -363,8 +441,8 @@ export class GameLoop {
                 continue;
             }
             
-            // Check collision with player
-            if (this.checkCollision(game.player, bribe)) {
+            // Check collision with player - only in playing mode (tutorial handles separately)
+            if (game.gameState === 'playing' && this.checkCollision(game.player, bribe)) {
                 // Remove bribe
                 game.bribes.splice(i, 1);
                 
@@ -419,6 +497,11 @@ export class GameLoop {
                     
                     // Play train activation sound
                     game.soundManager.playEffect('choochoo');
+                    
+                    // Notify tutorial manager if in tutorial mode
+                    if (game.gameState === 'tutorial' && game.tutorialManager) {
+                        game.tutorialManager.handleTrainActivated();
+                    }
                 }
             }
         }
@@ -483,6 +566,90 @@ export class GameLoop {
                player.y + player.height > object.y;
     }
     
+    static handleTutorialCollisions(game) {
+        // Handle obstacle collisions in tutorial mode
+        for (let i = game.obstacles.length - 1; i >= 0; i--) {
+            const obstacle = game.obstacles[i];
+            
+            // Check for collision
+            if (this.checkCollision(game.player, obstacle)) {
+                if (game.player.isTrainMode) {
+                    // Train mode - player is invincible, add visual effect and points
+                    const basePoints = obstacle.type === 'tall' ? game.config.tallPoints : game.config.lowPoints;
+                    const points = basePoints * 2; // Double points for plowing through
+                    game.score += points;
+                    GameLogic.updateScore(game);
+                    
+                    // Ragdoll the obstacle instead of just removing it
+                    obstacle.triggerRagdoll(game.player.x + game.player.width/2, game.player.y + game.player.height/2);
+                    continue;
+                } else {
+                    // In tutorial mode, crashes trigger tutorial-specific behavior
+                    game.soundManager.playEffect('crash');
+                    
+                    // Reset player position instead of triggering full crash
+                    game.player.reset(game.canvas.height * game.config.groundLevel);
+                    
+                    // Remove the obstacle that caused the crash
+                    game.obstacles.splice(i, 1);
+                    
+                    // Notify tutorial manager of crash
+                    if (game.tutorialManager) {
+                        game.tutorialManager.handleTutorialCrash();
+                    }
+                    return;
+                }
+            }
+        }
+        
+        // Handle bribe collection in tutorial mode
+        for (let i = game.bribes.length - 1; i >= 0; i--) {
+            const bribe = game.bribes[i];
+            
+            if (this.checkCollision(game.player, bribe)) {
+                game.bribes.splice(i, 1);
+                
+                // Add points (no penalty in tutorial)
+                game.score += 5;
+                GameLogic.updateScore(game);
+                
+                // Visual feedback
+                GameLogic.addPopup(game, "+5 VOTES!", bribe.x, bribe.y, {icon: '💰'});
+                game.soundManager.playPointTall();
+                
+                // Notify tutorial manager
+                if (game.tutorialManager) {
+                    game.tutorialManager.handleBribeCollected();
+                }
+            }
+        }
+        
+        // For constituents in tutorial mode, use the normal updateConstituents logic
+        // which will call the regular constituent stomp handling and automatically 
+        // trigger the tutorial counter via the score penalty function
+        
+        // Handle train mode activation in tutorial
+        for (let i = game.gerrymanderExpresses.length - 1; i >= 0; i--) {
+            const gerrymanderExpress = game.gerrymanderExpresses[i];
+            
+            if (gerrymanderExpress.checkCollision(game.player)) {
+                game.gerrymanderExpresses.splice(i, 1);
+                gerrymanderExpress.collect();
+                
+                if (game.player.activateTrainMode()) {
+                    // Visual feedback
+                    GameLogic.addPopup(game, "GERRYMANDER EXPRESS!", 
+                                      game.player.x + game.player.width/2, game.player.y - 50, {icon: '🚂'});
+                    game.soundManager.playEffect('choochoo');
+                    
+                    // Notify tutorial manager
+                    if (game.tutorialManager) {
+                        game.tutorialManager.handleTrainActivated();
+                    }
+                }
+            }
+        }
+    }
     
     static updateTrailSegments(game) {
         // Spawn trail segments when in train mode

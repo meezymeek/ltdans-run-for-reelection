@@ -5,6 +5,7 @@ import { LeaderboardManager } from './managers/LeaderboardManager.js';
 import { SoundManager } from './managers/SoundManager.js';
 import { OrientationManager } from './managers/OrientationManager.js';
 import { TouchFeedbackManager } from './managers/TouchFeedbackManager.js';
+import { TutorialManager } from './managers/TutorialManager.js';
 import { GAME_CONFIG } from './constants/GameConfig.js';
 import { Player } from './entities/Player.js';
 import { Obstacle } from './entities/Obstacle.js';
@@ -41,6 +42,7 @@ export class LtDanRunner {
         this.soundManager = new SoundManager();
         this.soundManager.loadSettings();
         this.leaderboard = new LeaderboardManager();
+        this.tutorialManager = new TutorialManager(this);
         
         // Initialize game systems (GameLoop and Renderer use static methods)
         this.gameLogic = new GameLogic(this);
@@ -70,6 +72,7 @@ export class LtDanRunner {
         
         // Button elements
         this.startButton = document.getElementById('startButton');
+        this.tutorialButton = document.getElementById('tutorialButton');
         this.restartButton = document.getElementById('restartButton');
         this.leaderboardButton = document.getElementById('leaderboardButton');
         this.viewLeaderboardButton = document.getElementById('viewLeaderboardButton');
@@ -178,6 +181,10 @@ export class LtDanRunner {
         this.debugHitboxes = false;
         this.showSpeed = false;
         
+        // Tutorial crash overlay effect
+        this.tutorialCrashOverlay = 0; // 0 = no overlay, 1 = full red overlay
+        this.tutorialCrashFadeSpeed = 0.05;
+        
         // Pre-loaded assets (will be set by AssetLoader)
         this.preloadedAssets = null;
         
@@ -251,6 +258,21 @@ export class LtDanRunner {
                 <input type="checkbox" id="toggleSpeed" style="margin-right: 5px;">
                 Show Speed
             </label>
+            <div style="margin: 8px 0; padding: 8px; background: rgba(255,215,0,0.1); border-radius: 4px;">
+                <div style="font-size: 12px; text-align: center; color: #ffd700; margin-bottom: 8px;">
+                    🎯 Score Testing
+                </div>
+                <div style="display: flex; gap: 4px; margin-bottom: 4px;">
+                    <input type="number" id="scoreInput" placeholder="Enter score" style="flex: 1; padding: 4px; font-size: 11px; background: rgba(0,0,0,0.8); color: #fff; border: 1px solid #ffd700; border-radius: 0;">
+                    <button id="setScore" style="padding: 4px 8px; font-size: 11px; background: #ffd700; color: #000; border: none; cursor: pointer;">Set</button>
+                </div>
+                <div style="display: flex; gap: 2px; justify-content: space-between;">
+                    <button id="score1000" style="flex: 1; padding: 3px; font-size: 10px; background: #666; color: #fff; border: none; cursor: pointer;">1K</button>
+                    <button id="score10000" style="flex: 1; padding: 3px; font-size: 10px; background: #666; color: #fff; border: none; cursor: pointer;">10K</button>
+                    <button id="score100000" style="flex: 1; padding: 3px; font-size: 10px; background: #666; color: #fff; border: none; cursor: pointer;">100K</button>
+                    <button id="score1000000" style="flex: 1; padding: 3px; font-size: 10px; background: #666; color: #fff; border: none; cursor: pointer;">1M</button>
+                </div>
+            </div>
             <div style="margin: 8px 0; padding: 8px; background: rgba(0,255,0,0.1); border-radius: 4px;">
                 <div style="font-size: 12px; text-align: center; color: #00ff88;">
                     ✅ Assets scaled to 70%<br>
@@ -444,6 +466,11 @@ export class LtDanRunner {
             this.startGame();
         });
         
+        this.tutorialButton.addEventListener('click', () => {
+            this.soundManager.playButtonClick();
+            this.startTutorial();
+        });
+        
         this.restartButton.addEventListener('click', () => {
             this.soundManager.playButtonClick();
             this.restartGame();
@@ -497,7 +524,7 @@ export class LtDanRunner {
     setupControlListeners() {
         this.pauseButton.addEventListener('click', () => {
             this.soundManager.playButtonClick();
-            this.pauseGame();
+            this.togglePause();
         });
         
         this.resumeButton.addEventListener('click', () => {
@@ -541,6 +568,14 @@ export class LtDanRunner {
             const rect = this.canvas.getBoundingClientRect();
             const mouseX = e.clientX - rect.left;
             const mouseY = e.clientY - rect.top;
+            
+            // Check for tutorial navigation clicks first
+            if (this.gameState === 'tutorial' && this.tutorialManager) {
+                if (this.tutorialManager.handleTutorialClick(mouseX, mouseY)) {
+                    return; // Navigation click handled, don't process as jump
+                }
+            }
+            
             this.handleJump(mouseX, mouseY);
         });
         
@@ -563,6 +598,16 @@ export class LtDanRunner {
         const effectsVolume = document.getElementById('effectsVolume');
         const effectsVolumeValue = document.getElementById('effectsVolumeValue');
         const effectsMute = document.getElementById('effectsMute');
+        
+        // Setup accordion functionality
+        const accordionHeader = document.getElementById('audioAccordionHeader');
+        const accordionContent = document.getElementById('audioAccordionContent');
+        const audioAccordion = accordionHeader.parentElement;
+        
+        accordionHeader.addEventListener('click', () => {
+            audioAccordion.classList.toggle('collapsed');
+            this.soundManager.playButtonClick();
+        });
         
         // Load current values
         masterVolume.value = this.soundManager.volumes.master * 100;
@@ -608,7 +653,7 @@ export class LtDanRunner {
     handleTouchStart(e) {
         e.preventDefault();
         
-        if (this.gameState === 'playing') {
+        if (this.gameState === 'playing' || this.gameState === 'tutorial') {
             if (e.touches && e.touches.length > 0) {
                 this.player.lastTouchX = e.touches[0].clientX;
                 this.player.lastTouchY = e.touches[0].clientY;
@@ -625,7 +670,12 @@ export class LtDanRunner {
     }
     
     handleJump(mouseX, mouseY) {
-        if (this.gameState !== 'playing') return;
+        if (this.gameState !== 'playing' && this.gameState !== 'tutorial') return;
+        
+        // Tutorial mode: track parachute usage
+        if (this.gameState === 'tutorial' && this.player.hasParachute && this.player.parachuteTimeLeft > 0) {
+            this.tutorialManager.handleParachuteUsed();
+        }
         
         // Use the player's activateParachute method for parachute logic
         if (this.player.hasParachute && this.player.parachuteTimeLeft > 0) {
@@ -635,6 +685,11 @@ export class LtDanRunner {
             // Use player's jump method to handle percentage coordinate logic
             if (this.player.jump()) {
                 this.soundManager.playJump();
+                
+                // Tutorial mode: track jump completion
+                if (this.gameState === 'tutorial' && this.tutorialManager) {
+                    this.tutorialManager.handleJumpCompleted();
+                }
             }
         }
     }
@@ -645,6 +700,25 @@ export class LtDanRunner {
                 this.pauseGame();
             } else if (this.gameState === 'paused') {
                 this.resumeGame();
+            } else if (this.gameState === 'tutorial') {
+                // ESC skips tutorial
+                this.tutorialManager.skipTutorial();
+            }
+        }
+        
+        // Tutorial navigation with arrow keys
+        if (this.gameState === 'tutorial' && this.tutorialManager) {
+            if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                console.log('Left arrow key pressed');
+                this.tutorialManager.goToPreviousSection();
+                return;
+            }
+            if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                console.log('Right arrow key pressed');
+                this.tutorialManager.goToNextSection();
+                return;
             }
         }
         
@@ -655,12 +729,30 @@ export class LtDanRunner {
     }
     
     // Game State Management
+    togglePause() {
+        if (this.gameState === 'paused') {
+            this.resumeGame();
+        } else if (this.gameState === 'playing' || this.gameState === 'tutorial') {
+            this.pauseGame();
+        }
+    }
+    
     pauseGame() {
-        if (this.gameState !== 'playing') return;
+        if (this.gameState !== 'playing' && this.gameState !== 'tutorial') return;
         
+        // Store the previous state so we can resume to the correct mode
+        this.previousGameState = this.gameState;
         this.gameState = 'paused';
         this.updateHUDVisibility();
         this.pauseScreen.classList.remove('hidden');
+        
+        // Update pause menu text based on current mode
+        this.updatePauseMenuText();
+        
+        // Add paused animation and change icon to X
+        this.pauseButton.classList.add('paused');
+        this.pauseButton.textContent = '×';
+        this.pauseButton.title = 'Resume Game';
         
         this.soundManager.pauseMusic();
         this.soundManager.playMusic('pause');
@@ -669,12 +761,29 @@ export class LtDanRunner {
     resumeGame() {
         if (this.gameState !== 'paused') return;
         
-        this.gameState = 'playing';
+        // Resume to the previous state (playing or tutorial)
+        this.gameState = this.previousGameState || 'playing';
         this.updateHUDVisibility();
         this.pauseScreen.classList.add('hidden');
         
+        // Remove paused animation and change icon back to hamburger
+        this.pauseButton.classList.remove('paused');
+        this.pauseButton.textContent = '≡';
+        this.pauseButton.title = 'Pause Game';
+        
         this.soundManager.stopMusic();
         this.soundManager.playMusic('game');
+    }
+    
+    updatePauseMenuText() {
+        // Update button text based on whether we're in tutorial or regular play
+        if (this.previousGameState === 'tutorial') {
+            this.resumeButton.textContent = '▶️ Resume Tutorial';
+            this.restartFromPauseButton.textContent = '🔄 Restart Tutorial';
+        } else {
+            this.resumeButton.textContent = '▶️ Resume Campaign';
+            this.restartFromPauseButton.textContent = '🔄 Restart';
+        }
     }
     
     showDevMenu() {
@@ -690,16 +799,51 @@ export class LtDanRunner {
             this.showSpeed = e.target.checked;
         };
         
+        // Score testing controls
+        const scoreInput = this.devMenu.querySelector('#scoreInput');
+        const setScoreBtn = this.devMenu.querySelector('#setScore');
+        const score1KBtn = this.devMenu.querySelector('#score1000');
+        const score10KBtn = this.devMenu.querySelector('#score10000');
+        const score100KBtn = this.devMenu.querySelector('#score100000');
+        const score1MBtn = this.devMenu.querySelector('#score1000000');
+        
+        // Custom score input
+        setScoreBtn.onclick = () => {
+            const newScore = parseInt(scoreInput.value);
+            if (!isNaN(newScore) && newScore >= 0) {
+                this.setTestScore(newScore);
+                scoreInput.value = '';
+            }
+        };
+        
+        scoreInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                setScoreBtn.click();
+            }
+        });
+        
+        // Preset score buttons
+        score1KBtn.onclick = () => this.setTestScore(1000);
+        score10KBtn.onclick = () => this.setTestScore(10000);
+        score100KBtn.onclick = () => this.setTestScore(100000);
+        score1MBtn.onclick = () => this.setTestScore(1000000);
+        
         this.closeDevMenuButton.onclick = () => {
             this.devMenu.classList.add('hidden');
         };
     }
     
+    setTestScore(newScore) {
+        this.score = newScore;
+        this.updateScore();
+        console.log(`Score set to: ${newScore} (${newScore.toString().length} digits)`);
+    }
+    
     updateHUDVisibility() {
-        if (this.gameState === 'playing' || this.gameState === 'paused') {
+        if (this.gameState === 'playing' || this.gameState === 'paused' || this.gameState === 'tutorial') {
             this.gameHeader.classList.remove('show-title');
             this.controlButtons.classList.add('active');
-            this.scoreContainer.classList.remove('active');
+            this.scoreContainer.classList.add('active'); // Show score during tutorial too
         } else {
             this.gameHeader.classList.add('show-title');
             this.controlButtons.classList.remove('active');
@@ -730,6 +874,11 @@ export class LtDanRunner {
         this.updateHUDVisibility();
         this.score = 0;
         this.gameFrame = 0;
+        
+        // Reset pause button icon when starting game
+        this.pauseButton.classList.remove('paused');
+        this.pauseButton.textContent = '≡';
+        this.pauseButton.title = 'Pause Game';
         
         // Reset collections
         this.obstacles = [];
@@ -774,8 +923,32 @@ export class LtDanRunner {
         this.updateScore();
     }
     
+    startTutorial() {
+        console.log('Starting tutorial from Game class');
+        // Ensure canvas/scale match the current viewport
+        this.forceRemeasure();
+        
+        // Start the tutorial
+        this.tutorialManager.startTutorial();
+    }
+    
     restartGame() {
-        this.startGame();
+        // Check if we're restarting from tutorial pause
+        if (this.previousGameState === 'tutorial') {
+            this.restartTutorial();
+        } else {
+            this.startGame();
+        }
+    }
+    
+    restartTutorial() {
+        // Reset pause button icon when restarting tutorial
+        this.pauseButton.classList.remove('paused');
+        this.pauseButton.textContent = '≡';
+        this.pauseButton.title = 'Pause Game';
+        
+        // Start tutorial from beginning
+        this.startTutorial();
     }
     
     triggerCrash(obstacle) {
@@ -842,6 +1015,11 @@ export class LtDanRunner {
         this.hideAllScreens();
         this.updateHUDVisibility();
         this.startScreen.classList.remove('hidden');
+        
+        // Reset pause button icon when returning to main menu
+        this.pauseButton.classList.remove('paused');
+        this.pauseButton.textContent = '≡';
+        this.pauseButton.title = 'Pause Game';
         
         if (this.soundInitialized) {
             this.soundManager.stopMusic();
@@ -1111,6 +1289,24 @@ export class LtDanRunner {
         const now = Date.now();
         if (now - this.lastScoreUpdate > 50) {
             this.scoreElement.textContent = this.score;
+            
+            // Apply dynamic font sizing CSS class based on digit count
+            const digitCount = this.score.toString().length;
+            
+            // Remove existing digit-based classes
+            this.scoreElement.className = this.scoreElement.className.replace(/\bdigits-\d+-?(?:or-less|plus)?\b/g, '');
+            
+            // Add appropriate class based on digit count
+            if (digitCount <= 4) {
+                this.scoreElement.classList.add('digits-4-or-less');
+            } else if (digitCount === 5) {
+                this.scoreElement.classList.add('digits-5');
+            } else if (digitCount === 6) {
+                this.scoreElement.classList.add('digits-6');
+            } else {
+                this.scoreElement.classList.add('digits-7-plus');
+            }
+            
             this.lastScoreUpdate = now;
             
             if (this.score > 0 && this.score % 100 === 0) {

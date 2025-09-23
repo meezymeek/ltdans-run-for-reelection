@@ -423,7 +423,7 @@ body {
     top: max(var(--space-md), env(safe-area-inset-top));
     left: 50%;
     transform: translateX(-50%);
-    z-index: 100;
+    z-index: 25;
     opacity: 0;
     pointer-events: none;
     transition: var(--transition);
@@ -433,10 +433,10 @@ body {
     opacity: 1;
 }
 
-/* Control Buttons - Bottom right position, close to edge */
+/* Control Buttons - Top right position, close to edge */
 .control-buttons {
     position: absolute;
-    bottom: max(var(--space-xl), env(safe-area-inset-bottom));
+    top: max(var(--space-xl), env(safe-area-inset-top));
     right: max(var(--space-sm), env(safe-area-inset-right));
     z-index: 100;
     display: flex;
@@ -453,34 +453,57 @@ body {
 }
 
 .control-btn {
-    background: transparent !important;
-    border: none !important;
-    outline: none !important;
-    color: var(--color-text);
-    font-size: clamp(var(--font-size-xl), 6vw, var(--font-size-2xl));
-    width: auto;
-    height: auto;
-    display: inline;
+    /* Circular pixel-art pause button */
+    background: rgba(0, 0, 0, 0.7) !important;
+    border: var(--px-border-1) solid var(--px-border) !important;
+    border-radius: var(--radius-md) !important;
+    color: var(--color-accent) !important;
+    font-size: 1.8rem !important;
+    width: 48px !important;
+    height: 48px !important;
+    min-width: 48px !important;
+    min-height: 48px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
     cursor: pointer;
-    transition: var(--transition);
+    transition: var(--transition) !important;
     padding: 0 !important;
     margin: 0 !important;
-    filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.7));
-    box-shadow: none !important;
-    border-radius: 0 !important;
+    box-shadow: var(--px-shadow-offset) var(--px-shadow-offset) 0 var(--px-shadow) !important;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+    position: relative;
+    backdrop-filter: blur(2px);
 }
 
 .control-btn:hover,
 .control-btn:focus {
-    transform: scale(1.1);
-    filter: drop-shadow(3px 3px 6px rgba(0,0,0,0.8));
-    background: transparent !important;
-    outline: none !important;
+    background: rgba(0, 0, 0, 0.85) !important;
+    color: var(--color-accent-bright) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: calc(var(--px-shadow-offset) + 2px) calc(var(--px-shadow-offset) + 2px) 0 var(--px-shadow) !important;
+    outline: 2px solid var(--color-accent) !important;
+    outline-offset: 2px;
 }
 
 .control-btn:active {
-    transform: scale(0.95);
-    background: transparent !important;
+    background: rgba(0, 0, 0, 0.9) !important;
+    transform: translateY(2px) !important;
+    box-shadow: 2px 2px 0 var(--px-shadow) !important;
+}
+
+/* Pause state animation */
+.control-btn.paused {
+    animation: pausePulse 2s ease-in-out infinite alternate;
+}
+
+@keyframes pausePulse {
+    0% { 
+        box-shadow: var(--px-shadow-offset) var(--px-shadow-offset) 0 var(--px-shadow), 0 0 10px rgba(255, 215, 0, 0.3);
+    }
+    100% { 
+        box-shadow: var(--px-shadow-offset) var(--px-shadow-offset) 0 var(--px-shadow), 0 0 20px rgba(255, 215, 0, 0.6);
+    }
 }
 
 
@@ -494,7 +517,7 @@ body {
     text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
     letter-spacing: 0.3em;
     position: relative;
-    top: 2rem; /* push it down */
+    top: .5rem; /* push it down */
 }
 
 .score-badge {
@@ -515,6 +538,28 @@ body {
     margin-top: -20%; /* move score up by ~20% */
     letter-spacing: 0.1em;
     border-radius: var(--radius-pill);
+    /* Dynamic sizing classes will be applied via JavaScript */
+}
+
+/* Dynamic font sizing for different digit counts */
+.score-badge.digits-4-or-less {
+    font-size: clamp(10rem, 30vw, 12rem); /* Full size for 4 digits or less */
+    transform: translateY(0); /* Baseline position */
+}
+
+.score-badge.digits-5 {
+    font-size: clamp(8.5rem, 25.5vw, 10.2rem); /* 85% size for 5 digits */
+    transform: translateY(1rem); /* Move DOWN to compensate for smaller text appearing higher */
+}
+
+.score-badge.digits-6 {
+    font-size: clamp(7rem, 21vw, 8.4rem); /* 70% size for 6 digits */
+    transform: translateY(2rem); /* Move DOWN more for even smaller text */
+}
+
+.score-badge.digits-7-plus {
+    font-size: clamp(6rem, 18vw, 7.2rem); /* 60% size for 7+ digits */
+    transform: translateY(3rem); /* Move DOWN most to keep baseline aligned */
 }
 
 .score-badge.shake {
@@ -1462,40 +1507,89 @@ button:focus {
     }
 }
 
-/* Audio Controls Styles - Optimized for pause screen */
-.audio-controls {
+/* Audio Accordion Styles */
+.audio-accordion {
     background: rgba(0, 0, 0, 0.3);
     border: var(--px-border-1) solid rgba(255, 215, 0, 0.3);
     border-radius: 0;
-    padding: 1rem;
     margin: 1rem 0;
     box-shadow: var(--px-shadow-offset) var(--px-shadow-offset) 0 rgba(0, 0, 0, 0.3);
+    overflow: hidden;
 }
 
-.audio-controls h3 {
+.audio-accordion-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: rgba(255, 215, 0, 0.1);
+    cursor: pointer;
+    transition: var(--transition);
+    border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+    user-select: none;
+}
+
+.audio-accordion-header:hover {
+    background: rgba(255, 215, 0, 0.2);
+}
+
+.audio-accordion-header span:first-child {
     color: var(--color-accent);
     font-size: 1rem;
-    margin-bottom: 0.8rem;
+    font-weight: bold;
     text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
 }
 
+.accordion-arrow {
+    color: var(--color-accent);
+    font-size: 1rem;
+    transition: transform 0.3s ease;
+}
+
+.audio-accordion.collapsed .accordion-arrow {
+    transform: rotate(-90deg);
+}
+
+.audio-accordion-content {
+    padding: 1rem;
+    transition: all 0.3s ease;
+    max-height: 300px;
+    overflow: hidden;
+}
+
+.audio-accordion.collapsed .audio-accordion-content {
+    max-height: 0;
+    padding: 0 1rem;
+}
+
 .volume-control {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin: 0.6rem 0;
-    padding: 0.3rem;
+    margin: 0.8rem 0;
+    padding: 0.8rem;
     background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 215, 0, 0.2);
     border-radius: 0;
 }
 
-.volume-control label {
-    flex: 0 0 80px;
-    font-size: 0.8rem;
-    color: var(--color-text-muted);
+.volume-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
 }
 
-.volume-control input[type="range"] {
+.volume-row label {
+    font-size: 0.9rem;
+    color: var(--color-text-muted);
+    font-weight: bold;
+}
+
+.volume-slider-row {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+}
+
+.volume-slider-row input[type="range"] {
     flex: 1;
     -webkit-appearance: none;
     appearance: none;
@@ -1503,9 +1597,10 @@ button:focus {
     background: rgba(255, 255, 255, 0.2);
     outline: none;
     border: var(--px-border-1) solid var(--px-border);
+    border-radius: 0;
 }
 
-.volume-control input[type="range"]::-webkit-slider-thumb {
+.volume-slider-row input[type="range"]::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
     width: 20px;
@@ -1514,18 +1609,20 @@ button:focus {
     cursor: pointer;
     border: var(--px-border-1) solid var(--px-border);
     box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5);
+    border-radius: 0;
 }
 
-.volume-control input[type="range"]::-moz-range-thumb {
+.volume-slider-row input[type="range"]::-moz-range-thumb {
     width: 20px;
     height: 20px;
     background: var(--color-accent);
     cursor: pointer;
     border: var(--px-border-1) solid var(--px-border);
     box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5);
+    border-radius: 0;
 }
 
-.volume-control span {
+.volume-slider-row span {
     flex: 0 0 50px;
     text-align: right;
     font-size: 0.9rem;
@@ -1534,26 +1631,34 @@ button:focus {
 }
 
 .mute-btn {
-    flex: 0 0 40px !important;
     width: 40px !important;
-    height: 40px !important;
+    height: 32px !important;
     min-width: 40px !important;
-    min-height: 40px !important;
+    min-height: 32px !important;
     padding: 0 !important;
     background: rgba(255, 107, 107, 0.8) !important;
     border: var(--px-border-1) solid var(--px-border) !important;
-    font-size: 1.2rem !important;
+    border-radius: 0 !important;
+    font-size: 1rem !important;
     cursor: pointer;
     transition: var(--transition);
+    box-shadow: 2px 2px 0 var(--px-shadow) !important;
 }
 
 .mute-btn:hover {
     background: var(--color-primary) !important;
+    transform: translateY(-1px);
+    box-shadow: 3px 3px 0 var(--px-shadow) !important;
+}
+
+.mute-btn:active {
+    transform: translateY(1px);
+    box-shadow: 1px 1px 0 var(--px-shadow) !important;
 }
 
 .mute-btn.muted {
     background: rgba(128, 128, 128, 0.8) !important;
-    opacity: 0.6;
+    opacity: 0.7;
 }
 
 /* Responsive audio controls */
@@ -1722,4 +1827,300 @@ button:focus {
 [data-theme="high-contrast"] ::-webkit-scrollbar-track {
     background: #1a1a1a;
     border: 3px solid #000000;
+}
+
+/* Tutorial Dialog System Styles */
+.tutorial-dialog {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    backdrop-filter: blur(4px);
+    font-family: var(--font-pixel);
+    animation: tutorialFadeIn 0.3s ease-out;
+}
+
+.tutorial-content {
+    background: var(--color-surface);
+    border: var(--px-border-1) solid var(--px-border);
+    box-shadow: 8px 8px 0 var(--px-shadow);
+    padding: 2rem;
+    max-width: min(400px, 85vw);
+    max-height: 80vh;
+    overflow-y: auto;
+    color: var(--color-text);
+    text-align: center;
+    position: relative;
+}
+
+.tutorial-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.tutorial-title {
+    font-size: clamp(1.3rem, 5vw, 1.8rem);
+    color: var(--color-accent);
+    font-weight: bold;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    flex: 1 1 auto;
+}
+
+.tutorial-progress {
+    font-size: clamp(0.9rem, 3.5vw, 1.1rem);
+    color: var(--color-text-muted);
+    background: rgba(0, 0, 0, 0.3);
+    padding: 0.5rem 0.8rem;
+    border: 1px solid var(--color-accent);
+    border-radius: 0;
+    flex: 0 0 auto;
+    min-width: fit-content;
+}
+
+.tutorial-message {
+    font-size: clamp(1rem, 4vw, 1.3rem);
+    line-height: 1.4;
+    margin-bottom: 2rem;
+    color: var(--color-text);
+    background: rgba(255, 255, 255, 0.05);
+    padding: 1.5rem;
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    border-radius: 0;
+    box-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.3);
+}
+
+.tutorial-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 1.5rem;
+}
+
+.tutorial-continue-btn {
+    background: var(--color-accent) !important;
+    color: var(--color-text-dark) !important;
+    border: var(--px-border-1) solid var(--px-border) !important;
+    border-radius: 0 !important;
+    padding: 14px 20px !important;
+    min-height: 48px !important;
+    min-width: 140px !important;
+    font-family: var(--font-pixel) !important;
+    font-size: clamp(1rem, 4vw, 1.2rem) !important;
+    font-weight: bold !important;
+    text-shadow: none !important;
+    box-shadow: var(--px-shadow-offset) var(--px-shadow-offset) 0 var(--px-shadow) !important;
+    transition: var(--transition) !important;
+    cursor: pointer;
+    animation: tutorialPulse 2s ease-in-out infinite alternate;
+}
+
+.tutorial-continue-btn:hover {
+    background: var(--color-accent-bright) !important;
+    transform: translateY(-2px);
+    box-shadow: calc(var(--px-shadow-offset) + 2px) calc(var(--px-shadow-offset) + 2px) 0 var(--px-shadow) !important;
+}
+
+.tutorial-continue-btn:active {
+    transform: translateY(2px);
+    box-shadow: 2px 2px 0 var(--px-shadow) !important;
+}
+
+.tutorial-skip-btn {
+    background: #666666 !important;
+    color: var(--color-text) !important;
+    border: var(--px-border-1) solid var(--px-border) !important;
+    border-radius: 0 !important;
+    padding: 12px 16px !important;
+    min-height: 48px !important;
+    min-width: 120px !important;
+    font-family: var(--font-pixel) !important;
+    font-size: clamp(0.9rem, 3.5vw, 1.1rem) !important;
+    font-weight: normal !important;
+    text-shadow: none !important;
+    box-shadow: var(--px-shadow-offset) var(--px-shadow-offset) 0 var(--px-shadow) !important;
+    transition: var(--transition) !important;
+    cursor: pointer;
+    opacity: 0.8;
+}
+
+.tutorial-skip-btn:hover {
+    background: #777777 !important;
+    opacity: 1;
+    transform: translateY(-2px);
+    box-shadow: calc(var(--px-shadow-offset) + 2px) calc(var(--px-shadow-offset) + 2px) 0 var(--px-shadow) !important;
+}
+
+.tutorial-skip-btn:active {
+    transform: translateY(2px);
+    box-shadow: 2px 2px 0 var(--px-shadow) !important;
+}
+
+/* Tutorial dialog animations */
+@keyframes tutorialFadeIn {
+    0% {
+        opacity: 0;
+        backdrop-filter: blur(0px);
+    }
+    100% {
+        opacity: 1;
+        backdrop-filter: blur(4px);
+    }
+}
+
+@keyframes tutorialPulse {
+    0% { 
+        box-shadow: var(--px-shadow-offset) var(--px-shadow-offset) 0 var(--px-shadow), 0 0 10px rgba(255, 215, 0, 0.3);
+    }
+    100% { 
+        box-shadow: var(--px-shadow-offset) var(--px-shadow-offset) 0 var(--px-shadow), 0 0 20px rgba(255, 215, 0, 0.6);
+    }
+}
+
+/* Tutorial dialog mobile optimizations */
+@media (max-width: 480px) {
+    .tutorial-content {
+        padding: 1.5rem;
+        max-width: 90vw;
+        max-height: 85vh;
+    }
+    
+    .tutorial-header {
+        flex-direction: column;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+        text-align: center;
+    }
+    
+    .tutorial-title {
+        font-size: clamp(1.1rem, 5vw, 1.5rem);
+    }
+    
+    .tutorial-progress {
+        font-size: clamp(0.8rem, 3vw, 1rem);
+        padding: 0.4rem 0.6rem;
+    }
+    
+    .tutorial-message {
+        font-size: clamp(0.9rem, 4vw, 1.1rem);
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .tutorial-actions {
+        flex-direction: column;
+        gap: 0.8rem;
+        align-items: center;
+    }
+    
+    .tutorial-continue-btn,
+    .tutorial-skip-btn {
+        width: 100% !important;
+        max-width: 200px;
+        min-width: 160px !important;
+    }
+}
+
+/* Landscape mode adjustments for tutorial */
+@media (orientation: landscape) and (max-height: 500px) {
+    .tutorial-content {
+        max-height: 90vh;
+        padding: 1rem 1.5rem;
+    }
+    
+    .tutorial-header {
+        margin-bottom: 1rem;
+    }
+    
+    .tutorial-message {
+        margin-bottom: 1rem;
+        padding: 1rem;
+    }
+    
+    .tutorial-actions {
+        margin-top: 1rem;
+        flex-direction: row;
+    }
+}
+
+/* High contrast theme tutorial adjustments */
+[data-theme="high-contrast"] .tutorial-content {
+    background: #000000;
+    border: 3px solid #ffffff;
+    box-shadow: 8px 8px 0 #ffffff;
+}
+
+[data-theme="high-contrast"] .tutorial-title {
+    color: #ffff00;
+}
+
+[data-theme="high-contrast"] .tutorial-progress {
+    background: #1a1a1a;
+    border: 2px solid #ffff00;
+    color: #ffffff;
+}
+
+[data-theme="high-contrast"] .tutorial-message {
+    background: #1a1a1a;
+    border: 2px solid #ffffff;
+    color: #ffffff;
+}
+
+[data-theme="high-contrast"] .tutorial-continue-btn {
+    background: #ffff00 !important;
+    color: #000000 !important;
+    border: 3px solid #000000 !important;
+}
+
+[data-theme="high-contrast"] .tutorial-skip-btn {
+    background: #666666 !important;
+    color: #ffffff !important;
+    border: 3px solid #000000 !important;
+}
+
+/* Tutorial visual indicators (for future use) */
+.tutorial-arrow {
+    position: absolute;
+    font-size: 2rem;
+    color: var(--color-accent);
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+    animation: tutorialBounce 1.5s ease-in-out infinite;
+    z-index: 9999;
+}
+
+.tutorial-highlight {
+    position: absolute;
+    border: 3px solid var(--color-accent);
+    border-radius: 0;
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+    animation: tutorialHighlight 2s ease-in-out infinite alternate;
+    z-index: 9998;
+    pointer-events: none;
+}
+
+@keyframes tutorialBounce {
+    0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+    40% { transform: translateY(-10px); }
+    60% { transform: translateY(-5px); }
+}
+
+@keyframes tutorialHighlight {
+    0% { 
+        opacity: 0.7;
+        box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+    }
+    100% { 
+        opacity: 1;
+        box-shadow: 0 0 30px rgba(255, 215, 0, 0.8);
+    }
 }

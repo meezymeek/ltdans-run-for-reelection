@@ -92,7 +92,7 @@
         
         <!-- Control Buttons - Bottom right -->
         <div class="control-buttons">
-            <button class="control-btn" id="pauseButton" title="Pause Game">⏸</button>
+            <button class="control-btn" id="pauseButton" title="Pause Game">≡</button>
         </div>
         
         <canvas id="gameCanvas" width="800" height="600"></canvas>
@@ -103,6 +103,7 @@
                 <p>Help Lt. Dan win the election!</p>
                 <div class="menu-buttons">
                     <button id="startButton">Start Campaign!</button>
+                    <button id="tutorialButton" class="secondary-button">📚 Tutorial</button>
                     <button id="leaderboardButton" class="secondary-button">🏆 Leaderboard</button>
                 </div>
             </div>
@@ -156,26 +157,43 @@
                 <h2>⏸️ Game Paused</h2>
                 <p>Take a break, the campaign will wait!</p>
                 
-                <!-- Audio Controls -->
-                <div class="audio-controls">
-                    <h3>🔊 Audio Settings</h3>
-                    <div class="volume-control">
-                        <label for="masterVolume">Master Volume</label>
-                        <input type="range" id="masterVolume" min="0" max="100" value="70">
-                        <span id="masterVolumeValue">70%</span>
-                        <button id="masterMute" class="mute-btn">🔇</button>
+                <!-- Audio Controls Accordion -->
+                <div class="audio-accordion collapsed">
+                    <div class="audio-accordion-header" id="audioAccordionHeader">
+                        <span>🔊 Audio Settings</span>
+                        <span class="accordion-arrow">◀</span>
                     </div>
-                    <div class="volume-control">
-                        <label for="musicVolume">Music Volume</label>
-                        <input type="range" id="musicVolume" min="0" max="100" value="60">
-                        <span id="musicVolumeValue">60%</span>
-                        <button id="musicMute" class="mute-btn">🔇</button>
-                    </div>
-                    <div class="volume-control">
-                        <label for="effectsVolume">Effects Volume</label>
-                        <input type="range" id="effectsVolume" min="0" max="100" value="80">
-                        <span id="effectsVolumeValue">80%</span>
-                        <button id="effectsMute" class="mute-btn">🔇</button>
+                    <div class="audio-accordion-content" id="audioAccordionContent">
+                        <div class="volume-control">
+                            <div class="volume-row">
+                                <label for="masterVolume">Master Volume</label>
+                                <button id="masterMute" class="mute-btn">🔇</button>
+                            </div>
+                            <div class="volume-slider-row">
+                                <input type="range" id="masterVolume" min="0" max="100" value="70">
+                                <span id="masterVolumeValue">70%</span>
+                            </div>
+                        </div>
+                        <div class="volume-control">
+                            <div class="volume-row">
+                                <label for="musicVolume">Music Volume</label>
+                                <button id="musicMute" class="mute-btn">🔇</button>
+                            </div>
+                            <div class="volume-slider-row">
+                                <input type="range" id="musicVolume" min="0" max="100" value="60">
+                                <span id="musicVolumeValue">60%</span>
+                            </div>
+                        </div>
+                        <div class="volume-control">
+                            <div class="volume-row">
+                                <label for="effectsVolume">Effects Volume</label>
+                                <button id="effectsMute" class="mute-btn">🔇</button>
+                            </div>
+                            <div class="volume-slider-row">
+                                <input type="range" id="effectsVolume" min="0" max="100" value="80">
+                                <span id="effectsVolumeValue">80%</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 

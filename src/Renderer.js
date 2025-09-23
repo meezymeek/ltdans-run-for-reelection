@@ -30,11 +30,13 @@ export class Renderer {
         ctx.lineTo(game.canvas.width, groundY);
         ctx.stroke();
         
-        // Draw Score UI FIRST (before player and other entities)
-        this.renderScoreUI(game);
+        // Draw tutorial text EARLY (below player and UI elements, above background)
+        if (game.gameState === 'tutorial' && game.tutorialManager) {
+            this.renderTutorialText(game);
+        }
         
         // Draw TRON-style trail segments BEFORE player (so they appear behind)
-        if (game.gameState === 'playing' && game.trailSegments.length > 0) {
+        if ((game.gameState === 'playing' || game.gameState === 'tutorial') && game.trailSegments.length > 0) {
             this.drawTrailSegments(game);
         }
         
@@ -42,7 +44,7 @@ export class Renderer {
         if (game.gameState === 'crashing' && game.ragdoll) {
             // Draw ragdoll
             game.ragdoll.render(ctx);
-        } else if (game.gameState === 'playing') {
+        } else if (game.gameState === 'playing' || game.gameState === 'tutorial') {
             // Draw player based on mode
             if (game.player.isTrainMode) {
                 this.drawTrainPlayer(game);
@@ -91,8 +93,18 @@ export class Renderer {
         ctx.restore();
         
         // Draw train mode UI (if active)
-        if (game.gameState === 'playing' && game.player.isTrainMode) {
+        if ((game.gameState === 'playing' || game.gameState === 'tutorial') && game.player.isTrainMode) {
             this.drawTrainModeUI(game);
+        }
+        
+        // Draw tutorial crash overlay if active
+        if (game.gameState === 'tutorial' && game.tutorialCrashOverlay > 0) {
+            this.renderTutorialCrashOverlay(game);
+        }
+        
+        // Draw pause button arrow if in completion stage
+        if (game.gameState === 'tutorial' && game.tutorialManager && game.tutorialManager.shouldShowPauseArrow()) {
+            this.renderPauseArrow(game);
         }
         
         // Draw popups LAST (on top of everything)
@@ -123,16 +135,38 @@ export class Renderer {
         ctx.fillStyle = '#ffd700';
         ctx.fillText('VOTES', centerX, topY);
         
-        // Draw score number with block black shadow (centered, even bigger)
-        ctx.font = 'bold 80px Tiny5';
+        // Calculate dynamic font size based on score digit count
+        const scoreString = game.score.toString();
+        const digitCount = scoreString.length;
+        let baseFontSize = 80;
+        let scaleFactor = 1.0;
+        
+        // Adjust font size based on digit count
+        if (digitCount <= 4) {
+            scaleFactor = 1.0; // 4 digits at current size is max comfortable
+        } else if (digitCount === 5) {
+            scaleFactor = 0.85; // 15% smaller for 5 digits
+        } else if (digitCount === 6) {
+            scaleFactor = 0.70; // 30% smaller for 6 digits
+        } else {
+            scaleFactor = 0.60; // 40% smaller for 7+ digits
+        }
+        
+        const adjustedFontSize = Math.floor(baseFontSize * scaleFactor);
+        
+        // Draw score number with block black shadow (centered, dynamically sized)
+        ctx.font = `bold ${adjustedFontSize}px Tiny5`;
         ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        // Black shadow offset
+        ctx.textBaseline = 'top'; // Use top baseline for consistent positioning
+        // Black shadow offset (scale shadow with font size)
+        const shadowOffset = Math.max(2, Math.floor(4 * scaleFactor));
+        // Fixed Y position for consistent placement regardless of font size
+        const scoreY = topY + 45; // Consistent top position for score text
         ctx.fillStyle = '#000000';
-        ctx.fillText(game.score.toString(), centerX + 4, topY + 74);
+        ctx.fillText(scoreString, centerX + shadowOffset, scoreY + shadowOffset);
         // White text on top
         ctx.fillStyle = '#ffffff';
-        ctx.fillText(game.score.toString(), centerX, topY + 70);
+        ctx.fillText(scoreString, centerX, scoreY);
         
         // Add milestone animation effect (centered)
         if (game.score > 0 && game.score % 100 === 0) {
@@ -905,6 +939,202 @@ export class Renderer {
             ctx.fillStyle = '#FFFFFF';
             ctx.fillRect(segment.x - segment.width/4, segment.y - segment.height/4, segment.width/2, segment.height/2);
         }
+        
+        ctx.restore();
+    }
+    
+    static renderTutorialText(game) {
+        const tutorialInfo = game.tutorialManager.getCurrentMessage();
+        if (!tutorialInfo) return;
+        
+        const ctx = game.ctx;
+        ctx.save();
+        
+        // Position tutorial text 50% lower from current position
+        const textX = game.canvas.width / 2;
+        const textY = game.canvas.height * 0.9; // 80% down from top (50% lower from 59%)
+        
+        // Calculate text dimensions for proper sizing
+        ctx.font = 'bold 14px Tiny5';
+        const maxWidth = game.canvas.width - 80;
+        
+        // Wrap the instruction text
+        const words = tutorialInfo.instruction.split(' ');
+        const lines = [];
+        let currentLine = '';
+        
+        for (let word of words) {
+            const testLine = currentLine + (currentLine ? ' ' : '') + word;
+            const metrics = ctx.measureText(testLine);
+            
+            if (metrics.width > maxWidth && currentLine) {
+                lines.push(currentLine);
+                currentLine = word;
+            } else {
+                currentLine = testLine;
+            }
+        }
+        if (currentLine) lines.push(currentLine);
+        
+        // Calculate background height based on content
+        const lineHeight = 18;
+        const padding = 15;
+        const backgroundHeight = padding * 2 + 20 + 20 + (lines.length * lineHeight);
+        const backgroundWidth = game.canvas.width - 60;
+        const backgroundX = 30;
+        const backgroundY = textY - backgroundHeight/2;
+        
+        // Draw semi-transparent background
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        ctx.fillRect(backgroundX, backgroundY, backgroundWidth, backgroundHeight);
+        
+        // Draw golden border
+        ctx.strokeStyle = '#ffd700';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(backgroundX, backgroundY, backgroundWidth, backgroundHeight);
+        
+        // Draw progress indicator with navigation arrows
+        const progressY = backgroundY + padding + 8;
+        const canGoPrevious = game.tutorialManager.currentSection > 0;
+        const canGoNext = game.tutorialManager.currentSection < game.tutorialManager.sections.length - 1;
+        
+        // Left arrow (previous section) - part of progress row
+        if (canGoPrevious) {
+            ctx.font = 'bold 16px Tiny5';
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#ffd700';
+            ctx.fillText('◀', textX - 80, progressY);
+        }
+        
+        // Progress text in center
+        ctx.font = 'bold 12px Tiny5';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#ffd700';
+        ctx.fillText(tutorialInfo.progress, textX, progressY);
+        
+        // Right arrow (next section) - part of progress row
+        if (canGoNext) {
+            ctx.font = 'bold 16px Tiny5';
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#ffd700';
+            ctx.fillText('▶', textX + 80, progressY);
+        }
+        
+        // Draw title
+        ctx.font = 'bold 16px Tiny5';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#ffd700';
+        ctx.fillText(tutorialInfo.title, textX, backgroundY + padding + 28);
+        
+        // Draw instruction lines
+        ctx.font = 'bold 14px Tiny5';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#ffffff';
+        
+        for (let i = 0; i < lines.length; i++) {
+            ctx.fillText(lines[i], textX, backgroundY + padding + 50 + (i * lineHeight));
+        }
+        
+        
+        ctx.restore();
+    }
+    
+    static renderTutorialCrashOverlay(game) {
+        const ctx = game.ctx;
+        ctx.save();
+        
+        // Draw red overlay with fade effect
+        ctx.fillStyle = `rgba(255, 0, 0, ${game.tutorialCrashOverlay * 0.4})`; // Max 40% opacity
+        ctx.fillRect(0, 0, game.canvas.width, game.canvas.height);
+        
+        ctx.restore();
+    }
+    
+    static renderPauseArrow(game) {
+        const ctx = game.ctx;
+        ctx.save();
+        
+        // Calculate tutorial message box position (matching renderTutorialText)
+        const textX = game.canvas.width / 2;
+        const textY = game.canvas.height * 0.9;
+        const backgroundWidth = game.canvas.width - 60;
+        const backgroundX = 30;
+        
+        // Estimate background height (simplified calculation)
+        const padding = 15;
+        const backgroundHeight = padding * 2 + 20 + 20 + (2 * 18); // Roughly 2 lines for completion text
+        const backgroundY = textY - backgroundHeight/2;
+        
+        // Start point: middle of right side of message box
+        const startX = backgroundX + backgroundWidth;
+        const startY = backgroundY + backgroundHeight / 2;
+        
+        // End point: center of left side of pause button
+        // Button is 48x48px, positioned 32px from top and 8px from right
+        const endX = game.canvas.width - 56; // Left edge of 48px button (8px margin + 48px width)
+        const endY = 56; // Vertical center of button (32px top margin + 24px to center)
+        
+        // Animation values
+        const time = Date.now() % 2000; // 2 second cycle
+        const animationProgress = time / 2000;
+        const bounce = Math.sin(animationProgress * Math.PI * 4) * 10; // Bouncing effect
+        
+        // Draw arrow line with animation
+        ctx.strokeStyle = '#ffd700';
+        ctx.lineWidth = 3;
+        ctx.shadowColor = '#ffd700';
+        ctx.shadowBlur = 8;
+        
+        // Animated dashed line
+        ctx.setLineDash([10, 5]);
+        ctx.lineDashOffset = -time * 0.02; // Moving dashes
+        
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        
+        // Create an extremely dramatic S-curve path to the pause button
+        const controlPoint1X = startX + 100;
+        const controlPoint1Y = startY - 300 + bounce; // Very high arc up
+        const controlPoint2X = endX - 300;
+        const controlPoint2Y = endY - 50 - bounce; // Deep curve down
+        
+        ctx.bezierCurveTo(controlPoint1X, controlPoint1Y, controlPoint2X, controlPoint2Y, endX, endY);
+        ctx.stroke();
+        
+        // Reset line dash for arrowhead
+        ctx.setLineDash([]);
+        
+        // Draw arrowhead at pause button
+        const arrowSize = 15 + Math.sin(animationProgress * Math.PI * 6) * 3; // Pulsing size
+        const angle = Math.atan2(endY - controlPoint2Y, endX - controlPoint2X); // Angle from final control point
+        
+        ctx.save();
+        ctx.translate(endX, endY);
+        ctx.rotate(angle);
+        
+        ctx.fillStyle = '#ffd700';
+        ctx.shadowColor = '#ffd700';
+        ctx.shadowBlur = 10;
+        
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-arrowSize, -arrowSize/2);
+        ctx.lineTo(-arrowSize, arrowSize/2);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+        
+        // Add pulsing text near the curve peak
+        const labelX = controlPoint1X;
+        const labelY = controlPoint1Y - 20;
+        
+        ctx.font = 'bold 14px Tiny5';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#000000';
+        ctx.fillText('Pause to return', labelX + 2, labelY + 2); // Shadow
+        ctx.fillStyle = '#ffd700';
+        ctx.fillText('Pause to return', labelX, labelY);
         
         ctx.restore();
     }
