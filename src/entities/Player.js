@@ -93,7 +93,7 @@ export class Player {
         
         // Position lerping for parachute launch
         this.parachuteOriginalXPercent = this.xPercent;
-        this.parachuteLaunchXPercent = this.xPercent + 0.05; // Move forward by 5% when parachute activates
+        this.parachuteLaunchXPercent = this.xPercent + 0.08; // Move forward by 8% when parachute activates
         this.parachutePositionActive = false;
         
         // Simple TRON-style trail (just track position history)
@@ -183,7 +183,7 @@ export class Player {
             // Activate parachute launch position effect (if not in train mode)
             if (!this.isTrainMode) {
                 this.parachuteOriginalXPercent = this.xPercent; // Store current position
-                this.parachuteLaunchXPercent = this.xPercent + 0.05; // Move forward by 5%
+                this.parachuteLaunchXPercent = this.xPercent + 0.08; // Move forward by 8%
                 this.parachutePositionActive = true;
                 this.targetXPercent = this.parachuteLaunchXPercent; // Set target to launch position
             }
