@@ -2,7 +2,7 @@
 FROM nginx:alpine
 
 # Force complete rebuild with timestamp
-ENV REBUILD_TIME=2025-01-17-1838
+ENV REBUILD_TIME=2025-01-23-2002
 ARG CACHEBUST=1
 
 # Copy static files to nginx html directory
