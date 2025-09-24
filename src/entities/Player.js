@@ -188,6 +188,21 @@ export class Player {
                 this.targetXPercent = this.parachuteLaunchXPercent; // Set target to launch position
             }
             
+            // Activate tap overlay when parachute is given
+            if (game && game.parachuteTapOverlay) {
+                game.parachuteTapOverlay.activate(
+                    this.x + this.width / 2,
+                    this.y + this.height / 2,
+                    this.canvas
+                );
+            }
+            
+            // Track parachute acquisition for Gerrymander Express spawn requirements (campaign mode only)
+            if (game && game.gameState === 'playing') {
+                game.parachuteActivationCount++;
+                console.log(`Parachute acquired! Count: ${game.parachuteActivationCount}`);
+            }
+            
             // Notify tutorial manager of parachute deployment
             if (game && game.gameState === 'tutorial' && game.tutorialManager) {
                 game.tutorialManager.handleParachuteDeployed();
@@ -298,6 +313,11 @@ export class Player {
                 this.lastTapTime = 0;
                 this.velocityY = Math.max(this.velocityY, 2);
                 
+                // Deactivate tap overlay when parachute expires
+                if (game && game.parachuteTapOverlay) {
+                    game.parachuteTapOverlay.deactivate();
+                }
+                
                 // Restore original position if parachute position was active and not in train mode
                 if (this.parachutePositionActive && !this.isTrainMode) {
                     this.targetXPercent = this.parachuteOriginalXPercent;
@@ -359,6 +379,11 @@ export class Player {
             this.hasParachute = false;
             this.parachuteUsedThisJump = false;
             this.parachuteTimeLeft = 0;
+            
+            // Deactivate tap overlay when landing
+            if (hadParachute && game && game.parachuteTapOverlay) {
+                game.parachuteTapOverlay.deactivate();
+            }
             
             // Restore original position if parachute position was active and not in train mode
             if (hadParachutePositionActive && !this.isTrainMode) {

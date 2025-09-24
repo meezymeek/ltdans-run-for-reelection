@@ -43,6 +43,9 @@ export class GameLoop {
             this.updateTrailSegments(game);
             this.updatePopups(game);
             
+            // Update parachute tap overlay
+            game.parachuteTapOverlay.update(game.deltaTime, game);
+            
             // Continuous scoring with train mode multiplier
             if (game.gameFrame % 10 === 0) {
                 const basePoints = 1;
@@ -126,6 +129,9 @@ export class GameLoop {
             this.updateTrailSegments(game);
             this.updatePopups(game);
             
+            // Update parachute tap overlay
+            game.parachuteTapOverlay.update(game.deltaTime, game);
+            
             // Check for tutorial-specific collisions and events
             this.handleTutorialCollisions(game);
         } else if (game.gameState === 'paused') {
@@ -185,8 +191,8 @@ export class GameLoop {
                         game.score += points;
                         GameLogic.updateScore(game);
                         const displayText = game.player.isTrainMode ? `+${points} (2X!)` : `+${points}`;
-                        GameLogic.addPopup(game, displayText, 
-                                      game.player.x + game.player.width/2, game.player.y - 20);
+                        GameLogic.addPopup(game, displayText,
+                                      game.player.x + game.player.width/2 + 50, game.player.y - 20);
                         game.soundManager.playPointTall();
                     } else {
                         const basePoints = game.config.lowPoints;
@@ -195,8 +201,8 @@ export class GameLoop {
                         game.score += points;
                         GameLogic.updateScore(game);
                         const displayText = game.player.isTrainMode ? `+${points} (2X!)` : `+${points}`;
-                        GameLogic.addPopup(game, displayText, 
-                                      game.player.x + game.player.width/2, game.player.y - 20);
+                        GameLogic.addPopup(game, displayText,
+                                      game.player.x + game.player.width/2 + 50, game.player.y - 20);
                         game.soundManager.playPointLow();
                     }
                 } else if (game.gameState === 'tutorial') {
@@ -330,9 +336,14 @@ export class GameLoop {
                 // Visual feedback - check if parachute was actually given
                 const parachuteGiven = game.player.hasParachute && game.player.parachuteTimeLeft > 0;
                 if (parachuteGiven) {
-                    GameLogic.addPopup(game, "PARACHUTE!", game.player.x, game.player.y - 50, {icon: '🪂'});
+                    GameLogic.addPopup(game, "PARACHUTE!", game.canvas.width / 2, game.canvas.height * 0.9, {icon: '🪂', duration: 2550});
+                    // Activate tap overlay when parachute is given
+                    game.parachuteTapOverlay.activate(
+                        game.player.x + game.player.width / 2,
+                        game.player.y + game.player.height / 2
+                    );
                 } else {
-                    GameLogic.addPopup(game, "SUPER JUMP!", game.player.x, game.player.y - 50, {icon: '⬆️'});
+                    GameLogic.addPopup(game, "SUPER JUMP!", game.canvas.width / 2, game.canvas.height * 0.9, {icon: '⬆️', duration: 2550});
                 }
             }
         }
@@ -384,12 +395,23 @@ export class GameLoop {
         
         // Only spawn when player has an active parachute AND not currently in train mode
         if (game.player.hasParachute && game.player.parachuteTimeLeft > 0 && !game.player.isTrainMode) {
-            // Spawn every 2 seconds when parachute is active (reduced frequency)
+            // New spawn limitations:
+            // 1. Require at least 3 parachute activations
+            if (game.parachuteActivationCount < 3) return;
+            
+            // 2. Check cooldown - prevent spawning for 15 seconds after last collection
+            const currentTime = Date.now();
+            if (currentTime - game.lastGerrymanderExpressTime < game.gerrymanderExpressCooldown) return;
+            
+            // 3. Spawn every 2 seconds when parachute is active, but with probability check
             if (game.gameFrame % 120 === 0) {
-                const gerrymanderExpress = new GerrymanderExpress(game.canvas);
-                gerrymanderExpress.setPosition(game.player.groundY);
-                gerrymanderExpress.setSpeed(game.config.obstacleSpeed);
-                game.gerrymanderExpresses.push(gerrymanderExpress);
+                // 4. Add spawn probability - only 40% chance to spawn
+                if (Math.random() < 0.4) {
+                    const gerrymanderExpress = new GerrymanderExpress(game.canvas);
+                    gerrymanderExpress.setPosition(game.player.groundY);
+                    gerrymanderExpress.setSpeed(game.config.obstacleSpeed);
+                    game.gerrymanderExpresses.push(gerrymanderExpress);
+                }
             }
         }
         // No spawning when no parachute is active or train mode is active
@@ -455,7 +477,7 @@ export class GameLoop {
                 
                 // Visual feedback
                 const displayText = game.player.isTrainMode ? `+${points} VOTES! (2X!)` : `+${points} VOTES!`;
-                GameLogic.addPopup(game, displayText, bribe.x, bribe.y, {icon: '💰'});
+                GameLogic.addPopup(game, displayText, bribe.x + 50, bribe.y, {icon: '💰'});
                 
                 // Play collect sound (use point sound for now)
                 game.soundManager.playPointTall();
@@ -482,6 +504,9 @@ export class GameLoop {
                 game.gerrymanderExpresses.splice(i, 1);
                 gerrymanderExpress.collect();
                 
+                // Set cooldown timer to prevent spawning for 15 seconds (hidden from player)
+                game.lastGerrymanderExpressTime = Date.now();
+                
                 // Activate train mode
                 if (game.player.activateTrainMode()) {
                     // Clear all remaining gerrymander express pickups to prevent multiple collection
@@ -492,8 +517,8 @@ export class GameLoop {
                     }
                     
                     // Visual feedback
-                    GameLogic.addPopup(game, "GERRYMANDER EXPRESS!", 
-                                      game.player.x + game.player.width/2, game.player.y - 50, {icon: '🚂'});
+                    GameLogic.addPopup(game, "GERRYMANDER EXPRESS!",
+                                      game.canvas.width / 2, game.canvas.height * 0.9, {icon: '🚂', duration: 2550});
                     
                     // Play train activation sound
                     game.soundManager.playEffect('choochoo');
@@ -534,19 +559,35 @@ export class GameLoop {
                 p.scale = 1.0;
             }
 
-            // Animate toward top-center of screen with ramping speed
-            const targetX = game.canvas.width / 2;
-            const targetY = game.canvas.height * 0.15;
-            const linger = 0.25; // linger for first 25% of life
-            let speedFactor;
-            if (k < linger) {
-                speedFactor = 0.002; // very slow drift at start
+            // Detect if this is a power message (appears at tutorial message box location)
+            const isPowerMessage = Math.abs(p.y - game.canvas.height * 0.9) < 10; // Within 10px of tutorial position
+
+            if (isPowerMessage) {
+                // Power message animation: hold position briefly, then slide right
+                const holdTime = 0.4; // Hold for first 40% of life
+                if (k < holdTime) {
+                    // Hold position (no movement)
+                } else {
+                    // Slide to the right quickly
+                    const slideProgress = (k - holdTime) / (1 - holdTime);
+                    const slideSpeed = 8 + (slideProgress * 12); // Accelerating slide
+                    p.x += slideSpeed;
+                }
             } else {
-                const u = (k - linger) / (1 - linger);
-                speedFactor = 0.01 + 0.18 * u; // then ramp up quickly
+                // Regular message animation: float toward top-center
+                const targetX = game.canvas.width / 2;
+                const targetY = game.canvas.height * 0.15;
+                const linger = 0.25; // linger for first 25% of life
+                let speedFactor;
+                if (k < linger) {
+                    speedFactor = 0.002; // very slow drift at start
+                } else {
+                    const u = (k - linger) / (1 - linger);
+                    speedFactor = 0.01 + 0.18 * u; // then ramp up quickly
+                }
+                p.x += (targetX - p.x) * speedFactor;
+                p.y += (targetY - p.y) * speedFactor;
             }
-            p.x += (targetX - p.x) * speedFactor;
-            p.y += (targetY - p.y) * speedFactor;
 
             // Fade out quicker
             if (k < 0.35) {
@@ -614,7 +655,7 @@ export class GameLoop {
                 GameLogic.updateScore(game);
                 
                 // Visual feedback
-                GameLogic.addPopup(game, "+5 VOTES!", bribe.x, bribe.y, {icon: '💰'});
+                GameLogic.addPopup(game, "+5 VOTES!", bribe.x + 50, bribe.y, {icon: '💰'});
                 game.soundManager.playPointTall();
                 
                 // Notify tutorial manager
@@ -636,10 +677,13 @@ export class GameLoop {
                 game.gerrymanderExpresses.splice(i, 1);
                 gerrymanderExpress.collect();
                 
+                // Set cooldown timer to prevent spawning for 15 seconds (hidden from player)
+                game.lastGerrymanderExpressTime = Date.now();
+                
                 if (game.player.activateTrainMode()) {
                     // Visual feedback
-                    GameLogic.addPopup(game, "GERRYMANDER EXPRESS!", 
-                                      game.player.x + game.player.width/2, game.player.y - 50, {icon: '🚂'});
+                    GameLogic.addPopup(game, "GERRYMANDER EXPRESS!",
+                                      game.canvas.width / 2, game.canvas.height * 0.9, {icon: '🚂', duration: 2550});
                     game.soundManager.playEffect('choochoo');
                     
                     // Notify tutorial manager

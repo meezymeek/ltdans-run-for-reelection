@@ -6,6 +6,7 @@ import { SoundManager } from './managers/SoundManager.js';
 import { OrientationManager } from './managers/OrientationManager.js';
 import { TouchFeedbackManager } from './managers/TouchFeedbackManager.js';
 import { TutorialManager } from './managers/TutorialManager.js';
+import { ParachuteTapOverlay } from './managers/ParachuteTapOverlay.js';
 import { GAME_CONFIG } from './constants/GameConfig.js';
 import { Player } from './entities/Player.js';
 import { Obstacle } from './entities/Obstacle.js';
@@ -43,6 +44,7 @@ export class LtDanRunner {
         this.soundManager.loadSettings();
         this.leaderboard = new LeaderboardManager();
         this.tutorialManager = new TutorialManager(this);
+        this.parachuteTapOverlay = new ParachuteTapOverlay();
         
         // Initialize game systems (GameLoop and Renderer use static methods)
         this.gameLogic = new GameLogic(this);
@@ -140,6 +142,11 @@ export class LtDanRunner {
         this.bribeSpawnCounter = 0;
         this.bribePatternCounter = 0;
         this.nextBribePattern = 250;
+        
+        // Gerrymander Express spawn limiting
+        this.parachuteActivationCount = 0;  // Track total parachute activations
+        this.lastGerrymanderExpressTime = 0;  // Hidden cooldown timer
+        this.gerrymanderExpressCooldown = 15000;  // 15 second cooldown (hidden from player)
         
         // Collections
         this.obstacles = [];
@@ -875,6 +882,9 @@ export class LtDanRunner {
         this.score = 0;
         this.gameFrame = 0;
         
+        // Clear previous game state to prevent tutorial restart bug
+        this.previousGameState = null;
+        
         // Reset pause button icon when starting game
         this.pauseButton.classList.remove('paused');
         this.pauseButton.textContent = '≡';
@@ -889,6 +899,10 @@ export class LtDanRunner {
         // Reset spawn counters
         this.constituentSpawnCounter = 0;
         this.bribeSpawnCounter = 0;
+        
+        // Reset Gerrymander Express spawn tracking
+        this.parachuteActivationCount = 0;
+        this.lastGerrymanderExpressTime = 0;
         
         // Reset player (including train mode)
         this.player.reset(this.canvas.height * this.config.groundLevel);
@@ -927,6 +941,9 @@ export class LtDanRunner {
         console.log('Starting tutorial from Game class');
         // Ensure canvas/scale match the current viewport
         this.forceRemeasure();
+        
+        // Clear previous game state to prevent restart bugs
+        this.previousGameState = null;
         
         // Start the tutorial
         this.tutorialManager.startTutorial();
@@ -988,7 +1005,7 @@ export class LtDanRunner {
         if (this.score > this.top5Threshold) {
             console.log(`Score ${this.score} beats top 5 threshold of ${this.top5Threshold}! Playing victory fanfare.`);
             this.soundManager.playEffect('victory-fanfare');
-            GameLogic.addPopup(this, "TOP 5!", this.canvas.width/2, this.canvas.height * 0.4, {icon: '🏆'});
+            GameLogic.addPopup(this, "TOP 5!", this.canvas.width / 2, this.canvas.height * 0.9, {icon: '🏆', duration: 3000});
         } else {
             console.log(`Score ${this.score} didn't beat top 5 threshold of ${this.top5Threshold}. Playing fail sound.`);
             this.soundManager.playEffect('fail');
@@ -1312,7 +1329,7 @@ export class LtDanRunner {
             if (this.score > 0 && this.score % 100 === 0) {
                 this.animateScoreBadge();
                 this.soundManager.playMilestone();
-                GameLogic.addPopup(this, "MILESTONE!", this.canvas.width/2, this.canvas.height * 0.3, {icon: '🎯'});
+                GameLogic.addPopup(this, "MILESTONE!", this.canvas.width / 2, this.canvas.height * 0.9, {icon: '🎯', duration: 2100});
             }
         }
         
