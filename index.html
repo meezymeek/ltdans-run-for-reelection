@@ -207,7 +207,30 @@
         
     </div>
     
+    <!-- Debug Script - Test if JavaScript works at all -->
+    <script>
+        console.log('DEBUG: Basic JavaScript is working on Railway');
+        console.log('DEBUG: Location:', window.location.href);
+        console.log('DEBUG: User Agent:', navigator.userAgent);
+        
+        // Test module loading
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('DEBUG: DOM loaded, about to load ES6 module');
+        });
+    </script>
+    
     <!-- Main Game Entry Point - Using ES6 Modules -->
     <script type="module" src="src/main.js"></script>
+    
+    <!-- Fallback error handling -->
+    <script>
+        window.addEventListener('error', (e) => {
+            console.error('DEBUG: Global error:', e.error, e.filename, e.lineno);
+        });
+        
+        window.addEventListener('unhandledrejection', (e) => {
+            console.error('DEBUG: Unhandled promise rejection:', e.reason);
+        });
+    </script>
 </body>
 </html>
