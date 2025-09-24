@@ -85,7 +85,7 @@ export const PLAYER_CONFIG = {
     parachuteGravityModifier: 0.6, // multiplier (unchanged)
     
     // Launch settings
-    constituentLaunchTargetHeight: 0.5 // Launch to 50% from top of screen (50% up) - more controlled height
+    constituentLaunchTargetHeight: 0.4 // Launch to 50% from top of screen (50% up) - more controlled height
 };
 
 // Visual Configuration

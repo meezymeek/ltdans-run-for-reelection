@@ -30,6 +30,11 @@ export class Renderer {
         ctx.lineTo(game.canvas.width, groundY);
         ctx.stroke();
         
+        // Draw parachute tap overlay EARLY (behind everything except background)
+        if ((game.gameState === 'playing' || game.gameState === 'tutorial') && game.parachuteTapOverlay) {
+            game.parachuteTapOverlay.render(game.ctx, game);
+        }
+        
         // Draw tutorial text EARLY (below player and UI elements, above background)
         if (game.gameState === 'tutorial' && game.tutorialManager) {
             this.renderTutorialText(game);
@@ -582,8 +587,8 @@ export class Renderer {
         
         ctx.restore();
         
-        // Draw parachute timer at smoothly animated position (if player has tapped and not in train mode)
-        if (game.player.timerX && game.player.timerY && !game.player.isTrainMode) {
+        // Draw parachute timer centered on player (if not in train mode)
+        if (!game.player.isTrainMode) {
             this.drawParachuteTimer(game);
         }
     }
@@ -592,103 +597,74 @@ export class Renderer {
         const ctx = game.ctx;
         ctx.save();
         
-        // Radial timer configuration
-        const timerRadius = 35;
-        const innerRadius = 25;
-        const padding = 10;
+        // Position timer directly on the player, centered (like train timer)
+        const timerRadius = 39; // Use same radius as train timer
+        const centerX = game.player.x + game.player.width / 2;
+        const centerY = game.player.y + game.player.height / 2; // Centered on player
         
-        // Calculate center position with bounds checking
-        let centerX = game.player.timerX;
-        let centerY = game.player.timerY;
-        
-        // Ensure timer stays within screen bounds
-        centerX = Math.max(timerRadius + padding, Math.min(centerX, game.canvas.width - timerRadius - padding));
-        centerY = Math.max(timerRadius + padding, Math.min(centerY, game.canvas.height - timerRadius - padding));
-        
-        // Apply tap pulse scaling
-        const scale = game.player.tapPulseScale;
-        ctx.translate(centerX, centerY);
-        ctx.scale(scale, scale);
-        
-        // Time remaining calculation
+        // Calculate parachute time remaining
         const timePercent = Math.max(0, game.player.parachuteTimeLeft / 3);
-        const timeLeft = Math.ceil(game.player.parachuteTimeLeft);
+        const secondsLeft = Math.ceil(game.player.parachuteTimeLeft);
         
-        // Color based on time remaining and tap state
-        let ringColor, progressColor, textColor;
+        // Color based on time remaining and tap state (using train timer color logic)
+        let circleColor, progressColor, textColor;
         if (game.player.parachuteTapping) {
-            ringColor = '#00ff88';
-            progressColor = '#44ff88';
-            textColor = '#00ff88';
+            circleColor = '#00CC44'; // Green when tapping (like train timer green)
+            progressColor = '#00FF55';
+            textColor = '#00FF55';
         } else if (timePercent > 0.5) {
-            ringColor = '#ffd700';
-            progressColor = '#ffed4e';
-            textColor = '#ffd700';
+            circleColor = '#00CC44'; // Green when plenty of time
+            progressColor = '#00FF55';
+            textColor = '#00FF55';
         } else if (timePercent > 0.2) {
-            ringColor = '#ff8c00';
-            progressColor = '#ffaa44';
-            textColor = '#ff8c00';
+            circleColor = '#FF8C00'; // Orange when getting low
+            progressColor = '#FF8C00';
+            textColor = '#FF8C00';
         } else {
-            ringColor = '#ff4444';
-            progressColor = '#ff6666';
-            textColor = '#ff4444';
+            circleColor = '#FF4444'; // Red when almost out
+            progressColor = '#FF4444';
+            textColor = '#FF4444';
         }
         
-        // Draw outer ring background
+        // Draw timer background (completely transparent like train timer)
         ctx.beginPath();
-        ctx.arc(0, 0, timerRadius, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+        ctx.arc(centerX, centerY, timerRadius, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(0, 0, 0, 0)'; // Completely transparent
         ctx.fill();
-        ctx.strokeStyle = ringColor;
+        ctx.strokeStyle = circleColor;
         ctx.lineWidth = 3;
         ctx.stroke();
         
-        // Draw progress arc (clockwise from top)
+        // Draw progress arc (parachute time remaining)
         if (timePercent > 0) {
             ctx.beginPath();
-            const startAngle = -Math.PI / 2; // Start from top
-            const endAngle = startAngle + (Math.PI * 2 * timePercent); // Progress clockwise
-            ctx.arc(0, 0, timerRadius - 2, startAngle, endAngle);
+            const startAngle = -Math.PI / 2;
+            const endAngle = startAngle + (Math.PI * 2 * timePercent);
+            ctx.arc(centerX, centerY, timerRadius - 2, startAngle, endAngle);
             ctx.strokeStyle = progressColor;
             ctx.lineWidth = 6;
             ctx.lineCap = 'round';
             ctx.stroke();
         }
         
-        // Draw inner circle
-        ctx.beginPath();
-        ctx.arc(0, 0, innerRadius, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
-        ctx.fill();
-        ctx.strokeStyle = ringColor;
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        
-        // Draw "TAP!" text with pulsing effect
-        ctx.font = 'bold 14px Tiny5';
+        // Draw countdown text using train timer style
+        ctx.save();
+        ctx.font = 'bold 32px Tiny5';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = '#000000';
+        ctx.shadowColor = 'rgba(0,0,0,0.8)';
+        ctx.shadowBlur = 6;
         
-        // Add glow effect when tapping
-        if (game.player.parachuteTapping) {
-            ctx.shadowColor = textColor;
-            ctx.shadowBlur = 8;
-            ctx.globalAlpha = 1.0;
-        } else {
-            // Subtle pulse animation when not tapping
-            const pulseTime = Date.now() % 1000;
-            ctx.globalAlpha = 0.7 + 0.3 * Math.sin(pulseTime / 1000 * Math.PI * 2);
-        }
+        // Black drop shadow
+        ctx.fillStyle = '#000000';
+        ctx.fillText(`${secondsLeft}s`, centerX + 3, centerY + 3);
         
+        // Colored text on top
         ctx.fillStyle = textColor;
-        ctx.fillText('TAP!', 0, -2);
-        
-        // Draw small time indicator at bottom
-        ctx.shadowBlur = 0;
-        ctx.globalAlpha = 0.8;
-        ctx.font = 'bold 8px Tiny5';
-        ctx.fillStyle = '#ffffff';
-        ctx.fillText(`${timeLeft}s`, 0, 12);
+        ctx.fillText(`${secondsLeft}s`, centerX, centerY);
+        ctx.restore();
         
         ctx.restore();
     }

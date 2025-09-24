@@ -260,7 +260,7 @@ export class GameLogic {
             game.soundManager.playEffect('victory-fanfare');
             
             // Add a special popup for top 5 achievement
-            this.addPopup(game, "TOP 5!", game.canvas.width/2, game.canvas.height * 0.4, {icon: '🏆'});
+            this.addPopup(game, "TOP 5!", game.canvas.width / 2, game.canvas.height * 0.9, {icon: '🏆', duration: 3000});
         } else {
             // Player didn't make top 5, play fail sound
             console.log(`Score ${game.score} didn't beat top 5 threshold of ${game.top5Threshold}. Playing fail sound.`);
@@ -284,7 +284,7 @@ export class GameLogic {
             if (game.score > 0 && game.score % 100 === 0) {
                 this.animateScoreBadge(game);
                 game.soundManager.playMilestone();
-                this.addPopup(game, "MILESTONE!", game.canvas.width/2, game.canvas.height * 0.3, {icon: '🎯'});
+                this.addPopup(game, "MILESTONE!", game.canvas.width / 2, game.canvas.height * 0.9, {icon: '🎯', duration: 2100});
             }
         }
         
@@ -313,7 +313,7 @@ export class GameLogic {
             vx: (Math.random() - 0.5) * 0.25,
             vy: -0.6,
             start: now,
-            life: 850,
+            life: opts.duration || 850, // Allow custom duration, default to 850ms
             scale: 0.6,
             alpha: 1
         });
