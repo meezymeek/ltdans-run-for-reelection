@@ -227,6 +227,9 @@ export class GameLoop {
                     // Ragdoll the obstacle instead of just removing it
                     obstacle.triggerRagdoll(game.player.x + game.player.width/2, game.player.y + game.player.height/2);
                     continue;
+                } else if (game.player.postTrainInvincible) {
+                    // Post-train invincibility - just bypass obstacles, no ragdoll
+                    continue; // Skip this collision entirely
                 } else {
                     // Normal collision - trigger crash
                     GameLogic.triggerCrash(game, obstacle);
@@ -624,6 +627,9 @@ export class GameLoop {
                     // Ragdoll the obstacle instead of just removing it
                     obstacle.triggerRagdoll(game.player.x + game.player.width/2, game.player.y + game.player.height/2);
                     continue;
+                } else if (game.player.postTrainInvincible) {
+                    // Post-train invincibility - just bypass obstacles, no ragdoll
+                    continue; // Skip this collision entirely
                 } else {
                     // In tutorial mode, crashes trigger tutorial-specific behavior
                     game.soundManager.playEffect('crash');

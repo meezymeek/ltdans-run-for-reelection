@@ -87,9 +87,9 @@ export class Player {
         
         // Position lerping for train mode
         this.originalXPercent = this.xPercent;
-        this.trainXPercent = 0.15; // Move forward to 15% from left (closer to middle)
+        this.trainXPercent = 0.25; // Move forward to 15% from left (closer to middle)
         this.targetXPercent = this.xPercent;
-        this.positionLerpRate = 0.03; // Slower transition rate for more dramatic effect
+        this.positionLerpRate = 0.01; // Slower transition rate for more dramatic effect
         
         // Position lerping for parachute launch
         this.parachuteOriginalXPercent = this.xPercent;
@@ -100,6 +100,11 @@ export class Player {
         this.trailStartX = 0;
         this.trailStartY = 0;
         this.isDrawingTrail = false;
+        
+        // Post-train mode extended invincibility
+        this.postTrainInvincible = false;
+        this.postTrainInvincibilityTimer = 0;
+        this.postTrainInvincibilityDuration = 2500; // 2.5 seconds total (1s overlap + 1.5s after)
     }
     
     setGroundY(groundY) {
@@ -289,9 +294,23 @@ export class Player {
         if (this.isTrainMode) {
             this.trainModeTimer += deltaTime;
             
+            // Check for extended invincibility activation (last 1 second of train mode)
+            if (!this.postTrainInvincible && this.trainModeTimer >= this.trainModeDuration - 1000) {
+                this.postTrainInvincible = true;
+                this.postTrainInvincibilityTimer = this.postTrainInvincibilityDuration;
+            }
+            
             if (this.trainModeTimer >= this.trainModeDuration) {
                 // Train mode expired
                 this.deactivateTrainMode();
+            }
+        }
+        
+        // Update post-train invincibility timer
+        if (this.postTrainInvincible) {
+            this.postTrainInvincibilityTimer -= deltaTime;
+            if (this.postTrainInvincibilityTimer <= 0) {
+                this.postTrainInvincible = false;
             }
         }
         
@@ -531,6 +550,10 @@ export class Player {
         this.isDrawingTrail = false;
         this.trailStartX = 0;
         this.trailStartY = 0;
+        
+        // Reset post-train invincibility
+        this.postTrainInvincible = false;
+        this.postTrainInvincibilityTimer = 0;
     }
     
     launchHigh(game = null) {

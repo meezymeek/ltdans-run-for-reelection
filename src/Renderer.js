@@ -50,6 +50,41 @@ export class Renderer {
             // Draw ragdoll
             game.ragdoll.render(ctx);
         } else if (game.gameState === 'playing' || game.gameState === 'tutorial') {
+            // Check for invincibility flashing (last 1s of train mode OR post-train invincibility)
+            const shouldFlash = (game.player.isTrainMode && game.player.trainModeTimer >= game.player.trainModeDuration - 1000) || 
+                               game.player.postTrainInvincible;
+            
+            if (shouldFlash) {
+                // Calculate ramping flash rate - starts slow, gets faster like a ticking time bomb
+                let timeElapsed;
+                if (game.player.isTrainMode) {
+                    // During train mode (last 1 second)
+                    timeElapsed = game.player.trainModeTimer - (game.player.trainModeDuration - 1000);
+                } else {
+                    // Post-train mode
+                    timeElapsed = 1000 + (game.player.postTrainInvincibilityDuration - game.player.postTrainInvincibilityTimer);
+                }
+                
+                // Total flashing duration is 3.5 seconds (1s train + 2.5s post-train)
+                const totalFlashDuration = 3500;
+                const rawProgress = Math.min(timeElapsed / totalFlashDuration, 1);
+                
+                // Apply smooth easing curve for more natural progression
+                const flashProgress = rawProgress * rawProgress * (3 - 2 * rawProgress); // Smoothstep function
+                
+                // Ramp flash rate from 0.125 flashes/sec to 1 flash/sec (75% reduction)
+                const minFlashRate = 1; // Start extremely slow (1 flash every 8 seconds)
+                const maxFlashRate = 1.5; // End gentle (1 flash per second)
+                const currentFlashRate = minFlashRate + (maxFlashRate - minFlashRate) * flashProgress;
+                
+                // Convert to milliseconds per flash cycle
+                const flashInterval = 1000 / (currentFlashRate * 2); // *2 because sin cycle gives us 2 flashes per cycle
+                const flashCycle = Date.now() / flashInterval;
+                
+                // Simple transparency flash effect
+                ctx.globalAlpha = Math.sin(flashCycle) > 0 ? 1.0 : 0.3;
+            }
+            
             // Draw player based on mode
             if (game.player.isTrainMode) {
                 this.drawTrainPlayer(game);
@@ -61,6 +96,11 @@ export class Renderer {
             // Draw parachute if active AND has time remaining
             if (game.player.hasParachute && game.player.parachuteTimeLeft > 0) {
                 this.drawParachute(game);
+            }
+            
+            // Reset alpha after drawing player
+            if (shouldFlash) {
+                ctx.globalAlpha = 1.0;
             }
         }
         
