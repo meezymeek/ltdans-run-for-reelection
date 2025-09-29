@@ -1000,7 +1000,7 @@ body {
 
 #gameCanvas {
     /* Full screen canvas - no borders or constraints */
-    background: linear-gradient(to bottom, #87CEEB 0%, #98FB98 100%);
+    background: linear-gradient(to bottom, #1a1a2e 0%, #16213e 70%, #0f0f23 100%);
     width: 100vw;
     height: 100dvh;
     touch-action: none;

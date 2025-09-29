@@ -536,13 +536,85 @@ export class GameLoop {
     }
     
     static updateBackground(game) {
+        // Update all background layers
+        if (game.backgroundLayers) {
+            // Update buildings (furthest background)
+            for (let building of game.backgroundLayers.buildings) {
+                building.x -= building.speed;
+                if (building.x + building.width < 0) {
+                    building.x = game.canvas.width + Math.random() * 400;
+                    building.y = game.canvas.height * (0.3 + Math.random() * 0.2);
+                }
+            }
+            
+            // Update tombstones (mid-ground)
+            for (let tombstone of game.backgroundLayers.tombstones) {
+                tombstone.x -= tombstone.speed;
+                if (tombstone.x + tombstone.width < 0) {
+                    tombstone.x = game.canvas.width + Math.random() * 300;
+                    tombstone.y = game.canvas.height * (0.55 + Math.random() * 0.15);
+                }
+            }
+            
+            // Update fences (foreground) - maintain seamless connections
+            for (let i = 0; i < game.backgroundLayers.fences.length; i++) {
+                const fence = game.backgroundLayers.fences[i];
+                fence.x -= fence.speed;
+                if (fence.x + fence.width < 0) {
+                    // Find the absolute rightmost position of all other fences
+                    let rightmostX = game.canvas.width;
+                    for (let j = 0; j < game.backgroundLayers.fences.length; j++) {
+                        if (j !== i) { // Skip the current fence
+                            const otherFence = game.backgroundLayers.fences[j];
+                            const otherRightEdge = otherFence.x + otherFence.width;
+                            if (otherRightEdge > rightmostX) {
+                                rightmostX = otherRightEdge;
+                            }
+                        }
+                    }
+                    
+                    // Position this fence to touch the rightmost edge exactly
+                    fence.x = rightmostX;
+                    // Align bottom with ground plane
+                    fence.y = game.canvas.height * 0.8 - fence.height;
+                }
+            }
+            
+            // Update clouds
+            for (let cloud of game.backgroundLayers.clouds) {
+                cloud.x -= cloud.speed;
+                if (cloud.x + cloud.width < 0) {
+                    cloud.x = game.canvas.width + Math.random() * 200;
+                    cloud.y = Math.random() * game.canvas.height * 0.3;
+                }
+            }
+            
+            // Update fog with variable opacity changes
+            for (let fog of game.backgroundLayers.fog) {
+                fog.x -= fog.speed;
+                
+                // Slowly vary the opacity for atmospheric effect
+                fog.opacity += (Math.random() - 0.5) * 0.02;
+                fog.opacity = Math.max(0.05, Math.min(0.4, fog.opacity));
+                
+                // Update the color string with new opacity
+                fog.color = `rgba(200, 200, 220, ${fog.opacity})`;
+                
+                if (fog.x + fog.width < 0) {
+                    fog.x = game.canvas.width + Math.random() * 200;
+                    fog.y = game.canvas.height * (0.75 + Math.random() * 0.15);
+                }
+            }
+        }
+        
+        // Keep compatibility with old system
         for (let element of game.backgroundElements) {
             element.x -= element.speed;
             
             // Reset position when off screen
             if (element.x + element.width < 0) {
                 element.x = game.canvas.width + Math.random() * 200;
-                element.y = Math.random() * game.canvas.height * 0.5;
+                element.y = Math.random() * game.canvas.height * 0.3;
             }
         }
     }

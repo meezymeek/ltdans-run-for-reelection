@@ -884,16 +884,101 @@ export class RerunGame {
     }
     
     createBackgroundElements() {
-        for (let i = 0; i < 5; i++) {
-            this.backgroundElements.push({
-                x: Math.random() * this.canvas.width * 2,
-                y: Math.random() * this.canvas.height * 0.5,
-                width: 60 + Math.random() * 40,
-                height: 30 + Math.random() * 20,
-                speed: 0.5 + Math.random() * 1,
-                color: `rgba(255, 255, 255, ${0.1 + Math.random() * 0.2})`
+        // Initialize background layers array
+        this.backgroundLayers = {
+            buildings: [],
+            tombstones: [],
+            fences: [],
+            clouds: [],
+            fog: []
+        };
+        
+        // Create silhouetted buildings (furthest background)
+        for (let i = 0; i < 8; i++) {
+            this.backgroundLayers.buildings.push({
+                x: Math.random() * this.canvas.width * 3,
+                y: this.canvas.height * (0.3 + Math.random() * 0.2), // Upper portion
+                width: 80 + Math.random() * 120,
+                height: 100 + Math.random() * 150,
+                speed: 0.1 + Math.random() * 0.1, // Very slow
+                type: 'building'
             });
         }
+        
+        // Create tombstones and crosses (mid-ground)
+        for (let i = 0; i < 12; i++) {
+            this.backgroundLayers.tombstones.push({
+                x: Math.random() * this.canvas.width * 2.5,
+                y: this.canvas.height * (0.55 + Math.random() * 0.15), // Mid portion
+                width: 15 + Math.random() * 25,
+                height: 30 + Math.random() * 40,
+                speed: 0.2 + Math.random() * 0.15, // Slow
+                type: Math.random() > 0.7 ? 'cross' : 'tombstone'
+            });
+        }
+        
+        // Create cemetery fences with normalized sizes and proper gate placement
+        const standardFenceWidth = 120;
+        const standardFenceHeight = 30;
+        const standardGateWidth = 140;
+        const standardGateHeight = 45;
+        
+        // Create a pattern with fewer gates: mostly fences with occasional gates
+        const patternSequence = ['fence', 'fence', 'fence', 'fence', 'fence', 'fence', 'fence', 'fence', 'fence', 'gate'];
+        
+        let currentX = this.canvas.width;
+        
+        for (let i = 0; i < 12; i++) { // More elements for better coverage
+            const patternIndex = i % patternSequence.length;
+            const elementType = patternSequence[patternIndex];
+            const isGate = elementType === 'gate';
+            
+            // Use normalized sizes
+            const width = isGate ? standardGateWidth : standardFenceWidth;
+            const height = isGate ? standardGateHeight : standardFenceHeight;
+            
+            this.backgroundLayers.fences.push({
+                x: currentX,
+                y: this.canvas.height * 0.8 - height, // Align bottom with ground plane
+                width: width,
+                height: height,
+                speed: 0.5, // Fixed speed so all fences move together
+                type: elementType
+            });
+            
+            // Move to next position (elements touch each other)
+            currentX += width;
+        }
+        
+        // Create spooky clouds (keep existing system but modify for Halloween)
+        for (let i = 0; i < 6; i++) {
+            this.backgroundLayers.clouds.push({
+                x: Math.random() * this.canvas.width * 2,
+                y: Math.random() * this.canvas.height * 0.3, // Upper sky
+                width: 60 + Math.random() * 80,
+                height: 30 + Math.random() * 30,
+                speed: 0.15 + Math.random() * 0.2,
+                color: `rgba(60, 50, 80, ${0.15 + Math.random() * 0.25})`, // Dark purple clouds
+                type: 'cloud'
+            });
+        }
+        
+        // Create ground fog effect
+        for (let i = 0; i < 8; i++) {
+            this.backgroundLayers.fog.push({
+                x: Math.random() * this.canvas.width * 2,
+                y: this.canvas.height * (0.75 + Math.random() * 0.15), // Near ground
+                width: 80 + Math.random() * 120,
+                height: 20 + Math.random() * 25,
+                speed: 0.3 + Math.random() * 0.4, // Faster than clouds
+                color: `rgba(200, 200, 220, ${0.1 + Math.random() * 0.3})`, // Misty white/grey
+                type: 'fog',
+                opacity: 0.1 + Math.random() * 0.4 // Variable opacity for atmosphere
+            });
+        }
+        
+        // Keep the old backgroundElements for compatibility (now just clouds)
+        this.backgroundElements = this.backgroundLayers.clouds;
     }
     
     async startGame() {

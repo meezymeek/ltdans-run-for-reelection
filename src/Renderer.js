@@ -14,16 +14,186 @@ export class Renderer {
         // Clear canvas
         ctx.clearRect(0, 0, game.canvas.width, game.canvas.height);
         
-        // Draw background elements
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+        // Draw night sky gradient background
+        const gradient = ctx.createLinearGradient(0, 0, 0, game.canvas.height);
+        gradient.addColorStop(0, '#1a1a2e'); // Dark purple top
+        gradient.addColorStop(0.7, '#16213e'); // Darker blue middle
+        gradient.addColorStop(1, '#0f0f23'); // Almost black bottom
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, game.canvas.width, game.canvas.height);
+        
+        // Draw moon (static element in upper portion)
+        ctx.save();
+        const moonX = game.canvas.width * 0.8;
+        const moonY = game.canvas.height * 0.15;
+        const moonRadius = 40;
+        
+        // Moon glow
+        ctx.shadowColor = 'rgba(255, 255, 200, 0.6)';
+        ctx.shadowBlur = 30;
+        ctx.fillStyle = '#fffacd';
+        ctx.beginPath();
+        ctx.arc(moonX, moonY, moonRadius, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Moon craters (simple dark circles)
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = 'rgba(150, 150, 120, 0.3)';
+        ctx.beginPath();
+        ctx.arc(moonX - 8, moonY - 5, 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(moonX + 5, moonY + 8, 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+        
+        // Draw horizon line to separate sky from graveyard
+        const horizonY = game.canvas.height * 0.50; // Position horizon at 50% down (higher up)
+        ctx.strokeStyle = 'rgba(40, 30, 50, 0.6)'; // Dark purple horizon
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(0, horizonY);
+        ctx.lineTo(game.canvas.width, horizonY);
+        ctx.stroke();
+        
+        // Draw all background layers in depth order (back to front)
+        if (game.backgroundLayers) {
+            // 1. Buildings (hidden for clean Halloween aesthetic)
+            // ctx.fillStyle = 'rgba(20, 15, 30, 0.8)'; // Dark silhouettes
+            // for (let building of game.backgroundLayers.buildings) {
+            //     // Draw building as simple rectangle with occasional windows
+            //     ctx.fillRect(building.x, building.y, building.width, building.height);
+            //     
+            //     // Add a few lit windows randomly
+            //     if (Math.random() > 0.7) {
+            //         ctx.fillStyle = 'rgba(255, 255, 150, 0.6)';
+            //         const windowX = building.x + building.width * 0.3;
+            //         const windowY = building.y + building.height * 0.2;
+            //         ctx.fillRect(windowX, windowY, 8, 8);
+            //         ctx.fillStyle = 'rgba(20, 15, 30, 0.8)';
+            //     }
+            // }
+            
+            // 2. Tombstones and crosses (mid-ground)
+            ctx.fillStyle = 'rgba(40, 30, 50, 0.9)';
+            for (let tombstone of game.backgroundLayers.tombstones) {
+                if (tombstone.type === 'cross') {
+                    // Draw cross shape
+                    const centerX = tombstone.x + tombstone.width / 2;
+                    const centerY = tombstone.y + tombstone.height / 2;
+                    const crossWidth = tombstone.width * 0.6;
+                    const crossHeight = tombstone.height * 0.8;
+                    
+                    // Vertical beam
+                    ctx.fillRect(centerX - 2, tombstone.y, 4, crossHeight);
+                    // Horizontal beam
+                    ctx.fillRect(centerX - crossWidth/2, centerY - crossHeight/4, crossWidth, 4);
+                } else {
+                    // Draw tombstone shape (rounded top)
+                    ctx.beginPath();
+                    ctx.roundRect(tombstone.x, tombstone.y, tombstone.width, tombstone.height, [tombstone.width/2, tombstone.width/2, 0, 0]);
+                    ctx.fill();
+                }
+            }
+            
+            // 3. Cemetery fences and gates (foreground)
+            ctx.fillStyle = 'rgba(60, 50, 70, 0.7)';
+            for (let fence of game.backgroundLayers.fences) {
+                if (fence.type === 'gate') {
+                    // Draw simple arched cemetery gate with edge fence segments
+                    const gateX = fence.x;
+                    const gateY = fence.y;
+                    const gateWidth = fence.width;
+                    const gateHeight = fence.height;
+                    
+                    // Add fence segments that touch the gate pillars (30px each)
+                    const edgeFenceWidth = 30; // Width to reach the pillars
+                    const standardFenceHeight = 30;
+                    const edgeFenceY = game.canvas.height * 0.8 - standardFenceHeight;
+                    
+                    // Draw left fence segment (touches left pillar)
+                    ctx.fillRect(gateX, edgeFenceY, edgeFenceWidth, standardFenceHeight);
+                    // Draw right fence segment (touches right pillar)
+                    ctx.fillRect(gateX + gateWidth - edgeFenceWidth, edgeFenceY, edgeFenceWidth, standardFenceHeight);
+                    
+                    // Draw thicker gate posts (left and right)
+                    const postWidth = 12;
+                    const postInset = 30;
+                    ctx.fillRect(gateX + postInset, gateY, postWidth, gateHeight); // Left post
+                    ctx.fillRect(gateX + gateWidth - postWidth - postInset, gateY, postWidth, gateHeight); // Right post
+                    
+                    // Draw solid arched top connecting the posts
+                    const archCenterX = gateX + gateWidth / 2;
+                    const archRadius = (gateWidth - postWidth * 2 - postInset * 2) / 2;
+                    const archTopY = gateY - archRadius + 4;
+                    const archThickness = 8;
+                    
+                    // Create the arch shape using path
+                    ctx.save();
+                    ctx.beginPath();
+                    // Outer arch
+                    ctx.arc(archCenterX, archTopY + archRadius, archRadius + archThickness/2, Math.PI, 0, false);
+                    // Inner arch (reverse direction to create hollow center)
+                    ctx.arc(archCenterX, archTopY + archRadius, archRadius - archThickness/2, 0, Math.PI, true);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.restore();
+                    
+                    // Add decorative elements
+                    ctx.fillStyle = 'rgba(80, 70, 90, 0.9)';
+                    // Post caps
+                    ctx.fillRect(gateX + postInset - 2, gateY - 2, postWidth + 4, 4);
+                    ctx.fillRect(gateX + gateWidth - postWidth - postInset - 2, gateY - 2, postWidth + 4, 4);
+                    
+                    // Reset fill style for next fence
+                    ctx.fillStyle = 'rgba(60, 50, 70, 0.7)';
+                } else {
+                    // Draw regular fence as series of vertical posts
+                    const postWidth = 3;
+                    const postCount = Math.floor(fence.width / 8);
+                    for (let i = 0; i <= postCount; i++) {
+                        const postX = fence.x + (i * fence.width / postCount);
+                        ctx.fillRect(postX, fence.y, postWidth, fence.height);
+                    }
+                    // Draw horizontal rail
+                    ctx.fillRect(fence.x, fence.y + fence.height * 0.3, fence.width, 2);
+                }
+            }
+            
+            // 4. Spooky clouds (existing system with new colors)
+            for (let cloud of game.backgroundLayers.clouds) {
+                ctx.fillStyle = cloud.color;
+                ctx.fillRect(cloud.x, cloud.y, cloud.width, cloud.height);
+            }
+            
+            // 5. Ground fog (temporarily disabled)
+            // for (let fog of game.backgroundLayers.fog) {
+            //     ctx.save();
+            //     ctx.fillStyle = fog.color;
+            //     
+            //     // Create soft fog effect with gradient
+            //     const fogGradient = ctx.createRadialGradient(
+            //         fog.x + fog.width/2, fog.y + fog.height/2, 0,
+            //         fog.x + fog.width/2, fog.y + fog.height/2, fog.width/2
+            //     );
+            //     fogGradient.addColorStop(0, fog.color);
+            //     fogGradient.addColorStop(1, fog.color.replace(/[\d.]+\)/, '0)'));
+            //     
+            //     ctx.fillStyle = fogGradient;
+            //     ctx.fillRect(fog.x, fog.y, fog.width, fog.height);
+            //     ctx.restore();
+            // }
+        }
+        
+        // Keep compatibility with old background elements (now just clouds)
         for (let element of game.backgroundElements) {
             ctx.fillStyle = element.color;
             ctx.fillRect(element.x, element.y, element.width, element.height);
         }
         
-        // Draw ground line (fixed position regardless of zoom)
+        // Draw ground line (fixed position regardless of zoom) - Halloween themed
         const groundY = game.canvas.height * 0.8; // Always 80% down from top
-        ctx.strokeStyle = '#8B4513';
+        ctx.strokeStyle = '#444444'; // Dark grey for spooky graveyard ground
         ctx.lineWidth = 3;
         ctx.beginPath();
         ctx.moveTo(0, groundY);
