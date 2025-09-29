@@ -1,7 +1,7 @@
 {
   "name": "lt-dans-run-for-reelection",
   "version": "1.0.0",
-  "description": "Lt. Dan's Run for Re-Election - Mobile Endless Runner Game",
+  "description": "RERUN: Danny Boy Runs for Office Again - Mobile Endless Runner Game",
   "main": "src/main.js",
   "type": "module",
   "scripts": {

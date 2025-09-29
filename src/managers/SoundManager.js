@@ -1,4 +1,4 @@
-// Sound Manager for Lt. Dan's Run for Re-Election
+// Sound Manager for RERUN: Danny Boy Runs for Office Again
 // Modular audio system with fallback support
 
 export class SoundManager {
@@ -634,12 +634,12 @@ export class SoundManager {
             volumes: this.volumes,
             muted: this.muted
         };
-        localStorage.setItem('ltdan_audio_settings', JSON.stringify(settings));
+        localStorage.setItem('rerun_audio_settings', JSON.stringify(settings));
     }
     
     // Load settings from localStorage
     loadSettings() {
-        const saved = localStorage.getItem('ltdan_audio_settings');
+        const saved = localStorage.getItem('rerun_audio_settings');
         if (saved) {
             try {
                 const settings = JSON.parse(saved);

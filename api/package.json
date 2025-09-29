@@ -1,7 +1,7 @@
 {
   "name": "lt-dans-leaderboard-api",
   "version": "1.0.0",
-  "description": "Leaderboard API for Lt. Dan's Run for Re-Election",
+  "description": "Leaderboard API for RERUN: Danny Boy Runs for Office Again",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

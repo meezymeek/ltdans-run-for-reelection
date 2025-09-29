@@ -137,7 +137,7 @@ function isValidGameDuration(duration) {
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', service: 'Lt Dans Leaderboard API' });
+  res.json({ status: 'OK', service: 'RERUN: Danny Boy Leaderboard API' });
 });
 
 // Submit a new score
@@ -355,7 +355,7 @@ async function startServer() {
   try {
     await initializeDatabase();
     app.listen(port, () => {
-      console.log(`Lt. Dan's Leaderboard API running on port ${port}`);
+      console.log(`RERUN: Danny Boy Leaderboard API running on port ${port}`);
     });
   } catch (error) {
     console.error('Server startup error:', error);

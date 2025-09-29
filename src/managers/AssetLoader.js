@@ -18,7 +18,8 @@ export class AssetLoader {
             },
             images: {
                 skins: [],
-                parachutes: []
+                parachutes: [],
+                powerups: []
             },
             fonts: []
         };
@@ -26,7 +27,7 @@ export class AssetLoader {
         // Track loaded assets
         this.loadedContent = {
             audio: { music: {}, effects: {} },
-            images: { skins: {}, parachutes: [] },
+            images: { skins: {}, parachutes: [], powerups: {} },
             fonts: []
         };
         
@@ -66,6 +67,11 @@ export class AssetLoader {
             'parachute_spacex.png'
         ];
         
+        // Power-up images
+        this.assets.images.powerups = [
+            { name: 'ticket', path: 'ticket.png' }
+        ];
+        
         // Fonts (Google Fonts - just need to check if loaded)
         this.assets.fonts = ['Tiny5'];
         
@@ -75,6 +81,7 @@ export class AssetLoader {
             this.assets.audio.effects.length +
             this.assets.images.skins.length +
             this.assets.images.parachutes.length +
+            this.assets.images.powerups.length +
             this.assets.fonts.length;
     }
     
@@ -200,6 +207,11 @@ export class AssetLoader {
             imagePromises.push(this.loadParachuteImage(parachute));
         }
         
+        // Load power-up images
+        for (const powerup of this.assets.images.powerups) {
+            imagePromises.push(this.loadPowerupImage(powerup.name, powerup.path));
+        }
+        
         await Promise.allSettled(imagePromises);
     }
     
@@ -288,6 +300,45 @@ export class AssetLoader {
             
         } catch (error) {
             console.warn(`Failed to load parachute ${filename}:`, error.message);
+            this.updateProgress(); // Still count as processed
+        }
+    }
+    
+    // Load a power-up image
+    async loadPowerupImage(name, path) {
+        try {
+            const img = new Image();
+            
+            await new Promise((resolve, reject) => {
+                img.onload = () => {
+                    this.loadedContent.images.powerups[name] = img;
+                    this.updateProgress();
+                    console.log(`Loaded power-up: ${name}`);
+                    resolve();
+                };
+                
+                img.onerror = () => {
+                    reject(new Error(`Failed to load power-up: ${name}`));
+                };
+                
+                // Set timeout
+                const timeout = setTimeout(() => {
+                    reject(new Error('Load timeout'));
+                }, 3000);
+                
+                img.onload = () => {
+                    clearTimeout(timeout);
+                    this.loadedContent.images.powerups[name] = img;
+                    this.updateProgress();
+                    console.log(`Loaded power-up: ${name}`);
+                    resolve();
+                };
+                
+                img.src = path;
+            });
+            
+        } catch (error) {
+            console.warn(`Failed to load power-up ${name}:`, error.message);
             this.updateProgress(); // Still count as processed
         }
     }

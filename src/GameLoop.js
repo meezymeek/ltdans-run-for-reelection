@@ -410,7 +410,7 @@ export class GameLoop {
             if (game.gameFrame % 120 === 0) {
                 // 4. Add spawn probability - only 40% chance to spawn
                 if (Math.random() < 0.4) {
-                    const gerrymanderExpress = new GerrymanderExpress(game.canvas);
+                    const gerrymanderExpress = new GerrymanderExpress(game.canvas, game.assets);
                     gerrymanderExpress.setPosition(game.player.groundY);
                     gerrymanderExpress.setSpeed(game.config.obstacleSpeed);
                     game.gerrymanderExpresses.push(gerrymanderExpress);

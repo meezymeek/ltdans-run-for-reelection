@@ -1,7 +1,7 @@
 # Percentage-Based Coordinate System Implementation Plan
 
 ## Overview
-This document outlines the conversion of Lt. Dan's Run for Reelection from a fixed-pixel coordinate system to a percentage-based coordinate system. This ensures fair gameplay across all screen sizes and devices.
+This document outlines the conversion of RERUN: Danny Boy Runs for Office Again from a fixed-pixel coordinate system to a percentage-based coordinate system. This ensures fair gameplay across all screen sizes and devices.
 
 ## Problem Statement
 The current game uses fixed pixel values for:

@@ -1,7 +1,7 @@
 # Character Animation System Documentation
 
 ## Overview
-Lt. Dan's character uses an articulated body system with realistic joint-based animations for running and jumping. The character is rendered in a side profile view with proper z-index layering for depth perception.
+Danny Boy's character uses an articulated body system with realistic joint-based animations for running and jumping. The character is rendered in a side profile view with proper z-index layering for depth perception.
 
 ## Body Structure
 

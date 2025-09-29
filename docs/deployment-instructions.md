@@ -1,4 +1,4 @@
-# Deployment Instructions for Lt. Dan's Run for Re-Election
+# Deployment Instructions for RERUN: Danny Boy Runs for Office Again
 
 ## ✅ What's Already Complete
 
@@ -10,7 +10,7 @@ Your Railway project is set up and running! Here's what has been accomplished:
 
 ## 🎮 Game Files Ready for Deployment
 
-Your complete Lt. Dan's Run for Re-Election game consists of these files:
+Your complete RERUN: Danny Boy Runs for Office Again game consists of these files:
 - `index.html` - Main game page with mobile-optimized structure
 - `style.css` - Mobile-first responsive styling 
 - `game.js` - Complete endless runner game logic with touch controls
@@ -75,7 +75,7 @@ The game is built with:
 
 ## 🎖️ Campaign Strategy
 
-Help Lt. Dan navigate the political obstacles on his path to re-election! The game gets progressively harder as you advance through the campaign trail.
+Help Danny Boy navigate the political obstacles on his path to re-election! The game gets progressively harder as you advance through the campaign trail.
 
 ---
 

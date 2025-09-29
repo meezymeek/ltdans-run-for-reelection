@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Lt. Dan's Run for Re-Election</title>
+    <title>RERUN: Danny Boy Runs for Office Again</title>
     
     <!-- PWA Meta Tags - Only load manifest when served over HTTP -->
     <script>
@@ -19,7 +19,7 @@
     <!-- iOS Web App Meta Tags -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Lt. Dan's Run">
+    <meta name="apple-mobile-web-app-title" content="RERUN: Danny Boy">
     <link rel="apple-touch-icon" href="icon-192x192.png">
     
     <!-- Android Chrome Meta Tags -->
@@ -45,35 +45,43 @@
         </div>
     </div>
     
-    <!-- Loading Screen -->
-    <div id="loadingScreen" class="loading-screen">
+    <!-- Unified Loading and Start Screen -->
+    <div id="clickToStartScreen" class="loading-screen">
+        <canvas id="characterPreview" width="800" height="360"></canvas>
         <div class="loading-content">
-            <h1>Lt. Dan's Run for Re-Election</h1>
-            <div class="loading-message">Loading Campaign Assets...</div>
-            <div class="loading-bar-container">
+            <!-- Presents sequence - appears first -->
+            <img src="logo.png" alt="Company Logo" class="company-logo">
+            <div class="presents-text">PRESENTS...</div>
+            
+            <h1 class="title-elevated">
+                <div class="title-main">RE-RUN:</div>
+                <div class="title-sub">Danny Boy Runs for Office (Again)</div>
+            </h1>
+            
+            <!-- Loading bar positioned below character -->
+            <div class="loading-bar-container" id="loadingBarContainer">
                 <div class="loading-bar">
                     <div class="loading-progress" id="loadingProgress"></div>
                 </div>
                 <div class="loading-percentage" id="loadingPercentage">0%</div>
+                <div class="loading-status" id="loadingStatus">Preparing for the campaign...</div>
             </div>
-            <div class="loading-details" id="loadingDetails">Preparing for the campaign...</div>
-        </div>
-    </div>
-
-    <!-- Click to Start Screen -->
-    <div id="clickToStartScreen" class="loading-screen hidden">
-        <div class="loading-content">
-            <h1>Lt. Dan's Run for Re-Election</h1>
-            <div class="click-to-start-message">
-                <div class="ready-icon">🎮</div>
-                <p>Assets loaded successfully!</p>
-                <p>Audio system ready for initialization.</p>
-            </div>
-            <button id="clickToStartButton" class="click-to-start-btn">
-                🔊 Click to Start Campaign!
-            </button>
-            <div class="click-to-start-hint">
-                (Required to enable game audio)
+            
+            <!-- Bottom content area -->
+            <div class="bottom-content">
+                <div class="loading-message" id="loadingMessage">Loading Campaign Assets...</div>
+                <div class="loading-details" id="loadingDetails">Preparing for the campaign...</div>
+                
+                <!-- Initially hidden, shown after loading -->
+                <div class="click-to-start-content hidden" id="clickToStartContent">
+                    <button id="clickToStartButton" class="click-to-start-btn">
+                        START!
+                    </button>
+                    <p>Audio system ready for initialization.</p>
+                    <div class="click-to-start-hint">
+                        (Required to enable game audio)
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -81,7 +89,7 @@
     <div class="game-container">
         <!-- Game Header - Only shows title when not playing -->
         <div class="game-header">
-            <h1>Lt. Dan's Run for Re-Election</h1>
+            <h1>RERUN: Danny Boy Runs for Office Again</h1>
         </div>
         
         <!-- Score Badge - Top center for maximum size -->
@@ -100,7 +108,7 @@
         <div class="game-ui">
             <div id="startScreen" class="screen">
                 <h2>Re-Run</h2>
-                <p>Help Lt. Dan win the election!</p>
+                <p>Help Danny Boy win the election!</p>
                 <div class="menu-buttons">
                     <button id="startButton">Start Campaign!</button>
                     <button id="tutorialButton" class="secondary-button">📚 Tutorial</button>

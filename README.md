@@ -1,18 +1,18 @@
-# Lt. Dan's Run for Re-Election
+# RERUN: Danny Boy Runs for Office Again
 
-A mobile-first endless runner game where you help Lt. Dan win his re-election campaign!
+A mobile-first endless runner game where you help Danny Boy win his re-election campaign!
 
 ## Game Features
 
 - **Mobile-First Design**: Optimized for touch devices with responsive canvas
 - **Touch Controls**: 
-  - Tap anywhere to make Lt. Dan jump
+  - Tap anywhere to make Danny Boy jump
   - Swipe down to crouch under obstacles
 - **Endless Runner Mechanics**: 
   - Avoid obstacles to keep the campaign going
   - Score increases over time and distance
   - Progressive difficulty scaling
-- **Political Theme**: Help Lt. Dan navigate the campaign trail!
+- **Political Theme**: Help Danny Boy navigate the campaign trail!
 
 ## Technical Details
 
@@ -48,8 +48,8 @@ This game is designed to be deployed as a static website and works on any web se
 
 ## Campaign Strategy
 
-Help Lt. Dan avoid the obstacles in his path to re-election! Jump over low barriers and crouch under high ones. The further you go, the higher your campaign score!
+Help Danny Boy avoid the obstacles in his path to re-election! Jump over low barriers and crouch under high ones. The further you go, the higher your campaign score!
 
 ---
 
-*"Run Forest Run... but this time it's Lt. Dan running for office!"*
+*"Run Forest Run... but this time it's Danny Boy running for office!"*

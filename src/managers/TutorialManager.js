@@ -86,8 +86,8 @@ export class TutorialManager {
             {
                 id: 'gerrymander_express',
                 title: 'Gerrymander Express',
-                instruction: 'Stomp constituent for parachute, then collect the map token high in the air!',
-                baseInstruction: 'Stomp constituent for parachute, then collect the map token high in the air!',
+                instruction: 'Stomp constituent for parachute, then collect the ticket token high in the air!',
+                baseInstruction: 'Stomp constituent for parachute, then collect the ticket token high in the air!',
                 entities: [
                     { type: 'constituent', delay: 1500 },
                     { type: 'gerrymander_express', delay: 3000 }
@@ -123,7 +123,7 @@ export class TutorialManager {
         this.entitiesNeeded = 3; // Default number of entities to clear for obstacle sections
         this.jumpsCompleted = 0; // Track jumps for basic jumping section
         this.regularSpawningEnabled = false; // Flag for enabling regular game spawning
-        this.gerrymanderCycleStep = 0; // Track which step in the gerrymander sequence (0=constituent, 1=map token)
+        this.gerrymanderCycleStep = 0; // Track which step in the gerrymander sequence (0=constituent, 1=ticket token)
         this.trainActivations = 0; // Track number of train mode activations for stage 7
         
         // Dialog system
@@ -308,7 +308,7 @@ export class TutorialManager {
                 break;
                 
             case 'gerrymander_express':
-                const gerrymanderExpress = new GerrymanderExpress(this.game.canvas);
+                const gerrymanderExpress = new GerrymanderExpress(this.game.canvas, this.game.assets);
                 gerrymanderExpress.setPosition(groundY);
                 gerrymanderExpress.setSpeed(GAME_CONFIG.obstacleSpeed);
                 this.game.gerrymanderExpresses.push(gerrymanderExpress);
@@ -408,15 +408,15 @@ export class TutorialManager {
                     break;
                     
                 case 'activate_train':
-                    // Handle gerrymander express cycle (constituent → map token → train)
+                    // Handle gerrymander express cycle (constituent → ticket token → train)
                     if (section.id === 'gerrymander_express') {
-                        // Check if map token went off screen (missed)
-                        const mapTokenMissed = this.entitiesSpawned.some(spawn => 
+                        // Check if ticket token went off screen (missed)
+                        const ticketTokenMissed = this.entitiesSpawned.some(spawn =>
                             spawn.type === 'gerrymander_express' && spawn.entity.isOffScreen()
                         );
                         
-                        if (mapTokenMissed) {
-                            // Remove missed map token and restart cycle
+                        if (ticketTokenMissed) {
+                            // Remove missed ticket token and restart cycle
                             this.game.gerrymanderExpresses = [];
                             this.entitiesSpawned = this.entitiesSpawned.filter(spawn => spawn.type !== 'gerrymander_express');
                             this.gerrymanderCycleStep = 0; // Reset to constituent step
@@ -512,7 +512,7 @@ export class TutorialManager {
         this.parachutesDeployed++;
         const section = this.sections[this.currentSection];
         
-        // Stage 7: Immediately spawn map token when parachute is deployed
+        // Stage 7: Immediately spawn ticket token when parachute is deployed
         if (section.id === 'gerrymander_express') {
             this.spawnTutorialEntity({ type: 'gerrymander_express' });
         }
@@ -522,12 +522,12 @@ export class TutorialManager {
         }
     }
     
-    // Handle when player lands without collecting map token in stage 7
+    // Handle when player lands without collecting ticket token in stage 7
     handleParachuteLanded() {
         const section = this.sections[this.currentSection];
         
         if (section.id === 'gerrymander_express' && !this.trainActivated) {
-            // Clear any remaining map tokens
+            // Clear any remaining ticket tokens
             this.game.gerrymanderExpresses = [];
             this.entitiesSpawned = this.entitiesSpawned.filter(spawn => spawn.type !== 'gerrymander_express');
             

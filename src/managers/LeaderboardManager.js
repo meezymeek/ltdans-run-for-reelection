@@ -31,7 +31,7 @@ export class LeaderboardManager {
             }
 
             // Save player name to localStorage for future games
-            localStorage.setItem('ltdan_player_name', playerName.trim());
+            localStorage.setItem('rerun_player_name', playerName.trim());
             
             return data;
         } catch (error) {
@@ -106,7 +106,7 @@ export class LeaderboardManager {
     }
 
     getSavedPlayerName() {
-        return localStorage.getItem('ltdan_player_name') || '';
+        return localStorage.getItem('rerun_player_name') || '';
     }
 
     async checkAPIHealth() {

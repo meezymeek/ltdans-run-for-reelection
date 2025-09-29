@@ -2,7 +2,7 @@
 
 ## 🎯 System Overview
 
-A robust, scalable leaderboard system has been successfully integrated into Lt. Dan's Run for Re-Election game, deployed on Railway with the following architecture:
+A robust, scalable leaderboard system has been successfully integrated into RERUN: Danny Boy Runs for Office Again game, deployed on Railway with the following architecture:
 
 ### 🏗️ Architecture Components
 

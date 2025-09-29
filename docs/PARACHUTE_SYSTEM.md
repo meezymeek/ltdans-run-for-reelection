@@ -1,7 +1,7 @@
 # Parachute System Documentation
 
 ## Overview
-Lt. Dan's Run for Re-Election features a dynamic parachute system that activates during high jumps, allowing players to float and extend their airtime. The parachute system includes customizable skins that are randomly selected on each deployment.
+RERUN: Danny Boy Runs for Office Again features a dynamic parachute system that activates during high jumps, allowing players to float and extend their airtime. The parachute system includes customizable skins that are randomly selected on each deployment.
 
 ## How It Works
 
@@ -140,6 +140,6 @@ this.currentParachuteSkin        // Object: Currently selected skin
 - Monitor `player.parachuteTimeLeft` in console
 
 ## Credits
-- Parachute system designed and implemented for Lt. Dan's Run for Re-Election
+- Parachute system designed and implemented for RERUN: Danny Boy Runs for Office Again
 - Customizable skin system allows for branded/themed parachutes
 - Part of the comprehensive gameplay mechanics alongside ragdoll physics and leaderboards

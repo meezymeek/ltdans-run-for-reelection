@@ -225,6 +225,9 @@ export class GameLogic {
         // Play crash sound
         game.soundManager.playEffect('crash');
         
+        // Show crash skip hint
+        game.showCrashSkipHint();
+        
         // Create ragdoll at player position
         game.ragdoll = new RagdollSystem({
             x: game.player.x,
@@ -249,6 +252,9 @@ export class GameLogic {
         game.gameEndTime = Date.now();
         game.finalScoreElement.textContent = game.score;
         this.updateHUDVisibility(game);
+        
+        // Hide crash skip hint when transitioning to game over
+        game.hideCrashSkipHint();
         
         // Stop game music and always play menu music
         game.soundManager.stopMusic();

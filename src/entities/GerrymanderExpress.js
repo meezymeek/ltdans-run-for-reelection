@@ -2,9 +2,10 @@
 import { getScaleManager } from '../utils/ScaleManager.js';
 
 export class GerrymanderExpress {
-    constructor(canvas) {
+    constructor(canvas, assets = null) {
         this.canvas = canvas;
         this.scaleManager = getScaleManager();
+        this.assets = assets;
         
         // Use percentage-based coordinates for consistent scaling - match bribe sizing
         this.widthPercent = 0.04;   // 4% of screen width (slightly larger than bribe's 3.5%)
@@ -106,7 +107,7 @@ export class GerrymanderExpress {
         
         ctx.save();
         
-        // Draw glow effect
+        // Draw blue glow effect
         const glowRadius = this.width * 0.8;
         const gradient = ctx.createRadialGradient(
             this.x + this.width/2, this.y + this.height/2, 0,
@@ -127,86 +128,134 @@ export class GerrymanderExpress {
         // Draw sparkles
         this.renderSparkles(ctx);
         
-        // Draw map icon using simple shapes
-        this.drawMapIcon(ctx);
+        // Draw ticket icon - use image if available, fallback to shapes
+        if (this.assets?.images?.powerups?.ticket) {
+            this.drawTicketImage(ctx);
+        } else {
+            this.drawTicketIcon(ctx);
+        }
         
         ctx.restore();
     }
     
-    drawMapIcon(ctx) {
+    drawTicketImage(ctx) {
+        const ticketImg = this.assets.images.powerups.ticket;
         const centerX = this.x + this.width / 2;
         const centerY = this.y + this.height / 2;
-        const mapWidth = this.width * 0.8;
-        const mapHeight = this.height * 0.8;
         
-        // Main map background
-        ctx.fillStyle = '#F5F5DC'; // Beige paper color
+        // Draw additional golden glow effect around the ticket
+        const glowRadius = this.width * 1.2;
+        const goldGradient = ctx.createRadialGradient(
+            centerX, centerY, 0,
+            centerX, centerY, glowRadius
+        );
+        goldGradient.addColorStop(0, `rgba(255, 215, 0, ${this.glowIntensity * 0.6})`);
+        goldGradient.addColorStop(0.5, `rgba(255, 215, 0, ${this.glowIntensity * 0.3})`);
+        goldGradient.addColorStop(1, 'rgba(255, 215, 0, 0)');
+        
+        ctx.fillStyle = goldGradient;
         ctx.fillRect(
-            centerX - mapWidth/2,
-            centerY - mapHeight/2,
-            mapWidth,
-            mapHeight
+            centerX - glowRadius,
+            centerY - glowRadius,
+            glowRadius * 2,
+            glowRadius * 2
         );
         
-        // Map border
+        // Draw the ticket image scaled to fit our dimensions
+        const imgWidth = this.width * 0.9;
+        const imgHeight = this.height * 0.9;
+        
+        ctx.drawImage(
+            ticketImg,
+            centerX - imgWidth/2,
+            centerY - imgHeight/2,
+            imgWidth,
+            imgHeight
+        );
+    }
+    
+    drawTicketIcon(ctx) {
+        const centerX = this.x + this.width / 2;
+        const centerY = this.y + this.height / 2;
+        const ticketWidth = this.width * 0.9;
+        const ticketHeight = this.height * 0.6;
+        
+        // Main ticket background (cream/off-white)
+        ctx.fillStyle = '#F8F8FF'; // Ghost white for ticket
+        
+        // Create rounded rectangle for ticket shape
+        const cornerRadius = 3;
+        ctx.beginPath();
+        ctx.roundRect(
+            centerX - ticketWidth/2,
+            centerY - ticketHeight/2,
+            ticketWidth,
+            ticketHeight,
+            cornerRadius
+        );
+        ctx.fill();
+        
+        // Ticket border
         ctx.strokeStyle = this.color;
         ctx.lineWidth = 2;
-        ctx.strokeRect(
-            centerX - mapWidth/2,
-            centerY - mapHeight/2,
-            mapWidth,
-            mapHeight
+        ctx.stroke();
+        
+        // Perforated edge effect (left side)
+        ctx.fillStyle = '#FFFFFF';
+        const perfSize = 2;
+        const perfSpacing = 4;
+        const leftEdge = centerX - ticketWidth/2;
+        
+        for (let i = 0; i < ticketHeight; i += perfSpacing) {
+            ctx.beginPath();
+            ctx.arc(leftEdge, centerY - ticketHeight/2 + i, perfSize/2, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        
+        // Ticket text/details
+        ctx.fillStyle = this.color;
+        ctx.font = '8px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('EXPRESS', centerX, centerY - 2);
+        
+        // Train symbol (simple)
+        const trainY = centerY + 6;
+        ctx.fillStyle = '#8B4513'; // Brown for train
+        ctx.fillRect(centerX - 8, trainY, 16, 4);
+        
+        // Train wheels
+        ctx.fillStyle = '#2F4F4F'; // Dark slate gray
+        ctx.beginPath();
+        ctx.arc(centerX - 5, trainY + 4, 2, 0, Math.PI * 2);
+        ctx.arc(centerX + 5, trainY + 4, 2, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Ticket stub line (dashed)
+        ctx.strokeStyle = '#C0C0C0'; // Light gray
+        ctx.lineWidth = 1;
+        ctx.setLineDash([2, 2]);
+        ctx.beginPath();
+        ctx.moveTo(centerX + ticketWidth/3, centerY - ticketHeight/2);
+        ctx.lineTo(centerX + ticketWidth/3, centerY + ticketHeight/2);
+        ctx.stroke();
+        ctx.setLineDash([]); // Reset line dash
+        
+        // Add golden glow effect around the fallback ticket
+        const glowRadius = this.width * 1.2;
+        const goldGradient = ctx.createRadialGradient(
+            centerX, centerY, 0,
+            centerX, centerY, glowRadius
         );
+        goldGradient.addColorStop(0, `rgba(255, 215, 0, ${this.glowIntensity * 0.4})`);
+        goldGradient.addColorStop(0.5, `rgba(255, 215, 0, ${this.glowIntensity * 0.2})`);
+        goldGradient.addColorStop(1, 'rgba(255, 215, 0, 0)');
         
-        // Draw gerrymandered district boundaries (irregular shapes)
-        ctx.strokeStyle = '#8B0000'; // Dark red for district lines
-        ctx.lineWidth = 1.5;
-        
-        // District 1 (upper left - weird shape)
-        ctx.beginPath();
-        ctx.moveTo(centerX - mapWidth/2 + 2, centerY - mapHeight/2 + 2);
-        ctx.lineTo(centerX - mapWidth/4, centerY - mapHeight/3);
-        ctx.lineTo(centerX - mapWidth/6, centerY - mapHeight/4);
-        ctx.lineTo(centerX - mapWidth/3, centerY);
-        ctx.lineTo(centerX - mapWidth/2 + 2, centerY - mapHeight/6);
-        ctx.closePath();
-        ctx.stroke();
-        ctx.fillStyle = 'rgba(255, 0, 0, 0.3)';
-        ctx.fill();
-        
-        // District 2 (upper right - snake-like)
-        ctx.beginPath();
-        ctx.moveTo(centerX, centerY - mapHeight/2 + 2);
-        ctx.lineTo(centerX + mapWidth/2 - 2, centerY - mapHeight/2 + 2);
-        ctx.lineTo(centerX + mapWidth/2 - 2, centerY - mapHeight/4);
-        ctx.lineTo(centerX + mapWidth/4, centerY - mapHeight/6);
-        ctx.lineTo(centerX + mapWidth/6, centerY);
-        ctx.lineTo(centerX, centerY - mapHeight/3);
-        ctx.closePath();
-        ctx.stroke();
-        ctx.fillStyle = 'rgba(0, 0, 255, 0.3)';
-        ctx.fill();
-        
-        // District 3 (bottom - sprawling)
-        ctx.beginPath();
-        ctx.moveTo(centerX - mapWidth/3, centerY);
-        ctx.lineTo(centerX + mapWidth/3, centerY + mapHeight/6);
-        ctx.lineTo(centerX + mapWidth/2 - 2, centerY + mapHeight/2 - 2);
-        ctx.lineTo(centerX - mapWidth/2 + 2, centerY + mapHeight/2 - 2);
-        ctx.lineTo(centerX - mapWidth/4, centerY + mapHeight/4);
-        ctx.closePath();
-        ctx.stroke();
-        ctx.fillStyle = 'rgba(0, 128, 0, 0.3)';
-        ctx.fill();
-        
-        // Gold accent border
-        ctx.strokeStyle = this.accentColor;
-        ctx.lineWidth = 2;
-        ctx.strokeRect(
-            centerX - mapWidth/2,
-            centerY - mapHeight/2,
-            mapWidth,
-            mapHeight
+        ctx.fillStyle = goldGradient;
+        ctx.fillRect(
+            centerX - glowRadius,
+            centerY - glowRadius,
+            glowRadius * 2,
+            glowRadius * 2
         );
     }
     

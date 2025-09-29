@@ -1,5 +1,5 @@
 # Sound System Developer Guide
-## Lt. Dan's Run for Re-Election
+## RERUN: Danny Boy Runs for Office Again
 
 ### Table of Contents
 1. [System Overview](#system-overview)
@@ -194,7 +194,7 @@ effectVolume = masterVolume × effectsVolume × effectVolume
 ### Settings Persistence
 Volume settings are saved to `localStorage`:
 ```javascript
-localStorage.setItem('ltdan_audio_settings', {
+localStorage.setItem('rerun_audio_settings', {
     volumes: { master: 0.7, music: 0.6, effects: 0.8 },
     muted: { master: false, music: false, effects: false }
 });

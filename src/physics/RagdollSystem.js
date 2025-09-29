@@ -5,6 +5,8 @@ export class RagdollSystem {
         this.friction = 0.98;
         this.bounce = 0.6;
         this.skinImages = skinImages;
+        this.headDetached = false;
+        this.headDetachChance = 0.7; // 70% chance head detaches on crash
         
         // Initialize body parts with physics properties scaled to player size
         const x = initialPosition.x + initialPosition.width / 2;
@@ -105,24 +107,66 @@ export class RagdollSystem {
     }
     
     applyImpulse(forceX, forceY) {
+        // Randomly determine if head should detach
+        if (Math.random() < this.headDetachChance) {
+            this.detachHead();
+        }
+        
         // Apply initial crash force to all parts with some variation
         for (const part of Object.values(this.parts)) {
             part.vx += forceX * (0.5 + Math.random() * 0.5) / part.mass;
             part.vy += forceY * (0.5 + Math.random() * 0.5) / part.mass;
             part.angleVel += (Math.random() - 0.5) * 0.8;
         }
+        
+        // If head is detached, give it extra dramatic physics
+        if (this.headDetached) {
+            const head = this.parts.head;
+            // Much stronger horizontal force to ensure separation from body
+            head.vx += (Math.random() - 0.5) * 15; // Stronger random horizontal spin
+            head.vy -= Math.random() * 12 + 3; // Much stronger upward force (3-15 range)
+            head.angleVel += (Math.random() - 0.5) * 2.5; // More dramatic spin
+            
+            // Add additional directional force away from the torso
+            const torso = this.parts.torso;
+            const dx = head.x - torso.x;
+            const dy = head.y - torso.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            if (distance > 0) {
+                // Normalize direction vector and apply separation force
+                const separationForce = 8;
+                head.vx += (dx / distance) * separationForce;
+                head.vy += (dy / distance) * separationForce;
+            }
+        }
+    }
+    
+    detachHead() {
+        this.headDetached = true;
+        // Remove the head-torso joint constraint
+        this.joints = this.joints.filter(joint => 
+            !(joint.partA === 'head' && joint.partB === 'torso') &&
+            !(joint.partA === 'torso' && joint.partB === 'head')
+        );
     }
     
     update() {
         // Apply physics to each part
-        for (const part of Object.values(this.parts)) {
+        for (const [name, part] of Object.entries(this.parts)) {
             // Apply gravity
             part.vy += this.gravity;
             
-            // Apply friction
-            part.vx *= this.friction;
-            part.vy *= this.friction;
-            part.angleVel *= 0.99;
+            // Special physics for detached head
+            const isDetachedHead = name === 'head' && this.headDetached;
+            
+            // Apply friction (less friction for detached head to keep it rolling)
+            const frictionRate = isDetachedHead ? 0.995 : this.friction;
+            const angularFriction = isDetachedHead ? 0.995 : 0.99;
+            
+            part.vx *= frictionRate;
+            part.vy *= frictionRate;
+            part.angleVel *= angularFriction;
             
             // Update position
             part.x += part.vx;
@@ -133,24 +177,50 @@ export class RagdollSystem {
             const bottomY = part.y + part.height / 2;
             if (bottomY > this.groundY) {
                 part.y = this.groundY - part.height / 2;
-                part.vy *= -this.bounce;
-                part.vx *= 0.8; // Extra friction on ground
-                part.angleVel *= 0.7;
+                
+                // Enhanced bounce for detached head
+                const bounceRate = isDetachedHead ? 0.8 : this.bounce;
+                const groundFriction = isDetachedHead ? 0.9 : 0.8;
+                const angleReduction = isDetachedHead ? 0.9 : 0.7;
+                
+                part.vy *= -bounceRate;
+                part.vx *= groundFriction;
+                part.angleVel *= angleReduction;
+                
+                // For detached head, add rolling physics when on ground
+                if (isDetachedHead && Math.abs(part.vy) < 2) {
+                    // Convert some horizontal velocity to rotation (rolling effect)
+                    const rollFactor = 0.1;
+                    part.angleVel += part.vx * rollFactor;
+                }
                 
                 // Stop tiny bounces
-                if (Math.abs(part.vy) < 0.5) {
+                const minBounce = isDetachedHead ? 1.0 : 0.5;
+                if (Math.abs(part.vy) < minBounce) {
                     part.vy = 0;
                 }
             }
             
-            // Screen bounds
+            // Screen bounds with special behavior for detached head
             if (part.x < part.width / 2) {
                 part.x = part.width / 2;
-                part.vx *= -0.5;
+                const wallBounce = isDetachedHead ? -0.7 : -0.5;
+                part.vx *= wallBounce;
+                
+                // Add extra spin when detached head hits walls
+                if (isDetachedHead) {
+                    part.angleVel += Math.random() * 0.5 - 0.25;
+                }
             }
             if (part.x > window.innerWidth - part.width / 2) {
                 part.x = window.innerWidth - part.width / 2;
-                part.vx *= -0.5;
+                const wallBounce = isDetachedHead ? -0.7 : -0.5;
+                part.vx *= wallBounce;
+                
+                // Add extra spin when detached head hits walls
+                if (isDetachedHead) {
+                    part.angleVel += Math.random() * 0.5 - 0.25;
+                }
             }
         }
         

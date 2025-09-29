@@ -1,7 +1,7 @@
 {
-  "name": "Lt. Dan's Run for Re-Election",
-  "short_name": "Lt. Dan's Run",
-  "description": "Help Lt. Dan win the election in this exciting mobile endless runner game!",
+  "name": "RERUN: Danny Boy Runs for Office Again",
+  "short_name": "RERUN: Danny Boy",
+  "description": "Help Danny Boy win the election in this exciting mobile endless runner game!",
   "start_url": "./index.html",
   "display": "standalone",
   "orientation": "portrait-primary",
@@ -30,7 +30,7 @@
       "sizes": "390x844",
       "type": "image/png",
       "form_factor": "narrow",
-      "label": "Lt. Dan's Run gameplay on mobile"
+      "label": "RERUN: Danny Boy gameplay on mobile"
     }
   ],
   "prefer_related_applications": false,

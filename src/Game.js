@@ -17,7 +17,7 @@ import { GameLoop } from './GameLoop.js';
 import { Renderer } from './Renderer.js';
 import { initializeScaleManager, getScaleManager } from './utils/ScaleManager.js';
 
-export class LtDanRunner {
+export class RerunGame {
     constructor() {
         this.canvas = document.getElementById('gameCanvas');
         this.ctx = this.canvas.getContext('2d');
@@ -131,7 +131,7 @@ export class LtDanRunner {
         // Ragdoll system
         this.ragdoll = null;
         this.crashTimer = 0;
-        this.crashDuration = 2000;
+        this.crashDuration = 3000; // Increased from 2000ms to 3000ms (3 seconds)
         this.screenShake = 0;
         this.screenShakeIntensity = 0;
         
@@ -195,12 +195,16 @@ export class LtDanRunner {
         // Pre-loaded assets (will be set by AssetLoader)
         this.preloadedAssets = null;
         
+        // Create crash skip hint element (reusing loading screen styling)
+        this.createCrashSkipHint();
+        
         this.init();
     }
     
     // Method to receive pre-loaded assets from AssetLoader
     setPreloadedAssets(loadedAssets) {
         this.preloadedAssets = loadedAssets;
+        this.assets = loadedAssets; // Also store as assets for easier access
         console.log('Game received pre-loaded assets:', loadedAssets);
         
         // Use pre-loaded skin images if available
@@ -660,6 +664,13 @@ export class LtDanRunner {
     handleTouchStart(e) {
         e.preventDefault();
         
+        // Check for crash skip functionality first
+        if (this.gameState === 'crashing') {
+            // Skip crash animation and go directly to game over
+            GameLogic.gameOver(this);
+            return;
+        }
+        
         if (this.gameState === 'playing' || this.gameState === 'tutorial') {
             if (e.touches && e.touches.length > 0) {
                 this.player.lastTouchX = e.touches[0].clientX;
@@ -677,6 +688,13 @@ export class LtDanRunner {
     }
     
     handleJump(mouseX, mouseY) {
+        // Check for crash skip functionality first
+        if (this.gameState === 'crashing') {
+            // Skip crash animation and go directly to game over
+            GameLogic.gameOver(this);
+            return;
+        }
+        
         if (this.gameState !== 'playing' && this.gameState !== 'tutorial') return;
         
         // Tutorial mode: track parachute usage
@@ -702,6 +720,13 @@ export class LtDanRunner {
     }
     
     handleKeyDown(e) {
+        // Check for crash skip functionality first
+        if (this.gameState === 'crashing') {
+            // Skip crash animation and go directly to game over on any key press
+            GameLogic.gameOver(this);
+            return;
+        }
+        
         if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') {
             if (this.gameState === 'playing') {
                 this.pauseGame();
@@ -976,6 +1001,9 @@ export class LtDanRunner {
         
         this.soundManager.playEffect('crash');
         
+        // Show crash skip hint
+        this.showCrashSkipHint();
+        
         // Use scaled dimensions for ragdoll (current player size with zoom applied)
         this.ragdoll = new RagdollSystem({
             x: this.player.x,
@@ -998,6 +1026,9 @@ export class LtDanRunner {
         this.gameEndTime = Date.now();
         this.finalScoreElement.textContent = this.score;
         this.updateHUDVisibility();
+        
+        // Hide crash skip hint when transitioning to game over
+        this.hideCrashSkipHint();
         
         this.soundManager.stopMusic();
         this.soundManager.playMusic('menu');
@@ -1345,6 +1376,31 @@ export class LtDanRunner {
         setTimeout(() => {
             this.scoreBadge.classList.remove('shake');
         }, 600);
+    }
+    
+    createCrashSkipHint() {
+        // Create crash skip hint element (reusing loading screen skip-hint styling)
+        this.crashSkipHint = document.createElement('div');
+        this.crashSkipHint.className = 'skip-hint hidden';
+        this.crashSkipHint.textContent = 'Tap anywhere to skip crash';
+        this.crashSkipHint.style.position = 'fixed';
+        this.crashSkipHint.style.bottom = '2rem';
+        this.crashSkipHint.style.left = '50%';
+        this.crashSkipHint.style.transform = 'translateX(-50%)';
+        this.crashSkipHint.style.zIndex = '1000';
+        document.body.appendChild(this.crashSkipHint);
+    }
+    
+    showCrashSkipHint() {
+        if (this.crashSkipHint) {
+            this.crashSkipHint.classList.remove('hidden');
+        }
+    }
+    
+    hideCrashSkipHint() {
+        if (this.crashSkipHint) {
+            this.crashSkipHint.classList.add('hidden');
+        }
     }
     
     

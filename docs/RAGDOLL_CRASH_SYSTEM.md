@@ -15,10 +15,20 @@ The game now features a sophisticated ragdoll physics system that triggers when 
 When a collision occurs:
 1. Game state changes from 'playing' to 'crashing'
 2. Ragdoll system is created at player's position
-3. Crash sound effect plays (using the custom 'crash.mp3' sound)
-4. Screen shake effect begins (intensity: 15px, decays over time)
-5. Crash animation plays for 2 seconds
-6. Game over screen appears after animation completes
+3. **Head Detachment**: 70% chance for head to separate from body
+4. Crash sound effect plays (using the custom 'crash.mp3' sound)
+5. Screen shake effect begins (intensity: 15px, decays over time)
+6. Crash animation plays for 3 seconds (increased from 2 for head rolling)
+7. **Tap-to-Skip**: Players can tap/click anywhere to skip crash animation
+8. Game over screen appears after animation completes or is skipped
+
+### 2a. **Detachable Head System**
+- **70% Detachment Rate**: Head separates from body in most crashes
+- **Enhanced Physics**: Detached heads get stronger launch forces
+- **Rolling Mechanics**: Independent head physics with realistic rolling
+- **Enhanced Bouncing**: 80% bounce rate vs 60% for other body parts
+- **Extended Motion**: Reduced friction keeps heads moving longer
+- **Wall Interactions**: Extra spin effects when hitting screen edges
 
 ### 3. **Continuous Background Animation**
 - Clouds continue floating during crash sequence
@@ -51,7 +61,8 @@ Located in `game.js`, the RagdollSystem class handles:
 gravity: 0.5        // Downward force
 friction: 0.98      // Air resistance
 bounce: 0.6         // Ground bounce factor
-crashDuration: 2000 // 2 seconds before game over
+crashDuration: 3000 // 3 seconds before game over (increased from 2)
+headDetachChance: 0.7 // 70% chance for head to detach
 ```
 
 ### Game State Flow
@@ -75,7 +86,7 @@ During 'gameOver' state:
 - Located in `sfx/effects/crash.mp3`
 
 ## Configuration
-Crash parameters can be adjusted in the LtDanRunner constructor:
+Crash parameters can be adjusted in the RerunGame constructor:
 - `crashDuration`: Time before game over screen (default: 2000ms)
 - `screenShakeIntensity`: Initial shake strength (default: 15px)
 

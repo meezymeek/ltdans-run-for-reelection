@@ -1,4 +1,4 @@
-# Lt. Dan's Run for Re-election - Game Mechanics Guide
+# RERUN: Danny Boy Runs for Office Again - Game Mechanics Guide
 
 ## Table of Contents
 1. [Constituent Squashing System](#constituent-squashing-system)

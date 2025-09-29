@@ -1,4 +1,4 @@
-# Audio Assets Guide for Lt. Dan's Run for Re-Election
+# Audio Assets Guide for RERUN: Danny Boy Runs for Office Again
 
 ## Overview
 This document outlines all audio assets needed for the game, their specifications, and usage context. Audio files should be placed in the appropriate subdirectories within `/sfx/`.
