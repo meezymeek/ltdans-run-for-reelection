@@ -19,6 +19,7 @@ export class AssetLoader {
             images: {
                 skins: [],
                 parachutes: [],
+                obstacles: [],
                 powerups: []
             },
             fonts: []
@@ -27,7 +28,7 @@ export class AssetLoader {
         // Track loaded assets
         this.loadedContent = {
             audio: { music: {}, effects: {} },
-            images: { skins: {}, parachutes: [], powerups: {} },
+            images: { skins: {}, parachutes: [], obstacles: [], powerups: {} },
             fonts: []
         };
         
@@ -36,7 +37,7 @@ export class AssetLoader {
     }
     
     // Initialize asset lists
-    initializeAssetLists() {
+    async initializeAssetLists() {
         // Music files
         this.assets.audio.music = [
             { name: 'menu', path: 'sfx/music/menu-theme' },
@@ -67,6 +68,9 @@ export class AssetLoader {
             'parachute_spacex.png'
         ];
         
+        // Load obstacle skins from config
+        await this.loadObstacleSkinsList();
+        
         // Power-up images
         this.assets.images.powerups = [
             { name: 'ticket', path: 'ticket.png' }
@@ -81,6 +85,7 @@ export class AssetLoader {
             this.assets.audio.effects.length +
             this.assets.images.skins.length +
             this.assets.images.parachutes.length +
+            this.assets.images.obstacles.length +
             this.assets.images.powerups.length +
             this.assets.fonts.length;
     }
@@ -95,7 +100,7 @@ export class AssetLoader {
         this.onProgress = onProgress;
         this.onComplete = onComplete;
         
-        this.initializeAssetLists();
+        await this.initializeAssetLists();
         
         console.log(`Starting to load ${this.totalAssets} assets...`);
         
@@ -207,12 +212,100 @@ export class AssetLoader {
             imagePromises.push(this.loadParachuteImage(parachute));
         }
         
+        // Load obstacle images
+        for (const obstacle of this.assets.images.obstacles) {
+            imagePromises.push(this.loadObstacleImage(obstacle));
+        }
+        
         // Load power-up images
         for (const powerup of this.assets.images.powerups) {
             imagePromises.push(this.loadPowerupImage(powerup.name, powerup.path));
         }
         
         await Promise.allSettled(imagePromises);
+    }
+    
+    // Load obstacle skins list from configuration
+    async loadObstacleSkinsList() {
+        try {
+            const response = await fetch('skins/obstacles/obstacle-skins.json');
+            const skinConfig = await response.json();
+            
+            // Extract all obstacle skins that have images
+            for (const [type, variants] of Object.entries(skinConfig.skins)) {
+                for (const [variant, config] of Object.entries(variants)) {
+                    if (config.imagePath) {
+                        this.assets.images.obstacles.push({
+                            type: type,
+                            variant: variant,
+                            name: `${type}_${variant}`,
+                            path: config.imagePath,
+                            config: config
+                        });
+                    }
+                }
+            }
+            
+            console.log(`Found ${this.assets.images.obstacles.length} obstacle skins to load`);
+            
+        } catch (error) {
+            console.warn('Could not load obstacle skins config:', error.message);
+            // Continue without obstacle skins if config file is missing
+            this.assets.images.obstacles = [];
+        }
+    }
+    
+    // Load an obstacle image
+    async loadObstacleImage(obstacleInfo) {
+        try {
+            const img = new Image();
+            
+            await new Promise((resolve, reject) => {
+                img.onload = () => {
+                    this.loadedContent.images.obstacles.push({
+                        type: obstacleInfo.type,
+                        variant: obstacleInfo.variant,
+                        name: obstacleInfo.name,
+                        image: img,
+                        config: obstacleInfo.config,
+                        loaded: true
+                    });
+                    this.updateProgress();
+                    console.log(`Loaded obstacle skin: ${obstacleInfo.name}`);
+                    resolve();
+                };
+                
+                img.onerror = () => {
+                    reject(new Error(`Failed to load obstacle: ${obstacleInfo.name}`));
+                };
+                
+                // Set timeout
+                const timeout = setTimeout(() => {
+                    reject(new Error('Load timeout'));
+                }, 3000);
+                
+                img.onload = () => {
+                    clearTimeout(timeout);
+                    this.loadedContent.images.obstacles.push({
+                        type: obstacleInfo.type,
+                        variant: obstacleInfo.variant,
+                        name: obstacleInfo.name,
+                        image: img,
+                        config: obstacleInfo.config,
+                        loaded: true
+                    });
+                    this.updateProgress();
+                    console.log(`Loaded obstacle skin: ${obstacleInfo.name}`);
+                    resolve();
+                };
+                
+                img.src = obstacleInfo.path;
+            });
+            
+        } catch (error) {
+            console.warn(`Failed to load obstacle ${obstacleInfo.name}:`, error.message);
+            this.updateProgress(); // Still count as processed
+        }
     }
     
     // Load a skin image
@@ -380,6 +473,17 @@ export class AssetLoader {
         
         if (this.onProgress) {
             this.onProgress(this.progress, this.loadedAssets, this.totalAssets);
+        }
+    }
+    
+    // Get obstacle skins configuration data
+    async getObstacleSkinConfig() {
+        try {
+            const response = await fetch('skins/obstacles/obstacle-skins.json');
+            return await response.json();
+        } catch (error) {
+            console.warn('Could not load obstacle skins config:', error.message);
+            return null;
         }
     }
     

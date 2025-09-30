@@ -1,6 +1,6 @@
 // Tutorial Manager Class
 import { GAME_CONFIG } from '../constants/GameConfig.js';
-import { createObstacle } from '../entities/Obstacle.js';
+import { createObstacle, createObstacleWithVariant } from '../entities/Obstacle.js';
 import { Constituent } from '../entities/Constituent.js';
 import { Bribe } from '../entities/Bribe.js';
 import { GerrymanderExpress } from '../entities/GerrymanderExpress.js';
@@ -80,7 +80,7 @@ export class TutorialManager {
                 entities: [{ type: 'constituent', delay: 2000 }],
                 waitForAction: 'stay_airborne',
                 spawnContinuous: true,
-                spawnDelay: 3500,
+                spawnDelay: 2500, // Faster spawning for parachute practice
                 checkpoint: true
             },
             {
@@ -125,6 +125,9 @@ export class TutorialManager {
         this.regularSpawningEnabled = false; // Flag for enabling regular game spawning
         this.gerrymanderCycleStep = 0; // Track which step in the gerrymander sequence (0=constituent, 1=ticket token)
         this.trainActivations = 0; // Track number of train mode activations for stage 7
+        
+        // Constituent respawn system
+        this.lastConstituentRespawn = 0; // Track last respawn time for stage 5
         
         // Dialog system
         this.showingDialog = false;
@@ -217,6 +220,9 @@ export class TutorialManager {
         this.trainActivations = 0;
         this.jumpsCompleted = 0;
         
+        // Reset constituent respawn timer
+        this.lastConstituentRespawn = 0;
+        
         // Clear existing entities
         this.game.obstacles = [];
         this.game.constituents = [];
@@ -274,13 +280,17 @@ export class TutorialManager {
         
         switch (config.type) {
             case 'low_obstacle':
-                const lowObstacle = createObstacle('low', this.game.canvas, groundY, GAME_CONFIG.obstacleSpeed);
+                const { variant: lowVariant, skinConfig: lowSkinConfig } = this.selectObstacleVariant('low');
+                const lowObstacle = createObstacleWithVariant('low', this.game.canvas, groundY, GAME_CONFIG.obstacleSpeed, lowVariant, lowSkinConfig);
+                this.applySkinToObstacle(lowObstacle);
                 this.game.obstacles.push(lowObstacle);
                 this.entitiesSpawned.push({ type: 'obstacle', entity: lowObstacle });
                 break;
                 
             case 'tall_obstacle':
-                const tallObstacle = createObstacle('tall', this.game.canvas, groundY, GAME_CONFIG.obstacleSpeed);
+                const { variant: tallVariant, skinConfig: tallSkinConfig } = this.selectObstacleVariant('tall');
+                const tallObstacle = createObstacleWithVariant('tall', this.game.canvas, groundY, GAME_CONFIG.obstacleSpeed, tallVariant, tallSkinConfig);
+                this.applySkinToObstacle(tallObstacle);
                 this.game.obstacles.push(tallObstacle);
                 this.entitiesSpawned.push({ type: 'obstacle', entity: tallObstacle });
                 break;
@@ -327,10 +337,21 @@ export class TutorialManager {
         if (section.spawnContinuous) {
             const currentEntities = this.getCurrentSectionEntities();
             
-            // Only spawn if no entities on screen and enough time has passed
-            if (currentEntities.length === 0 && (now - this.lastSpawnTime) > section.spawnDelay) {
-                this.spawnTutorialEntity(section.entities[0]); // Spawn the first (and only) entity type
-                this.lastSpawnTime = now;
+            // For constituent sections, use more aggressive spawning
+            if (section.entities[0]?.type === 'constituent') {
+                const spawnDelay = section.spawnDelay;
+                
+                // Spawn if no constituents on screen and enough time has passed
+                if (currentEntities.length === 0 && (now - this.lastSpawnTime) > spawnDelay) {
+                    this.spawnTutorialEntity({ type: 'constituent' });
+                    this.lastSpawnTime = now;
+                }
+            } else {
+                // Only spawn if no entities on screen and enough time has passed
+                if (currentEntities.length === 0 && (now - this.lastSpawnTime) > section.spawnDelay) {
+                    this.spawnTutorialEntity(section.entities[0]); // Spawn the first (and only) entity type
+                    this.lastSpawnTime = now;
+                }
             }
             
             // Check completion based on section type
@@ -383,9 +404,33 @@ export class TutorialManager {
                     break;
                     
                 case 'encounter_constituent':
-                    // Stage 5 only needs 1 constituent
+                    // Stage 5 only needs 1 constituent - but respawn if needed
                     if (this.constituentsEncountered >= 1) {
                         this.completeSection();
+                    } else {
+                        // Check if constituents are getting close to being missed
+                        const constituentsNearMiss = this.game.constituents.filter(c => 
+                            c.xPercent < 0.2 && !c.isBeingStomped // Less than 20% across screen and not stomped
+                        );
+                        
+                        // If no constituents on screen, spawn immediately
+                        if (this.game.constituents.length === 0) {
+                            if (!this.lastConstituentRespawn || (now - this.lastConstituentRespawn) > 2000) {
+                                this.spawnTutorialEntity({ type: 'constituent' });
+                                this.lastConstituentRespawn = now;
+                            }
+                        }
+                        // If constituents are about to be missed, prepare a backup
+                        else if (constituentsNearMiss.length > 0) {
+                            if (!this.lastConstituentRespawn || (now - this.lastConstituentRespawn) > 4000) {
+                                setTimeout(() => {
+                                    if (this.game.constituents.length === 0 && this.constituentsEncountered < 1) {
+                                        this.spawnTutorialEntity({ type: 'constituent' });
+                                    }
+                                }, 2000);
+                                this.lastConstituentRespawn = now;
+                            }
+                        }
                     }
                     break;
                     
@@ -426,6 +471,22 @@ export class TutorialManager {
                                 this.spawnTutorialEntity({ type: 'constituent' });
                             }, 1000);
                         }
+                        
+                        // Also check if constituent is about to be missed and no parachute is active
+                        const constituentsNearMiss = this.game.constituents.filter(c => 
+                            c.xPercent < 0.3 && !c.isBeingStomped
+                        );
+                        
+                        if (constituentsNearMiss.length > 0 && !this.game.player.hasParachute) {
+                            if (!this.lastConstituentRespawn || (now - this.lastConstituentRespawn) > 4000) {
+                                setTimeout(() => {
+                                    if (this.game.constituents.length === 0 && !this.trainActivated) {
+                                        this.spawnTutorialEntity({ type: 'constituent' });
+                                    }
+                                }, 3000);
+                                this.lastConstituentRespawn = now;
+                            }
+                        }
                     }
                     
                     if (this.trainActivated) {
@@ -443,6 +504,7 @@ export class TutorialManager {
             }
         }
     }
+    
     handleTutorialCrash() {
         // Trigger red overlay effect
         this.game.tutorialCrashOverlay = 1.0; // Full red overlay
@@ -732,6 +794,52 @@ export class TutorialManager {
         const words = instruction.split(' ');
         const lines = Math.ceil(words.length / 8); // Rough estimate
         return 15 * 2 + 20 + 20 + (lines * 18);
+    }
+    
+    // Select obstacle variant based on spawn weights (copied from GameLoop)
+    selectObstacleVariant(type) {
+        // Use obstacle skin config if available
+        const obstacleSkinConfig = this.game.obstacleSkinConfig;
+        if (!obstacleSkinConfig || !obstacleSkinConfig.spawnWeights || !obstacleSkinConfig.spawnWeights[type]) {
+            // Fallback to default
+            return { variant: 'default', skinConfig: null };
+        }
+        
+        const weights = obstacleSkinConfig.spawnWeights[type];
+        const variants = Object.keys(weights);
+        
+        // Calculate total weight
+        const totalWeight = Object.values(weights).reduce((sum, weight) => sum + weight, 0);
+        
+        // Select random variant based on weights
+        let random = Math.random() * totalWeight;
+        for (const variant of variants) {
+            random -= weights[variant];
+            if (random <= 0) {
+                const skinConfig = obstacleSkinConfig.skins[type][variant];
+                return { variant, skinConfig };
+            }
+        }
+        
+        // Fallback to first variant
+        const fallbackVariant = variants[0];
+        const skinConfig = obstacleSkinConfig.skins[type][fallbackVariant];
+        return { variant: fallbackVariant, skinConfig };
+    }
+    
+    // Apply skin image to obstacle if available (copied from GameLoop)
+    applySkinToObstacle(obstacle) {
+        if (!this.game.loadedObstacleSkins || !obstacle.variant || obstacle.variant === 'default') {
+            return; // No skin needed for default obstacles
+        }
+        
+        // Find matching skin in loaded assets
+        const skinName = `${obstacle.type}_${obstacle.variant}`;
+        const loadedSkin = this.game.loadedObstacleSkins.find(skin => skin.name === skinName);
+        
+        if (loadedSkin && loadedSkin.image && loadedSkin.loaded) {
+            obstacle.setSkinImage(loadedSkin.image);
+        }
     }
     
     cleanup() {

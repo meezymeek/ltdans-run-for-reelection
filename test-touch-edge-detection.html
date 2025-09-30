@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Touch Edge Detection Test - LtDansRunForReelection</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Tiny5', monospace, system-ui;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: #ffffff;
+            overflow: hidden;
+            touch-action: none;
+            user-select: none;
+        }
+
+        #testCanvas {
+            background: linear-gradient(to bottom, #1a1a2e 0%, #16213e 70%, #0f0f23 100%);
+            width: 100vw;
+            height: 100dvh;
+            touch-action: none;
+            display: block;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1;
+            
+            /* Same safe area setup as game canvas */
+            padding: env(safe-area-inset-top, 0) env(safe-area-inset-right, 0) env(safe-area-inset-bottom, 0) env(safe-area-inset-left, 0);
+            box-sizing: border-box;
+            outline: env(safe-area-inset-right, 0) solid transparent;
+            outline-offset: calc(-1 * env(safe-area-inset-right, 0));
+        }
+
+        .info-panel {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            color: #ffd700;
+            padding: 15px;
+            border: 2px solid #ffd700;
+            border-radius: 8px;
+            font-size: 12px;
+            z-index: 100;
+            max-width: 300px;
+        }
+
+        .touch-indicator {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background: rgba(255, 215, 0, 0.8);
+            border: 2px solid #fff;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 50;
+            transform: translate(-50%, -50%);
+            animation: touchPulse 0.3s ease-out;
+        }
+
+        .edge-touch {
+            background: rgba(255, 107, 107, 0.8);
+            border-color: #ff0000;
+        }
+
+        @keyframes touchPulse {
+            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
+        }
+
+        .back-button {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #ff6b6b;
+            color: #fff;
+            border: 2px solid #000;
+            padding: 12px 20px;
+            font-size: 16px;
+            font-family: inherit;
+            cursor: pointer;
+            z-index: 100;
+            box-shadow: 4px 4px 0 #000;
+        }
+
+        .back-button:hover {
+            background: #ff5555;
+            transform: translateX(-50%) translateY(-2px);
+            box-shadow: 6px 6px 0 #000;
+        }
+
+        .back-button:active {
+            transform: translateX(-50%) translateY(2px);
+            box-shadow: 2px 2px 0 #000;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="testCanvas"></canvas>
+    
+    <div class="info-panel">
+        <h3>Touch Edge Detection Test</h3>
+        <div id="touchInfo">
+            <p>Canvas: <span id="canvasSize">-</span></p>
+            <p>Safe Areas: <span id="safeAreas">-</span></p>
+            <p>Last Touch: <span id="lastTouch">-</span></p>
+            <p>Edge Buffer: 20px</p>
+            <p>Total Touches: <span id="touchCount">0</span></p>
+            <p>Edge Touches: <span id="edgeTouchCount">0</span></p>
+        </div>
+    </div>
+
+    <button class="back-button" onclick="window.location.href='index.html'">Back to Game</button>
+
+    <script>
+        class TouchEdgeDetectionTest {
+            constructor() {
+                this.canvas = document.getElementById('testCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.touchCount = 0;
+                this.edgeTouchCount = 0;
+                
+                this.init();
+            }
+
+            init() {
+                this.setupCanvas();
+                this.setupEventListeners();
+                this.updateInfo();
+                this.draw();
+            }
+
+            setupCanvas() {
+                const vv = window.visualViewport;
+                const width = Math.round(vv?.width || window.innerWidth);
+                const height = Math.round(vv?.height || window.innerHeight);
+                
+                this.canvas.width = width;
+                this.canvas.height = height;
+                this.canvas.style.width = `${width}px`;
+                this.canvas.style.height = `${height}px`;
+
+                // Calculate safe areas (same logic as game)
+                this.safeArea = {
+                    top: this.getSafeAreaInset('top'),
+                    right: this.getSafeAreaInset('right'),
+                    bottom: this.getSafeAreaInset('bottom'),
+                    left: this.getSafeAreaInset('left'),
+                    effectiveWidth: width - this.getSafeAreaInset('left') - this.getSafeAreaInset('right'),
+                    effectiveHeight: height - this.getSafeAreaInset('top') - this.getSafeAreaInset('bottom')
+                };
+            }
+
+            getSafeAreaInset(side) {
+                const insetValue = getComputedStyle(document.documentElement)
+                    .getPropertyValue(`--safe-area-inset-${side}`) || 
+                    getComputedStyle(this.canvas)
+                    .getPropertyValue(`env(safe-area-inset-${side})`) || '0px';
+                
+                return parseInt(insetValue.replace('px', '')) || 0;
+            }
+
+            mapTouchCoordinates(rawX, rawY) {
+                const rect = this.canvas.getBoundingClientRect();
+                
+                let canvasX = rawX - rect.left;
+                let canvasY = rawY - rect.top;
+                
+                if (this.safeArea) {
+                    canvasX = Math.max(this.safeArea.left, Math.min(canvasX, this.canvas.width - this.safeArea.right));
+                    canvasY = Math.max(this.safeArea.top, Math.min(canvasY, this.canvas.height - this.safeArea.bottom));
+                }
+                
+                const edgeBuffer = 20;
+                const effectiveCanvasWidth = this.canvas.width - (this.safeArea?.right || 0);
+                
+                if (canvasX > effectiveCanvasWidth - edgeBuffer) {
+                    canvasX = effectiveCanvasWidth - 10;
+                }
+                
+                return {
+                    x: canvasX,
+                    y: canvasY,
+                    isEdgeTouch: rawX > effectiveCanvasWidth - edgeBuffer
+                };
+            }
+
+            setupEventListeners() {
+                this.canvas.addEventListener('touchstart', (e) => this.handleTouch(e), { passive: false });
+                this.canvas.addEventListener('click', (e) => this.handleClick(e));
+                
+                window.addEventListener('resize', () => {
+                    setTimeout(() => {
+                        this.setupCanvas();
+                        this.updateInfo();
+                        this.draw();
+                    }, 100);
+                });
+            }
+
+            handleTouch(e) {
+                e.preventDefault();
+                if (e.touches && e.touches.length > 0) {
+                    const mappedCoords = this.mapTouchCoordinates(e.touches[0].clientX, e.touches[0].clientY);
+                    this.processTouch(mappedCoords, e.touches[0].clientX, e.touches[0].clientY);
+                }
+            }
+
+            handleClick(e) {
+                const mappedCoords = this.mapTouchCoordinates(e.clientX, e.clientY);
+                this.processTouch(mappedCoords, e.clientX, e.clientY);
+            }
+
+            processTouch(mappedCoords, originalX, originalY) {
+                this.touchCount++;
+                if (mappedCoords.isEdgeTouch) {
+                    this.edgeTouchCount++;
+                }
+
+                this.lastTouch = {
+                    original: { x: originalX, y: originalY },
+                    mapped: mappedCoords,
+                    timestamp: Date.now()
+                };
+
+                this.showTouchIndicator(mappedCoords);
+                this.updateInfo();
+            }
+
+            showTouchIndicator(coords) {
+                const indicator = document.createElement('div');
+                indicator.className = `touch-indicator ${coords.isEdgeTouch ? 'edge-touch' : ''}`;
+                indicator.style.left = `${coords.x}px`;
+                indicator.style.top = `${coords.y}px`;
+                
+                document.body.appendChild(indicator);
+                
+                setTimeout(() => {
+                    document.body.removeChild(indicator);
+                }, 300);
+            }
+
+            updateInfo() {
+                document.getElementById('canvasSize').textContent = `${this.canvas.width}x${this.canvas.height}`;
+                document.getElementById('safeAreas').textContent = 
+                    `T:${this.safeArea.top} R:${this.safeArea.right} B:${this.safeArea.bottom} L:${this.safeArea.left}`;
+                
+                if (this.lastTouch) {
+                    const lt = this.lastTouch;
+                    document.getElementById('lastTouch').innerHTML = 
+                        `Original: (${lt.original.x}, ${lt.original.y})<br>` +
+                        `Mapped: (${lt.mapped.x}, ${lt.mapped.y})<br>` +
+                        `Edge Touch: ${lt.mapped.isEdgeTouch ? 'YES' : 'NO'}`;
+                }
+                
+                document.getElementById('touchCount').textContent = this.touchCount;
+                document.getElementById('edgeTouchCount').textContent = this.edgeTouchCount;
+            }
+
+            draw() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                // Draw safe area boundaries
+                this.ctx.strokeStyle = '#ffd700';
+                this.ctx.lineWidth = 2;
+                this.ctx.setLineDash([5, 5]);
+                
+                // Safe area rectangle
+                this.ctx.strokeRect(
+                    this.safeArea.left,
+                    this.safeArea.top,
+                    this.safeArea.effectiveWidth,
+                    this.safeArea.effectiveHeight
+                );
+                
+                // Edge buffer zone (right edge)
+                this.ctx.strokeStyle = '#ff6b6b';
+                this.ctx.lineWidth = 1;
+                const effectiveWidth = this.canvas.width - this.safeArea.right;
+                this.ctx.strokeRect(
+                    effectiveWidth - 20,
+                    this.safeArea.top,
+                    20,
+                    this.safeArea.effectiveHeight
+                );
+                
+                // Reset line dash
+                this.ctx.setLineDash([]);
+                
+                // Draw instructions
+                this.ctx.fillStyle = '#ffffff';
+                this.ctx.font = '16px sans-serif';
+                this.ctx.textAlign = 'center';
+                this.ctx.fillText('Tap anywhere to test touch detection', this.canvas.width / 2, this.canvas.height / 2);
+                this.ctx.fillText('Yellow dashes = Safe Area | Red area = Edge Buffer Zone', this.canvas.width / 2, this.canvas.height / 2 + 30);
+                
+                requestAnimationFrame(() => this.draw());
+            }
+        }
+
+        // Initialize test when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new TouchEdgeDetectionTest();
+        });
+    </script>
+</body>
+</html>

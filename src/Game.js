@@ -184,6 +184,10 @@ export class RerunGame {
         this.loadedParachuteSkins = [];
         this.currentParachuteSkin = null;
         
+        // Obstacle skins
+        this.obstacleSkinConfig = null;
+        this.loadedObstacleSkins = [];
+        
         // Debug flags
         this.debugHitboxes = false;
         this.showSpeed = false;
@@ -219,6 +223,15 @@ export class RerunGame {
             this.loadedParachuteSkins = [...loadedAssets.images.parachutes];
             console.log('Using pre-loaded parachute skins');
         }
+        
+        // Use pre-loaded obstacle images if available
+        if (loadedAssets.images && loadedAssets.images.obstacles) {
+            this.loadedObstacleSkins = [...loadedAssets.images.obstacles];
+            console.log('Using pre-loaded obstacle skins:', this.loadedObstacleSkins.length);
+        }
+        
+        // Load obstacle skin configuration
+        this.loadObstacleSkinConfig();
         
         // Pass audio assets to SoundManager if available
         if (loadedAssets.audio && this.soundManager) {
@@ -418,6 +431,28 @@ export class RerunGame {
             ];
         } else {
             console.log(`Successfully loaded ${this.loadedParachuteSkins.length} parachute skins`);
+        }
+    }
+    
+    // Load obstacle skin configuration from JSON file
+    async loadObstacleSkinConfig() {
+        try {
+            const response = await fetch('skins/obstacles/obstacle-skins.json');
+            this.obstacleSkinConfig = await response.json();
+            console.log('Loaded obstacle skin configuration:', this.obstacleSkinConfig);
+        } catch (error) {
+            console.warn('Could not load obstacle skins config:', error.message);
+            // Fallback configuration
+            this.obstacleSkinConfig = {
+                skins: {
+                    tall: { default: { name: "Default Tall", imagePath: null, color: "#8B4513", animationType: "none" } },
+                    low: { default: { name: "Default Low", imagePath: null, color: "#654321", animationType: "none" } }
+                },
+                spawnWeights: {
+                    tall: { default: 100 },
+                    low: { default: 100 }
+                }
+            };
         }
     }
     

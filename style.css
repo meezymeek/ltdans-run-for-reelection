@@ -999,7 +999,7 @@ body {
 }
 
 #gameCanvas {
-    /* Full screen canvas - no borders or constraints */
+    /* Full screen canvas with safe area insets for proper touch handling */
     background: linear-gradient(to bottom, #1a1a2e 0%, #16213e 70%, #0f0f23 100%);
     width: 100vw;
     height: 100dvh;
@@ -1009,6 +1009,14 @@ body {
     top: 0;
     left: 0;
     z-index: 1;
+    
+    /* Ensure canvas respects safe areas while maintaining full coverage */
+    padding: env(safe-area-inset-top, 0) env(safe-area-inset-right, 0) env(safe-area-inset-bottom, 0) env(safe-area-inset-left, 0);
+    box-sizing: border-box;
+    
+    /* Add a subtle border to visualize touch boundaries in debug */
+    outline: env(safe-area-inset-right, 0) solid transparent;
+    outline-offset: calc(-1 * env(safe-area-inset-right, 0));
 }
 
 /* Fallback for canvas on browsers without dvh support */

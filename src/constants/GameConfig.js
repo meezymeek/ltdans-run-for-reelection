@@ -9,8 +9,8 @@ export const GAME_CONFIG = {
     groundLevel: 0.8,
     
     // Physics (percentages - based on 600x600 reference)
-    gravityPercent: 0.00133,    // 0.133% of screen height per frame
-    jumpPowerPercent: -0.025,   // -2.5% of screen height
+    gravityPercent: 0.00120,    // 0.120% of screen height per frame (reduced for easier gameplay)
+    jumpPowerPercent: -0.026,   // -2.8% of screen height (increased for higher jumps)
     groundLevelPercent: 0.8,    // 80% down from top
     
     // Speed settings (pixels - legacy) - doubled for proper game feel
@@ -26,7 +26,7 @@ export const GAME_CONFIG = {
     gameSpeedPercent: 0.0134,
     baseObstacleSpeedPercent: 0.0134,
     obstacleSpeedPercent: 0.0134,
-    speedIncreaseRatePercent: 0.0000006, // Doubled percentage increase
+    speedIncreaseRatePercent: 0.05, // Doubled percentage increase
     maxGameSpeedPercent: 0.0266,     // 2.66% of screen width per frame
     
     // Scoring
@@ -46,7 +46,7 @@ export const GAME_CONFIG = {
     minObstacleGapPx: 250,
     
     // Gaps and distances (percentages)
-    minObstacleGapPercent: 0.417,    // 41.7% of screen width
+    minObstacleGapPercent: 0.50,    // 50% of screen width (increased for easier gameplay)
     
     // Effect modifiers
     constituentSpeedMod: 0.85,

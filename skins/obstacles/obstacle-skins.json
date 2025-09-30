@@ -1,0 +1,40 @@
+{
+  "skins": {
+    "tall": {
+      "default": {
+        "name": "Default Tall",
+        "imagePath": null,
+        "color": "#8B4513",
+        "animationType": "none"
+      },
+      "ghost": {
+        "name": "Ghost",
+        "imagePath": "skins/obstacles/tall obstacles/tall1.png",
+        "color": "#ffffff",
+        "animationType": "bob",
+        "animationConfig": {
+          "bobHeight": 3,
+          "bobSpeed": 0.008,
+          "bobOffset": 0
+        }
+      }
+    },
+    "low": {
+      "default": {
+        "name": "Default Low",
+        "imagePath": null,
+        "color": "#654321",
+        "animationType": "none"
+      }
+    }
+  },
+  "spawnWeights": {
+    "tall": {
+      "default": 0,
+      "ghost": 100
+    },
+    "low": {
+      "default": 100
+    }
+  }
+}

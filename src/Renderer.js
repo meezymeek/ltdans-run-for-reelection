@@ -166,22 +166,15 @@ export class Renderer {
                 ctx.fillRect(cloud.x, cloud.y, cloud.width, cloud.height);
             }
             
-            // 5. Ground fog (temporarily disabled)
+            // 5. Background fog (temporarily disabled)
             // for (let fog of game.backgroundLayers.fog) {
-            //     ctx.save();
-            //     ctx.fillStyle = fog.color;
-            //     
-            //     // Create soft fog effect with gradient
-            //     const fogGradient = ctx.createRadialGradient(
-            //         fog.x + fog.width/2, fog.y + fog.height/2, 0,
-            //         fog.x + fog.width/2, fog.y + fog.height/2, fog.width/2
-            //     );
-            //     fogGradient.addColorStop(0, fog.color);
-            //     fogGradient.addColorStop(1, fog.color.replace(/[\d.]+\)/, '0)'));
-            //     
-            //     ctx.fillStyle = fogGradient;
-            //     ctx.fillRect(fog.x, fog.y, fog.width, fog.height);
-            //     ctx.restore();
+            //     if (fog.layer === 'background') {
+            //         ctx.save();
+            //         ctx.filter = 'blur(4px)'; // Add blur effect
+            //         ctx.fillStyle = fog.color;
+            //         ctx.fillRect(fog.x, fog.y, fog.width, fog.height);
+            //         ctx.restore();
+            //     }
             // }
         }
         
@@ -293,6 +286,19 @@ export class Renderer {
         for (let obstacle of game.obstacles) {
             obstacle.render(ctx);
         }
+        
+        // Draw foreground fog (temporarily disabled)
+        // if (game.backgroundLayers) {
+        //     for (let fog of game.backgroundLayers.fog) {
+        //         if (fog.layer === 'foreground') {
+        //             ctx.save();
+        //             ctx.filter = 'blur(4px)'; // Add blur effect
+        //             ctx.fillStyle = fog.color;
+        //             ctx.fillRect(fog.x, fog.y, fog.width, fog.height);
+        //             ctx.restore();
+        //         }
+        //     }
+        // }
         
         // Debug: draw hitboxes
         if (game.debugHitboxes && game.gameState === 'playing') {

@@ -243,7 +243,7 @@ export class GameLogic {
         game.ragdoll.applyImpulse(collisionForceX, collisionForceY);
         
         // Start screen shake
-        game.screenShakeIntensity = 15;
+        game.screenShakeIntensity = 25;
         game.screenShake = game.screenShakeIntensity;
     }
     
@@ -252,6 +252,10 @@ export class GameLogic {
         game.gameEndTime = Date.now();
         game.finalScoreElement.textContent = game.score;
         this.updateHUDVisibility(game);
+        
+        // Reset screen shake effects to ensure clean transition
+        game.screenShake = 0;
+        game.screenShakeIntensity = 0;
         
         // Hide crash skip hint when transitioning to game over
         game.hideCrashSkipHint();
