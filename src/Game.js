@@ -255,7 +255,8 @@ export class RerunGame {
         this.devMenuButton.onmouseenter = () => this.devMenuButton.style.opacity = '1';
         this.devMenuButton.onmouseleave = () => this.devMenuButton.style.opacity = '0.6';
         this.pauseScreen.style.position = 'relative';
-        this.pauseScreen.appendChild(this.devMenuButton);
+        // DISABLED FOR PRODUCTION: Remove dev menu access from pause screen
+        // this.pauseScreen.appendChild(this.devMenuButton);
         
         // Create dev menu element
         this.devMenu = document.createElement('div');
@@ -610,11 +611,11 @@ export class RerunGame {
         this.setupAudioControls();
         this.setupRegisterToVoteButtons();
         
-        // Dev Menu button
-        this.devMenuButton.addEventListener('click', () => {
-            console.log("Dev Menu button clicked");
-            this.showDevMenu();
-        });
+        // Dev Menu button - DISABLED FOR PRODUCTION
+        // this.devMenuButton.addEventListener('click', () => {
+        //     console.log("Dev Menu button clicked");
+        //     this.showDevMenu();
+        // });
         
         // Window/UI chrome changes
         window.addEventListener('resize', this._onWindowResize);
