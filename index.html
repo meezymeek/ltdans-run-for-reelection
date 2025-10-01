@@ -89,7 +89,7 @@
     <div class="game-container">
         <!-- Game Header - Only shows title when not playing -->
         <div class="game-header">
-            <h1>RERUN: Danny Boy Runs for Office Again</h1>
+            <!-- Game title removed per user request -->
         </div>
         
         <!-- Score Badge - Top center for maximum size -->
@@ -113,11 +113,13 @@
                     <button id="startButton">Start Campaign!</button>
                     <button id="tutorialButton" class="secondary-button">📚 Tutorial</button>
                     <button id="leaderboardButton" class="secondary-button">🏆 Leaderboard</button>
+                    <button class="register-to-vote-btn">Register to Vote</button>
                 </div>
             </div>
             
             <div id="gameOverScreen" class="screen hidden">
                 <h2>Campaign Over!</h2>
+                <p id="politicalEndMessage" class="political-message"></p>
                 <p>Final Score: <span id="finalScore">0</span></p>
                 <div id="scoreSubmissionForm" class="score-form hidden">
                     <p>🎉 New High Score! Submit to Leaderboard:</p>
@@ -131,6 +133,7 @@
                 <div class="game-over-buttons">
                     <button id="restartButton">Re-Run Campaign</button>
                     <button id="viewLeaderboardButton" class="secondary-button">View Leaderboard</button>
+                    <button class="register-to-vote-btn">Register to Vote</button>
                 </div>
             </div>
 
@@ -158,6 +161,7 @@
                 </div>
                 <div class="stats-actions">
                     <button id="backToLeaderboardButton">Back to Leaderboard</button>
+                    <button class="register-to-vote-btn">Register to Vote</button>
                 </div>
             </div>
 
@@ -209,6 +213,7 @@
                     <button id="resumeButton">▶️ Resume Campaign</button>
                     <button id="restartFromPauseButton" class="secondary-button">🔄 Restart</button>
                     <button id="mainMenuFromPauseButton" class="secondary-button">🏠 Main Menu</button>
+                    <button class="register-to-vote-btn">Register to Vote</button>
                 </div>
             </div>
         </div>

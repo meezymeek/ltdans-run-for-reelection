@@ -199,6 +199,9 @@ export class RerunGame {
         // Pre-loaded assets (will be set by AssetLoader)
         this.preloadedAssets = null;
         
+        // Political end messages for game over screen
+        this.politicalEndMessages = [];
+        
         // Create crash skip hint element (reusing loading screen styling)
         this.createCrashSkipHint();
         
@@ -454,6 +457,84 @@ export class RerunGame {
                 }
             };
         }
+        
+        // Load political words for dynamic obstacles
+        await this.loadPoliticalWords();
+    }
+    
+    // Load political words from JSON file for dynamic obstacles
+    async loadPoliticalWords() {
+        try {
+            const response = await fetch('src/entities/political_obstacles.json');
+            this.politicalWords = await response.json();
+            console.log(`Loaded ${this.politicalWords.length} political words for obstacles`);
+        } catch (error) {
+            console.warn('Could not load political words:', error.message);
+            // Fallback words
+            this.politicalWords = [
+                'Accountability', 'Transparency', 'Integrity', 'Ethics', 'Justice',
+                'Responsibility', 'Honesty', 'Truth', 'Fairness', 'Democracy'
+            ];
+            console.log('Using fallback political words');
+        }
+    }
+    
+    // Get a random political word for obstacles
+    getRandomPoliticalWord() {
+        if (this.politicalWords.length === 0) {
+            return 'Accountability'; // Fallback
+        }
+        const randomIndex = Math.floor(Math.random() * this.politicalWords.length);
+        return this.politicalWords[randomIndex];
+    }
+    
+    // Load political end messages from JSON file for game over screen
+    async loadPoliticalEndMessages() {
+        try {
+            const response = await fetch('political_runner_end_messages.json');
+            this.politicalEndMessages = await response.json();
+            console.log(`Loaded ${this.politicalEndMessages.length} political end messages`);
+        } catch (error) {
+            console.warn('Could not load political end messages:', error.message);
+            // Fallback messages
+            this.politicalEndMessages = [
+                { id: "fallback_01", text: "Game over, candidate. Try another campaign cycle." },
+                { id: "fallback_02", text: "Better luck in the next election year." },
+                { id: "fallback_03", text: "The polls have closed… but not in your favor." }
+            ];
+            console.log('Using fallback political end messages');
+        }
+    }
+    
+    // Get a random political end message
+    getRandomPoliticalEndMessage() {
+        console.log('Getting random political message. Available messages:', this.politicalEndMessages.length);
+        
+        // Always use fallback messages if the main ones aren't loaded
+        const fallbackMessages = [
+            "Game over, candidate. Try another campaign cycle.",
+            "Better luck in the next election year.",
+            "The polls have closed… but not in your favor.",
+            "Your opponent kissed more babies.",
+            "You've reached term limits… of stamina.",
+            "Your staff quit mid-race.",
+            "Your slogan didn't stick this time.",
+            "Scandal fatigue got you this time.",
+            "Your campaign funds dried up.",
+            "You lost the debate… and the race."
+        ];
+        
+        if (this.politicalEndMessages.length === 0) {
+            console.log('No political messages loaded, using fallback');
+            const randomIndex = Math.floor(Math.random() * fallbackMessages.length);
+            return fallbackMessages[randomIndex];
+        }
+        
+        const randomIndex = Math.floor(Math.random() * this.politicalEndMessages.length);
+        const selectedMessage = this.politicalEndMessages[randomIndex];
+        console.log('Selected message:', selectedMessage);
+        
+        return selectedMessage.text;
     }
     
     init() {
@@ -461,6 +542,7 @@ export class RerunGame {
         this.setupEventListeners();
         this.calculatePositions();
         this.createBackgroundElements();
+        this.loadPoliticalEndMessages();
         this.gameLoop();
     }
     
@@ -527,6 +609,7 @@ export class RerunGame {
         this.setupLeaderboardListeners();
         this.setupInputListeners();
         this.setupAudioControls();
+        this.setupRegisterToVoteButtons();
         
         // Dev Menu button
         this.devMenuButton.addEventListener('click', () => {
@@ -693,6 +776,38 @@ export class RerunGame {
             muteButton.textContent = this.soundManager.muted[type] ? '🔊' : '🔇';
             muteButton.classList.toggle('muted', this.soundManager.muted[type]);
         });
+    }
+    
+    setupRegisterToVoteButtons() {
+        // Find all register to vote buttons and add event listeners
+        const registerButtons = document.querySelectorAll('.register-to-vote-btn');
+        
+        registerButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                this.soundManager.playButtonClick();
+                this.openVoterRegistration();
+            });
+        });
+    }
+    
+    openVoterRegistration() {
+        // Open the Texas voter registration URL in a new tab/window
+        const voterRegistrationUrl = 'https://teamrv-mvp.sos.texas.gov/MVP/mvp.do';
+        
+        try {
+            // Try to open in new tab/window
+            window.open(voterRegistrationUrl, '_blank', 'noopener,noreferrer');
+            console.log('Opened voter registration URL:', voterRegistrationUrl);
+        } catch (error) {
+            // Fallback: try to navigate to the URL directly
+            console.warn('Could not open in new tab, trying direct navigation:', error);
+            try {
+                window.location.href = voterRegistrationUrl;
+            } catch (fallbackError) {
+                console.error('Could not navigate to voter registration URL:', fallbackError);
+                alert('Please visit: https://teamrv-mvp.sos.texas.gov/MVP/mvp.do to register to vote!');
+            }
+        }
     }
     
     // Input Handling Methods
@@ -1146,6 +1261,12 @@ export class RerunGame {
         this.gameEndTime = Date.now();
         this.finalScoreElement.textContent = this.score;
         this.updateHUDVisibility();
+        
+        // Display random political end message
+        const politicalMessageElement = document.getElementById('politicalEndMessage');
+        if (politicalMessageElement) {
+            politicalMessageElement.textContent = this.getRandomPoliticalEndMessage();
+        }
         
         // Hide crash skip hint when transitioning to game over
         this.hideCrashSkipHint();
