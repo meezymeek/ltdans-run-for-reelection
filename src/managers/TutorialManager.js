@@ -4,6 +4,7 @@ import { createObstacle, createObstacleWithVariant } from '../entities/Obstacle.
 import { Constituent } from '../entities/Constituent.js';
 import { Bribe } from '../entities/Bribe.js';
 import { GerrymanderExpress } from '../entities/GerrymanderExpress.js';
+import { BurnOne } from '../entities/BurnOne.js';
 import { getScaleManager } from '../utils/ScaleManager.js';
 
 export class TutorialManager {
@@ -98,6 +99,16 @@ export class TutorialManager {
                 checkpoint: true
             },
             {
+                id: 'burn_one',
+                title: 'Burn One Power-Up',
+                instruction: 'Collect the floating green leaf for 10 seconds of moon gravity and slow motion!',
+                baseInstruction: 'Collect the floating green leaf for 10 seconds of moon gravity and slow motion!',
+                entities: [{ type: 'burn_one', delay: 2000 }],
+                waitForAction: 'collect_burn_one',
+                spawnContinuous: false,
+                checkpoint: true
+            },
+            {
                 id: 'completion',
                 title: 'Tutorial Complete!',
                 instruction: 'You\'ve learned all the basics! Ready for the real campaign? Push the menu button and ',
@@ -114,6 +125,7 @@ export class TutorialManager {
         this.obstaclesCleared = 0;
         this.bribesCollected = 0;
         this.constituentsEncountered = 0;
+        this.burnOnesCollected = 0;
         this.parachuteUsed = false;
         this.parachutesDeployed = 0; // Track parachute deployments for stage 6
         this.parachuteTimerCompleted = false; // Track if parachute timer completed successfully
@@ -212,6 +224,7 @@ export class TutorialManager {
         this.obstaclesCleared = 0;
         this.bribesCollected = 0;
         this.constituentsEncountered = 0;
+        this.burnOnesCollected = 0;
         this.parachuteUsed = false;
         this.parachutesDeployed = 0;
         this.parachuteTimerCompleted = false;
@@ -227,6 +240,8 @@ export class TutorialManager {
         this.game.obstacles = [];
         this.game.constituents = [];
         this.game.bribes = [];
+        this.game.burnOnes = [];
+        this.game.gerrymanderExpresses = [];
     }
     
     showDialog(title, message) {
@@ -323,6 +338,13 @@ export class TutorialManager {
                 gerrymanderExpress.setSpeed(GAME_CONFIG.obstacleSpeed);
                 this.game.gerrymanderExpresses.push(gerrymanderExpress);
                 this.entitiesSpawned.push({ type: 'gerrymander_express', entity: gerrymanderExpress });
+                break;
+                
+            case 'burn_one':
+                const burnOne = new BurnOne(this.game.canvas);
+                burnOne.setSpeed(GAME_CONFIG.obstacleSpeed);
+                this.game.burnOnes.push(burnOne);
+                this.entitiesSpawned.push({ type: 'burn_one', entity: burnOne });
                 break;
         }
     }
@@ -493,6 +515,33 @@ export class TutorialManager {
                         this.completeSection();
                     }
                     break;
+                    
+                case 'collect_burn_one':
+                    // Check if BurnOne was collected
+                    const burnOneCollected = this.entitiesSpawned.some(spawn =>
+                        spawn.type === 'burn_one' && spawn.entity.collected
+                    );
+                    
+                    if (burnOneCollected && this.game.player.isBurnOneActive) {
+                        this.completeSection();
+                    } else {
+                        // Check if BurnOne went off screen (missed)
+                        const burnOneMissed = this.entitiesSpawned.some(spawn =>
+                            spawn.type === 'burn_one' && spawn.entity.isOffScreen()
+                        );
+                        
+                        if (burnOneMissed) {
+                            // Clear missed BurnOne and spawn a new one
+                            this.game.burnOnes = [];
+                            this.entitiesSpawned = this.entitiesSpawned.filter(spawn => spawn.type !== 'burn_one');
+                            
+                            // Spawn new BurnOne
+                            setTimeout(() => {
+                                this.spawnTutorialEntity({ type: 'burn_one' });
+                            }, 1000);
+                        }
+                    }
+                    break;
             }
         }
         
@@ -564,6 +613,15 @@ export class TutorialManager {
         this.constituentsEncountered++;
         // Completion is handled in the main update method for continuous sections
         // Don't complete here to avoid conflicts with continuous spawning logic
+    }
+    
+    handleBurnOneCollected() {
+        this.burnOnesCollected++;
+        // Mark the section as ready to complete once the effect is active
+        const section = this.sections[this.currentSection];
+        if (section.waitForAction === 'collect_burn_one') {
+            // Completion is checked in update method when player has the effect active
+        }
     }
     
     handleParachuteUsed() {

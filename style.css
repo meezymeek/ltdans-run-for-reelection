@@ -647,7 +647,7 @@
     width: 100vw;
     height: 100vh;
     height: 100dvh;
-    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    background: linear-gradient(to bottom, #1a1a2e 0%, #16213e 70%, #0f0f23 100%);
     z-index: 20000; /* Higher than orientation warning */
     display: flex;
     align-items: center;
@@ -882,7 +882,7 @@ body {
     -webkit-font-smoothing: none;
     -moz-osx-font-smoothing: auto;
     text-rendering: optimizeSpeed;
-    background: linear-gradient(135deg, var(--color-bg-primary) 0%, var(--color-bg-secondary) 100%);
+    background: linear-gradient(to bottom, #1a1a2e 0%, #16213e 70%, #0f0f23 100%);
     overflow: hidden;
     touch-action: none;
     user-select: none;

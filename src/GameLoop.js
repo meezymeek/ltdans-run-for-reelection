@@ -3,6 +3,7 @@ import { Obstacle, createObstacle, createObstacleWithVariant } from './entities/
 import { Constituent } from './entities/Constituent.js';
 import { Bribe, BribePatternFactory } from './entities/Bribe.js';
 import { GerrymanderExpress } from './entities/GerrymanderExpress.js';
+import { BurnOne } from './entities/BurnOne.js';
 import { GameLogic } from './GameLogic.js';
 import { PLAYER_CONFIG } from './constants/GameConfig.js';
 
@@ -13,14 +14,16 @@ export class GameLoop {
         if (game.gameState === 'playing') {
             game.gameFrame++;
             
-            // Update speed targets based on train mode
+            // Update speed targets based on train mode and burn one effect
+            const burnOneSpeedModifier = game.player.isBurnOneActive ? 0.6 : 1.0; // 60% speed when active
+            
             if (game.player.isTrainMode) {
-                game.targetGameSpeed = game.config.baseGameSpeed * game.trainSpeedMultiplier;
-                game.targetObstacleSpeed = game.config.baseObstacleSpeed * game.trainSpeedMultiplier;
+                game.targetGameSpeed = game.config.baseGameSpeed * game.trainSpeedMultiplier * burnOneSpeedModifier;
+                game.targetObstacleSpeed = game.config.baseObstacleSpeed * game.trainSpeedMultiplier * burnOneSpeedModifier;
             } else {
-                // When not in train mode, return to base speeds (not current speeds which may be higher)
-                game.targetGameSpeed = game.config.baseGameSpeed;
-                game.targetObstacleSpeed = game.config.baseObstacleSpeed;
+                // When not in train mode, return to base speeds with burn one modifier
+                game.targetGameSpeed = game.config.baseGameSpeed * burnOneSpeedModifier;
+                game.targetObstacleSpeed = game.config.baseObstacleSpeed * burnOneSpeedModifier;
             }
             
             // Lerp current speed to target for smooth transitions
@@ -35,12 +38,15 @@ export class GameLoop {
             this.spawnConstituent(game);
             this.spawnBribe(game);
             this.spawnGerrymanderExpress(game);
+            this.spawnBurnOne(game);
             this.updateObstacles(game);
             this.updateConstituents(game);
             this.updateBribes(game);
             this.updateGerrymanderExpresses(game);
+            this.updateBurnOnes(game);
             this.updateBackground(game);
             this.updateTrailSegments(game);
+            this.updateSmokeSegments(game);
             this.updatePopups(game);
             
             // Update parachute tap overlay
@@ -125,8 +131,10 @@ export class GameLoop {
             this.updateConstituents(game);
             this.updateBribes(game);
             this.updateGerrymanderExpresses(game);
+            this.updateBurnOnes(game);
             this.updateBackground(game);
             this.updateTrailSegments(game);
+            this.updateSmokeSegments(game);
             this.updatePopups(game);
             
             // Update parachute tap overlay
@@ -472,6 +480,63 @@ export class GameLoop {
         // No spawning when no parachute is active or train mode is active
     }
     
+    static spawnBurnOne(game) {
+        // Don't spawn in tutorial mode unless regular spawning is enabled
+        if (game.gameState === 'tutorial' && !game.tutorialManager?.regularSpawningEnabled) return;
+        
+        // Don't spawn if one already exists or if player already has the effect active
+        if (game.burnOnes.length > 0 || game.player.isBurnOneActive) return;
+        
+        // Check cooldown - minimum 30 seconds between spawns
+        const currentTime = Date.now();
+        if (currentTime - game.lastBurnOneTime < 30000) return;
+        
+        // Spawn check every second (60 frames) with 5 in 100 chance
+        if (game.gameFrame % 60 === 0 && Math.random() < 0.05) {
+            const burnOne = new BurnOne(game.canvas);
+            burnOne.setSpeed(game.config.obstacleSpeed);
+            game.burnOnes.push(burnOne);
+            game.lastBurnOneTime = currentTime;
+        }
+    }
+    
+    static updateBurnOnes(game) {
+        for (let i = game.burnOnes.length - 1; i >= 0; i--) {
+            const burnOne = game.burnOnes[i];
+            
+            // Update burn one
+            burnOne.update(game.deltaTime);
+            
+            // Remove if off screen
+            if (burnOne.isOffScreen()) {
+                game.burnOnes.splice(i, 1);
+                continue;
+            }
+            
+            // Check collision with player
+            if (burnOne.checkCollision(game.player)) {
+                // Remove burn one
+                game.burnOnes.splice(i, 1);
+                burnOne.collect();
+                
+                // Activate burn one effect
+                if (game.player.activateBurnOne()) {
+                    // Visual feedback
+                    GameLogic.addPopup(game, "BURN ONE!",
+                                      game.canvas.width / 2, game.canvas.height * 0.9, {icon: '🌿', duration: 2550});
+                    
+                    // Play collection sound (use existing effect)
+                    game.soundManager.playEffect('jump');
+                    
+                    // Notify tutorial manager if in tutorial mode
+                    if (game.gameState === 'tutorial' && game.tutorialManager) {
+                        game.tutorialManager.handleBurnOneCollected();
+                    }
+                }
+            }
+        }
+    }
+    
     static updateBribes(game) {
         for (let i = game.bribes.length - 1; i >= 0; i--) {
             const bribe = game.bribes[i];
@@ -588,11 +653,14 @@ export class GameLoop {
     }
     
     static updateBackground(game) {
+        // Apply burn one speed modifier to background for complete slow-motion effect
+        const burnOneSpeedModifier = game.player.isBurnOneActive ? 0.6 : 1.0;
+        
         // Update all background layers
         if (game.backgroundLayers) {
             // Update buildings (furthest background)
             for (let building of game.backgroundLayers.buildings) {
-                building.x -= building.speed;
+                building.x -= building.speed * burnOneSpeedModifier;
                 if (building.x + building.width < 0) {
                     building.x = game.canvas.width + Math.random() * 400;
                     building.y = game.canvas.height * (0.3 + Math.random() * 0.2);
@@ -601,7 +669,7 @@ export class GameLoop {
             
             // Update tombstones (mid-ground)
             for (let tombstone of game.backgroundLayers.tombstones) {
-                tombstone.x -= tombstone.speed;
+                tombstone.x -= tombstone.speed * burnOneSpeedModifier;
                 if (tombstone.x + tombstone.width < 0) {
                     tombstone.x = game.canvas.width + Math.random() * 300;
                     tombstone.y = game.canvas.height * (0.55 + Math.random() * 0.15);
@@ -611,7 +679,7 @@ export class GameLoop {
             // Update fences (foreground) - maintain seamless connections
             for (let i = 0; i < game.backgroundLayers.fences.length; i++) {
                 const fence = game.backgroundLayers.fences[i];
-                fence.x -= fence.speed;
+                fence.x -= fence.speed * burnOneSpeedModifier;
                 if (fence.x + fence.width < 0) {
                     // Find the absolute rightmost position of all other fences
                     let rightmostX = game.canvas.width;
@@ -634,7 +702,7 @@ export class GameLoop {
             
             // Update clouds
             for (let cloud of game.backgroundLayers.clouds) {
-                cloud.x -= cloud.speed;
+                cloud.x -= cloud.speed * burnOneSpeedModifier;
                 if (cloud.x + cloud.width < 0) {
                     cloud.x = game.canvas.width + Math.random() * 200;
                     cloud.y = Math.random() * game.canvas.height * 0.3;
@@ -643,7 +711,7 @@ export class GameLoop {
             
             // Update fog with variable opacity changes
             for (let fog of game.backgroundLayers.fog) {
-                fog.x -= fog.speed;
+                fog.x -= fog.speed * burnOneSpeedModifier;
                 
                 // Slowly vary the opacity for atmospheric effect
                 fog.opacity += (Math.random() - 0.5) * 0.02;
@@ -661,7 +729,7 @@ export class GameLoop {
         
         // Keep compatibility with old system
         for (let element of game.backgroundElements) {
-            element.x -= element.speed;
+            element.x -= element.speed * burnOneSpeedModifier;
             
             // Reset position when off screen
             if (element.x + element.width < 0) {
@@ -823,6 +891,31 @@ export class GameLoop {
                 }
             }
         }
+        
+        // Handle BurnOne collection in tutorial mode
+        for (let i = game.burnOnes.length - 1; i >= 0; i--) {
+            const burnOne = game.burnOnes[i];
+            
+            if (burnOne.checkCollision(game.player)) {
+                game.burnOnes.splice(i, 1);
+                burnOne.collect();
+                
+                // Activate burn one effect
+                if (game.player.activateBurnOne()) {
+                    // Visual feedback
+                    GameLogic.addPopup(game, "BURN ONE!",
+                                      game.canvas.width / 2, game.canvas.height * 0.9, {icon: '🌿', duration: 2550});
+                    
+                    // Play collection sound
+                    game.soundManager.playEffect('jump');
+                    
+                    // Notify tutorial manager
+                    if (game.tutorialManager) {
+                        game.tutorialManager.handleBurnOneCollected();
+                    }
+                }
+            }
+        }
     }
     
     static updateTrailSegments(game) {
@@ -848,6 +941,76 @@ export class GameLoop {
             // Remove if off screen
             if (segment.x + segment.width < 0) {
                 game.trailSegments.splice(i, 1);
+            }
+        }
+    }
+    
+    static updateSmokeSegments(game) {
+        // Spawn smoke segments when BurnOne is active (faster than train trail)
+        if (game.player.isBurnOneActive && game.gameFrame % 2 === 0) { // Every 2 frames (faster than train)
+            let smokeX, smokeY;
+            
+            if (game.player.isTrainMode) {
+                // Position at train smokestack when in train mode
+                const trainWidth = game.player.width;
+                const trainHeight = game.player.height;
+                const stackWidth = trainWidth * 0.12;
+                const stackHeight = trainHeight * 0.4;
+                
+                smokeX = game.player.x + trainWidth * 0.25 + stackWidth / 2; // Center of smokestack
+                smokeY = game.player.y - stackHeight * 0.5; // Top of smokestack
+            } else {
+                // Position at front of head for side profile (fine-tuned)
+                const headOffset = 8; // Same offset used in player rendering
+                smokeX = game.player.x + game.player.width / 2 + headOffset + (game.player.width - headOffset) / 2 - 6; // Move left 6px
+                // Center on head instead of player center (move down more)
+                const headHeight = game.player.height * 0.33;
+                smokeY = game.player.y + headHeight / 2 + 6; // Move down 6px
+            }
+            
+            // Add some randomness to make it more smoke-like
+            const randomOffsetX = (Math.random() - 0.5) * 10;
+            const randomOffsetY = (Math.random() - 0.5) * 8;
+            
+            const originalWidth = 6 + Math.random() * 12; // Variable size (6-18px) - reduced max by 25%
+            const originalHeight = 6 + Math.random() * 12;
+            
+            game.smokeSegments.push({
+                x: smokeX + randomOffsetX,
+                y: smokeY + randomOffsetY,
+                originalWidth: originalWidth, // Store original size
+                originalHeight: originalHeight,
+                width: originalWidth, // Current size (will shrink over time)
+                height: originalHeight,
+                speed: game.config.obstacleSpeed * 0.8, // Slightly slower than obstacles
+                alpha: 0.6 + Math.random() * 0.4, // Variable opacity
+                life: 0, // Age of the smoke segment
+                maxLife: 60 + Math.random() * 40 // 60-100 frames lifetime
+            });
+        }
+        
+        // Update and remove smoke segments
+        for (let i = game.smokeSegments.length - 1; i >= 0; i--) {
+            const segment = game.smokeSegments[i];
+            segment.x -= segment.speed; // Move left like other elements
+            segment.life++; // Age the segment
+            
+            // Calculate age progress (0 = just born, 1 = max age)
+            const ageProgress = segment.life / segment.maxLife;
+            
+            // Fade out over time
+            segment.alpha = Math.max(0, (1 - ageProgress) * (0.6 + Math.random() * 0.4));
+            
+            // Shrink size over time (particles get smaller as they age) - 25% faster decay
+            // Start at full size, shrink to 30% of original size by end of life
+            const acceleratedAgeProgress = Math.min(1, ageProgress * 1.25); // 25% faster decay
+            const sizeMultiplier = 1 - (acceleratedAgeProgress * 0.7); // 100% -> 30%
+            segment.width = segment.originalWidth * sizeMultiplier;
+            segment.height = segment.originalHeight * sizeMultiplier;
+            
+            // Remove if off screen or too old
+            if (segment.x + segment.width < 0 || segment.life >= segment.maxLife) {
+                game.smokeSegments.splice(i, 1);
             }
         }
     }

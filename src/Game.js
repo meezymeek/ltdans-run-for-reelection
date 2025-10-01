@@ -147,12 +147,17 @@ export class RerunGame {
         this.lastGerrymanderExpressTime = 0;  // Hidden cooldown timer
         this.gerrymanderExpressCooldown = 15000;  // 15 second cooldown (hidden from player)
         
+        // Burn One spawn limiting
+        this.lastBurnOneTime = 0;  // Cooldown timer for Burn One spawns
+        
         // Collections
         this.obstacles = [];
         this.constituents = [];
         this.bribes = [];
         this.gerrymanderExpresses = [];
+        this.burnOnes = [];
         this.trailSegments = [];
+        this.smokeSegments = [];
         
         // Active effects tracking
         this.activeEffects = {
@@ -218,6 +223,22 @@ export class RerunGame {
             this.skinImages = { ...loadedAssets.images.skins };
             this.skinsLoaded = true;
             // Using pre-loaded skin images
+            console.log('Preloaded skin images:', Object.keys(this.skinImages));
+            console.log('Red-eye head in preloaded assets:', !!this.skinImages['head-red-eye']);
+            
+            // Manual fallback: Load red-eye head if missing from preloaded assets
+            if (!this.skinImages['head-red-eye']) {
+                console.log('Red-eye head missing from preloaded assets, loading manually...');
+                const redEyeImg = new Image();
+                redEyeImg.onload = () => {
+                    this.skinImages['head-red-eye'] = redEyeImg;
+                    console.log('Red-eye head loaded manually:', redEyeImg.src);
+                };
+                redEyeImg.onerror = () => {
+                    console.error('Failed to manually load red-eye head:', redEyeImg.src);
+                };
+                redEyeImg.src = 'skins/default/head-red-eye.png';
+            }
         }
         
         // Use pre-loaded parachute images if available
@@ -349,19 +370,29 @@ export class RerunGame {
     }
     
     initializeSkins() {
-        const bodyParts = ['head', 'head-open-mouth', 'torso', 'upper_arm', 'forearm', 'thigh', 'shin'];
+        const bodyParts = ['head', 'head-open-mouth', 'head-red-eye', 'torso', 'upper_arm', 'forearm', 'thigh', 'shin'];
         
         bodyParts.forEach(part => {
             const img = new Image();
             img.onload = () => {
                 // Skin loaded successfully
+                if (part === 'head-red-eye') {
+                    console.log('Red-eye head loaded successfully:', img.src);
+                }
             };
             img.onerror = () => {
                 // Failed to load skin, using fallback
+                if (part === 'head-red-eye') {
+                    console.error('Failed to load red-eye head:', img.src);
+                }
             };
             
             img.src = `skins/${this.currentSkin}/${part}.png`;
             this.skinImages[part] = img;
+            
+            if (part === 'head-red-eye') {
+                console.log('Attempting to load red-eye head from:', img.src);
+            }
         });
         
         setTimeout(() => {
@@ -849,8 +880,8 @@ export class RerunGame {
         if (this.player.hasParachute && this.player.parachuteTimeLeft > 0) {
             // Call the proper method which handles all parachute logic
             this.player.activateParachute(mouseX, mouseY);
-        } else if (!this.player.isJumping) {
-            // Use player's jump method to handle percentage coordinate logic
+        } else {
+            // Try to jump (handles both ground and mid-air jumps)
             if (this.player.jump()) {
                 this.soundManager.playJump();
                 
@@ -1148,6 +1179,7 @@ export class RerunGame {
         this.constituents = [];
         this.bribes = [];
         this.gerrymanderExpresses = [];
+        this.burnOnes = [];
         
         // Reset spawn counters
         this.constituentSpawnCounter = 0;

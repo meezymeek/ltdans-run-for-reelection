@@ -105,6 +105,22 @@ export class Player {
         this.postTrainInvincible = false;
         this.postTrainInvincibilityTimer = 0;
         this.postTrainInvincibilityDuration = 2500; // 2.5 seconds total (1s overlap + 1.5s after)
+        
+        // Burn One power-up state
+        this.isBurnOneActive = false;
+        this.burnOneTimer = 0;
+        this.burnOneDuration = 10000; // 10 seconds in milliseconds
+        this.burnOneStartTime = 0;
+        
+        // Burn One smoke trail
+        this.smokeTrailStartX = 0;
+        this.smokeTrailStartY = 0;
+        this.isDrawingSmokeTrail = false;
+        
+        // Burn One mid-air jump system
+        this.midAirJumpCount = 0;
+        this.midAirJumpHeightModifier = 1.0; // Starts at full height
+        this.originalJumpPower = GAME_CONFIG.jumpPowerPercent;
     }
     
     setGroundY(groundY) {
@@ -118,13 +134,34 @@ export class Player {
     }
     
     jump() {
+        // Normal jump from ground
         if (!this.isJumping) {
-            this.velocityYPercent = GAME_CONFIG.jumpPowerPercent;
+            // Reduce jump power during Burn One effect to compensate for reduced gravity
+            const burnOneJumpModifier = this.isBurnOneActive ? 0.6 : 1.0; // 60% jump power when Burn One is active
+            this.velocityYPercent = GAME_CONFIG.jumpPowerPercent * burnOneJumpModifier;
             this.velocityY = this.scaleManager.velocityToPixels(this.velocityYPercent);
             this.isJumping = true;
             return true; // Successfully jumped
         }
-        return false; // Couldn't jump (already jumping)
+        
+        // Mid-air jump during Burn One effect
+        if (this.isBurnOneActive && this.isJumping) {
+            // Calculate current jump power with halving modifier and Burn One modifier
+            const burnOneJumpModifier = 0.6; // Same 60% modifier for consistency
+            const jumpPower = this.originalJumpPower * this.midAirJumpHeightModifier * burnOneJumpModifier;
+            
+            // Apply the jump
+            this.velocityYPercent = jumpPower;
+            this.velocityY = this.scaleManager.velocityToPixels(this.velocityYPercent);
+            
+            // Increase mid-air jump count and halve the next jump height
+            this.midAirJumpCount++;
+            this.midAirJumpHeightModifier *= 0.5; // Halve for next jump
+            
+            return true; // Successfully mid-air jumped
+        }
+        
+        return false; // Couldn't jump
     }
     
     activateParachute(touchX, touchY) {
@@ -268,6 +305,42 @@ export class Player {
         return false; // Wasn't in train mode
     }
     
+    activateBurnOne() {
+        // Activate Burn One power-up
+        if (!this.isBurnOneActive) {
+            this.isBurnOneActive = true;
+            this.burnOneStartTime = Date.now();
+            this.burnOneTimer = 0;
+            
+            // Start smoke trail at current position
+            this.smokeTrailStartX = this.x + this.width / 2;
+            this.smokeTrailStartY = this.y + this.height / 2;
+            this.isDrawingSmokeTrail = true;
+            
+            return true; // Burn One activated
+        }
+        return false; // Already active
+    }
+    
+    deactivateBurnOne() {
+        // Deactivate Burn One power-up
+        if (this.isBurnOneActive) {
+            this.isBurnOneActive = false;
+            this.burnOneTimer = 0;
+            this.burnOneStartTime = 0;
+            
+            // Stop drawing smoke trail
+            this.isDrawingSmokeTrail = false;
+            
+            // Reset mid-air jump system when effect ends
+            this.midAirJumpCount = 0;
+            this.midAirJumpHeightModifier = 1.0;
+            
+            return true; // Burn One deactivated
+        }
+        return false; // Wasn't active
+    }
+    
     update(config, deltaTime, game = null) {
         // Smoothly animate timer position
         const timerLerpSpeed = 0.18;
@@ -311,6 +384,16 @@ export class Player {
             this.postTrainInvincibilityTimer -= deltaTime;
             if (this.postTrainInvincibilityTimer <= 0) {
                 this.postTrainInvincible = false;
+            }
+        }
+        
+        // Update Burn One timer
+        if (this.isBurnOneActive) {
+            this.burnOneTimer += deltaTime;
+            
+            if (this.burnOneTimer >= this.burnOneDuration) {
+                // Burn One effect expired
+                this.deactivateBurnOne();
             }
         }
         
@@ -359,18 +442,20 @@ export class Player {
             this.parachuteTimeLeft = 0;
         }
         
-        // Apply gravity
+        // Apply gravity with Burn One modifier
+        const burnOneGravityModifier = this.isBurnOneActive ? 0.2 : 1.0; // 20% gravity when active (50% reduction from previous 40%)
+        
         if (this.hasParachute && this.parachuteTimeLeft > 0) {
             if (this.parachuteTapping && this.velocityYPercent > 0) {
                 // Tapping - slight upward force
-                this.velocityYPercent += GAME_CONFIG.gravityPercent * -0.02;
+                this.velocityYPercent += GAME_CONFIG.gravityPercent * -0.02 * burnOneGravityModifier;
             } else {
                 // Not tapping but has parachute - reduced gravity
-                this.velocityYPercent += GAME_CONFIG.gravityPercent * PLAYER_CONFIG.parachuteGravityModifier;
+                this.velocityYPercent += GAME_CONFIG.gravityPercent * PLAYER_CONFIG.parachuteGravityModifier * burnOneGravityModifier;
             }
         } else {
-            // Normal gravity
-            this.velocityYPercent += GAME_CONFIG.gravityPercent;
+            // Normal gravity with Burn One modifier
+            this.velocityYPercent += GAME_CONFIG.gravityPercent * burnOneGravityModifier;
         }
         
         // Update position
@@ -398,6 +483,12 @@ export class Player {
             this.hasParachute = false;
             this.parachuteUsedThisJump = false;
             this.parachuteTimeLeft = 0;
+            
+            // Reset Burn One mid-air jump system when landing (if effect is still active)
+            if (this.isBurnOneActive) {
+                this.midAirJumpCount = 0;
+                this.midAirJumpHeightModifier = 1.0; // Reset to full height
+            }
             
             // Deactivate tap overlay when landing
             if (hadParachute && game && game.parachuteTapOverlay) {
@@ -554,6 +645,14 @@ export class Player {
         // Reset post-train invincibility
         this.postTrainInvincible = false;
         this.postTrainInvincibilityTimer = 0;
+        
+        // Reset Burn One effect and mid-air jump system
+        this.isBurnOneActive = false;
+        this.burnOneTimer = 0;
+        this.burnOneStartTime = 0;
+        this.midAirJumpCount = 0;
+        this.midAirJumpHeightModifier = 1.0;
+        this.isDrawingSmokeTrail = false;
     }
     
     launchHigh(game = null) {

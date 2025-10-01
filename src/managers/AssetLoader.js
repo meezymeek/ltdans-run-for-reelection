@@ -56,7 +56,7 @@ export class AssetLoader {
         
         // Player skin images
         this.assets.images.skins = [
-            'head', 'head-open-mouth', 'torso', 'upper_arm', 
+            'head', 'head-open-mouth', 'head-red-eye', 'torso', 'upper_arm', 
             'forearm', 'thigh', 'shin'
         ];
         

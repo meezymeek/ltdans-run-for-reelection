@@ -166,6 +166,11 @@ export class Renderer {
         ctx.lineTo(game.canvas.width, groundY);
         ctx.stroke();
         
+        // Draw burn one effect overlay if active
+        if (game.player.isBurnOneActive) {
+            this.drawBurnOneOverlay(game);
+        }
+        
         // Draw parachute tap overlay EARLY (behind everything except background)
         if ((game.gameState === 'playing' || game.gameState === 'tutorial') && game.parachuteTapOverlay) {
             game.parachuteTapOverlay.render(game.ctx, game);
@@ -240,6 +245,11 @@ export class Renderer {
             }
         }
         
+        // Draw smoke trail segments AFTER player (so they appear in front)
+        if ((game.gameState === 'playing' || game.gameState === 'tutorial') && game.smokeSegments.length > 0) {
+            this.drawSmokeSegments(game);
+        }
+        
         // Draw constituents (red walking enemies - same size as player)
         for (let constituent of game.constituents) {
             constituent.render(ctx);
@@ -253,6 +263,11 @@ export class Renderer {
         // Draw gerrymander expresses (special train collectibles)
         for (let gerrymanderExpress of game.gerrymanderExpresses) {
             gerrymanderExpress.render(ctx);
+        }
+        
+        // Draw burn one power-ups
+        for (let burnOne of game.burnOnes) {
+            burnOne.render(ctx);
         }
         
         // Draw obstacles (keep them visible during crash)
@@ -272,6 +287,11 @@ export class Renderer {
         
         // Restore context after screen shake
         ctx.restore();
+        
+        // Draw burn one timer UI (if active)
+        if ((game.gameState === 'playing' || game.gameState === 'tutorial') && game.player.isBurnOneActive) {
+            this.drawBurnOneUI(game);
+        }
         
         // Draw train mode UI (if active)
         if ((game.gameState === 'playing' || game.gameState === 'tutorial') && game.player.isTrainMode) {
@@ -293,6 +313,88 @@ export class Renderer {
         
         // Draw priority popups LAST (on top of everything including other popups)
         this.renderPriorityPopups(game);
+    }
+    
+    static drawBurnOneOverlay(game) {
+        // No overlay needed anymore - smoke trail will be rendered separately
+    }
+    
+    static drawBurnOneUI(game) {
+        const ctx = game.ctx;
+        ctx.save();
+        
+        // Calculate time remaining and effects
+        const timeRemaining = Math.max(0, game.player.burnOneDuration - game.player.burnOneTimer);
+        const timePercent = timeRemaining / game.player.burnOneDuration;
+        const secondsLeft = Math.ceil(timeRemaining / 1000);
+        
+        // Draw Burn One timer in top-left corner
+        const timerX = 80;
+        const timerY = 60;
+        const timerRadius = 35;
+        
+        // Color based on time remaining
+        let circleColor, progressColor, textColor;
+        if (timePercent > 0.5) {
+            circleColor = '#32CD32'; // Lime green when plenty of time
+            progressColor = '#90EE90'; // Light green progress
+            textColor = '#90EE90'; // Light green text
+        } else if (timePercent > 0.2) {
+            circleColor = '#ADFF2F'; // Green yellow when getting low
+            progressColor = '#ADFF2F'; // Green yellow progress
+            textColor = '#ADFF2F'; // Green yellow text
+        } else {
+            circleColor = '#FFD700'; // Gold when almost out
+            progressColor = '#FFD700'; // Gold progress
+            textColor = '#FFD700'; // Gold text
+        }
+        
+        // Draw timer background
+        ctx.beginPath();
+        ctx.arc(timerX, timerY, timerRadius, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)'; // Semi-transparent dark background
+        ctx.fill();
+        ctx.strokeStyle = circleColor;
+        ctx.lineWidth = 3;
+        ctx.stroke();
+        
+        // Draw progress arc (burn one time remaining)
+        if (timePercent > 0) {
+            ctx.beginPath();
+            const startAngle = -Math.PI / 2;
+            const endAngle = startAngle + (Math.PI * 2 * timePercent);
+            ctx.arc(timerX, timerY, timerRadius - 2, startAngle, endAngle);
+            ctx.strokeStyle = progressColor;
+            ctx.lineWidth = 6;
+            ctx.lineCap = 'round';
+            ctx.stroke();
+        }
+        
+        // Draw countdown text
+        ctx.font = 'bold 20px Tiny5';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = '#000000';
+        ctx.shadowColor = 'rgba(0,0,0,0.8)';
+        ctx.shadowBlur = 4;
+        
+        // Black drop shadow
+        ctx.fillStyle = '#000000';
+        ctx.fillText(`${secondsLeft}s`, timerX + 2, timerY + 2);
+        
+        // Colored text on top
+        ctx.fillStyle = textColor;
+        ctx.fillText(`${secondsLeft}s`, timerX, timerY);
+        
+        // Draw "BURN ONE" label below timer
+        ctx.font = 'bold 12px Tiny5';
+        ctx.fillStyle = '#000000';
+        ctx.fillText('BURN ONE', timerX + 1, timerY + 45 + 1); // Shadow
+        ctx.fillStyle = '#32CD32';
+        ctx.fillText('BURN ONE', timerX, timerY + 45);
+        
+        ctx.restore();
     }
     
     static renderRegularPopups(game) {
@@ -462,9 +564,16 @@ export class Renderer {
         game.ctx.rotate(game.player.headRotation * Math.PI / 180);
         game.ctx.translate(-headCenterX, -headCenterY);
         
-        // Choose which head to use based on jumping or breathing state
-        const useOpenMouth = game.player.isJumping || game.player.isBreathingOut;
-        const headImage = useOpenMouth ? game.skinImages['head-open-mouth'] : game.skinImages.head;
+        // Choose which head to use based on Burn One state, jumping, or breathing state
+        let headImage;
+        if (game.player.isBurnOneActive && game.skinImages['head-red-eye'] && game.skinImages['head-red-eye'].complete) {
+            // Use red-eye head during Burn One effect (static, no animation)
+            headImage = game.skinImages['head-red-eye'];
+        } else {
+            // Normal head selection based on jumping or breathing state
+            const useOpenMouth = game.player.isJumping || game.player.isBreathingOut;
+            headImage = useOpenMouth ? game.skinImages['head-open-mouth'] : game.skinImages.head;
+        }
         
         if (game.skinsLoaded && headImage && headImage.complete) {
             game.ctx.drawImage(
@@ -1085,6 +1194,51 @@ export class Renderer {
         ctx.restore();
     }
     
+    static drawSmokeSegments(game) {
+        const ctx = game.ctx;
+        
+        ctx.save();
+        
+        // Draw each smoke segment as a light gray square cloud
+        for (let segment of game.smokeSegments) {
+            // Calculate alpha based on age and base alpha (make it more visible)
+            const agePercent = segment.life / segment.maxLife;
+            const alpha = Math.max(0.3, segment.alpha * (1 - agePercent)); // Minimum 30% opacity
+            
+            if (alpha <= 0.1) continue; // Skip nearly transparent segments
+            
+            // Light gray smoke color with good visibility against dark background
+            ctx.fillStyle = `rgba(220, 220, 220, ${alpha})`;
+            ctx.shadowColor = `rgba(255, 255, 255, ${alpha * 0.8})`;
+            ctx.shadowBlur = 6; // More glow for visibility
+            
+            // Draw as a rounded square for a softer cloud look
+            ctx.beginPath();
+            ctx.roundRect(
+                segment.x - segment.width/2, 
+                segment.y - segment.height/2, 
+                segment.width, 
+                segment.height, 
+                3 // Slightly more rounded for cloud effect
+            );
+            ctx.fill();
+            
+            // Add a subtle white center for more visibility
+            ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.6})`;
+            ctx.beginPath();
+            ctx.roundRect(
+                segment.x - segment.width/4, 
+                segment.y - segment.height/4, 
+                segment.width/2, 
+                segment.height/2, 
+                2
+            );
+            ctx.fill();
+        }
+        
+        ctx.restore();
+    }
+    
     static renderTutorialText(game) {
         const tutorialInfo = game.tutorialManager.getCurrentMessage();
         if (!tutorialInfo) return;
@@ -1176,7 +1330,6 @@ export class Renderer {
         for (let i = 0; i < lines.length; i++) {
             ctx.fillText(lines[i], textX, backgroundY + padding + 50 + (i * lineHeight));
         }
-        
         
         ctx.restore();
     }
