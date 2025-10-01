@@ -485,13 +485,8 @@
     color: #aaaaaa;
     font-style: italic;
     text-align: center;
-    position: absolute;
-    left: 50%;
-    bottom: 1rem;
-    transform: translateX(-50%);
-    width: 88vw;
-    max-width: 450px;
-    min-width: 280px;
+    margin: 0.5rem auto;
+    width: 92%;
     line-height: 1.3;
     padding: 1rem;
     background: rgba(0, 0, 0, 0.4);
@@ -499,7 +494,6 @@
     border-radius: 8px;
     box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
     box-sizing: border-box;
-    z-index: 15;
 }
 
 @keyframes glow-pulse {
