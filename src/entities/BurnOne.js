@@ -3,9 +3,10 @@ import { getScaleManager } from '../utils/ScaleManager.js';
 import { ENTITY_DIMENSIONS_PERCENT } from '../constants/GameConfig.js';
 
 export class BurnOne {
-    constructor(canvas) {
+    constructor(canvas, assetLoader = null) {
         this.canvas = canvas;
         this.scaleManager = getScaleManager();
+        this.assetLoader = assetLoader;
         
         // Use same size as bribe for consistency
         this.widthPercent = ENTITY_DIMENSIONS_PERCENT.bribe.widthPercent;
@@ -113,35 +114,65 @@ export class BurnOne {
         );
         ctx.fill();
         
-        // Draw main power-up (leaf/joint shape)
+        // Get the burnone image from assets
+        let burnoneImage = null;
+        if (this.assetLoader) {
+            // Check if this.assetLoader is an AssetLoader object or direct assets
+            if (this.assetLoader.getLoadedAssets) {
+                // It's an AssetLoader object
+                const loadedAssets = this.assetLoader.getLoadedAssets();
+                burnoneImage = loadedAssets.images.powerups.burnone;
+            } else if (this.assetLoader.images) {
+                // It's direct assets object
+                burnoneImage = this.assetLoader.images.powerups.burnone;
+            }
+        }
+        
+        // Fallback: try to get from global game assets
+        if (!burnoneImage && window.gameInstance && window.gameInstance.assets && window.gameInstance.assets.images) {
+            burnoneImage = window.gameInstance.assets.images.powerups.burnone;
+        }
+        
+        // Draw main power-up
         ctx.translate(this.x + this.width/2, this.y + this.height/2);
         ctx.scale(this.pulseScale, this.pulseScale);
         ctx.rotate(this.animationTime * 0.5); // Slow rotation
         
-        // Draw leaf shape
-        ctx.fillStyle = this.color;
-        ctx.strokeStyle = '#228B22'; // Darker green outline
-        ctx.lineWidth = 2;
-        
-        ctx.beginPath();
-        // Create a leaf-like shape
-        const leafWidth = this.width * 0.8;
-        const leafHeight = this.height * 0.8;
-        
-        ctx.ellipse(-leafWidth/4, 0, leafWidth/2, leafHeight/2, 0, 0, Math.PI * 2);
-        ctx.ellipse(leafWidth/4, 0, leafWidth/2, leafHeight/2, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.stroke();
-        
-        // Add some detail lines
-        ctx.strokeStyle = '#006400'; // Dark green
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(-leafWidth/3, 0);
-        ctx.lineTo(leafWidth/3, 0);
-        ctx.moveTo(0, -leafHeight/3);
-        ctx.lineTo(0, leafHeight/3);
-        ctx.stroke();
+        if (burnoneImage) {
+            // Draw the loaded join.png image
+            ctx.drawImage(
+                burnoneImage,
+                -this.width/2,
+                -this.height/2,
+                this.width,
+                this.height
+            );
+        } else {
+            // Fallback: Draw leaf shape if image not loaded
+            ctx.fillStyle = this.color;
+            ctx.strokeStyle = '#228B22'; // Darker green outline
+            ctx.lineWidth = 2;
+            
+            ctx.beginPath();
+            // Create a leaf-like shape
+            const leafWidth = this.width * 0.8;
+            const leafHeight = this.height * 0.8;
+            
+            ctx.ellipse(-leafWidth/4, 0, leafWidth/2, leafHeight/2, 0, 0, Math.PI * 2);
+            ctx.ellipse(leafWidth/4, 0, leafWidth/2, leafHeight/2, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            
+            // Add some detail lines
+            ctx.strokeStyle = '#006400'; // Dark green
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(-leafWidth/3, 0);
+            ctx.lineTo(leafWidth/3, 0);
+            ctx.moveTo(0, -leafHeight/3);
+            ctx.lineTo(0, leafHeight/3);
+            ctx.stroke();
+        }
         
         ctx.restore();
     }

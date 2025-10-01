@@ -100,7 +100,7 @@ export class TutorialManager {
             },
             {
                 id: 'burn_one',
-                title: 'Burn One Power-Up',
+                title: 'Trail Blazer Power-Up',
                 instruction: 'Collect the floating green leaf for 10 seconds of moon gravity and slow motion! Juump again in mid-air to double jump!',
                 baseInstruction: 'Collect the floating green leaf for 10 seconds of moon gravity and slow motion! Juump again in mid-air to double jump!',
                 entities: [{ type: 'burn_one', delay: 2000 }],
@@ -341,7 +341,7 @@ export class TutorialManager {
                 break;
                 
             case 'burn_one':
-                const burnOne = new BurnOne(this.game.canvas);
+                const burnOne = new BurnOne(this.game.canvas, this.game.assets);
                 burnOne.setSpeed(GAME_CONFIG.obstacleSpeed);
                 this.game.burnOnes.push(burnOne);
                 this.entitiesSpawned.push({ type: 'burn_one', entity: burnOne });

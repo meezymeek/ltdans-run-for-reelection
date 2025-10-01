@@ -493,7 +493,7 @@ export class GameLoop {
         
         // Spawn check every second (60 frames) with 5 in 100 chance
         if (game.gameFrame % 60 === 0 && Math.random() < 0.05) {
-            const burnOne = new BurnOne(game.canvas);
+            const burnOne = new BurnOne(game.canvas, game.assets);
             burnOne.setSpeed(game.config.obstacleSpeed);
             game.burnOnes.push(burnOne);
             game.lastBurnOneTime = currentTime;
@@ -522,7 +522,7 @@ export class GameLoop {
                 // Activate burn one effect
                 if (game.player.activateBurnOne()) {
                     // Visual feedback
-                    GameLogic.addPopup(game, "BURN ONE!",
+                    GameLogic.addPopup(game, "TRAIL BLAZER!",
                                       game.canvas.width / 2, game.canvas.height * 0.9, {icon: '🌿', duration: 2550});
                     
                     // Play collection sound (use existing effect)
@@ -903,7 +903,7 @@ export class GameLoop {
                 // Activate burn one effect
                 if (game.player.activateBurnOne()) {
                     // Visual feedback
-                    GameLogic.addPopup(game, "BURN ONE!",
+                    GameLogic.addPopup(game, "TRAIL BLAZER!",
                                       game.canvas.width / 2, game.canvas.height * 0.9, {icon: '🌿', duration: 2550});
                     
                     // Play collection sound

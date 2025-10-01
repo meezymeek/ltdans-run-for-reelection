@@ -328,10 +328,10 @@ export class Renderer {
         const timePercent = timeRemaining / game.player.burnOneDuration;
         const secondsLeft = Math.ceil(timeRemaining / 1000);
         
-        // Draw Burn One timer in top-left corner
-        const timerX = 80;
-        const timerY = 60;
-        const timerRadius = 35;
+        // Position timer centered on player (like train and parachute timers)
+        const timerX = game.player.x + game.player.width / 2;
+        const timerY = game.player.y + game.player.height / 2;
+        const timerRadius = 70; // Doubled from 35 to 70 (double diameter)
         
         // Color based on time remaining
         let circleColor, progressColor, textColor;
@@ -349,10 +349,10 @@ export class Renderer {
             textColor = '#FFD700'; // Gold text
         }
         
-        // Draw timer background
+        // Draw timer background (completely transparent like train timer)
         ctx.beginPath();
         ctx.arc(timerX, timerY, timerRadius, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)'; // Semi-transparent dark background
+        ctx.fillStyle = 'rgba(0, 0, 0, 0)'; // Completely transparent
         ctx.fill();
         ctx.strokeStyle = circleColor;
         ctx.lineWidth = 3;
@@ -387,12 +387,12 @@ export class Renderer {
         ctx.fillStyle = textColor;
         ctx.fillText(`${secondsLeft}s`, timerX, timerY);
         
-        // Draw "BURN ONE" label below timer
+        // Draw "TRAIL BLAZER" label below timer
         ctx.font = 'bold 12px Tiny5';
         ctx.fillStyle = '#000000';
-        ctx.fillText('BURN ONE', timerX + 1, timerY + 45 + 1); // Shadow
+        ctx.fillText('TRAIL BLAZER', timerX + 1, timerY + 45 + 1); // Shadow
         ctx.fillStyle = '#32CD32';
-        ctx.fillText('BURN ONE', timerX, timerY + 45);
+        ctx.fillText('TRAIL BLAZER', timerX, timerY + 45);
         
         ctx.restore();
     }

@@ -73,7 +73,8 @@ export class AssetLoader {
         
         // Power-up images
         this.assets.images.powerups = [
-            { name: 'ticket', path: 'ticket.png' }
+            { name: 'ticket', path: 'ticket.png' },
+            { name: 'burnone', path: 'join.png' }
         ];
         
         // Fonts (Google Fonts - just need to check if loaded)

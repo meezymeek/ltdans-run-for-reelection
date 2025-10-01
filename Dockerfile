@@ -24,6 +24,7 @@ COPY package.json /usr/share/nginx/html/
 COPY political_runner_end_messages.json /usr/share/nginx/html/
 COPY logo.png /usr/share/nginx/html/
 COPY ticket.png /usr/share/nginx/html/
+COPY join.png /usr/share/nginx/html/
 COPY src /usr/share/nginx/html/src/
 COPY sfx /usr/share/nginx/html/sfx/
 COPY skins /usr/share/nginx/html/skins/
