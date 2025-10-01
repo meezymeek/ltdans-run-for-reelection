@@ -477,11 +477,19 @@
 }
 
 .click-to-start-hint {
-    font-size: clamp(0.8rem, 3vw, 1rem);
+    font-size: clamp(0.75rem, 2.8vw, 0.9rem);
     color: #aaaaaa;
     font-style: italic;
-    margin-top: 1rem;
+    margin: 1rem auto 2rem auto;
     text-align: center;
+    max-width: 85vw;
+    width: 100%;
+    line-height: 1.4;
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 @keyframes glow-pulse {
