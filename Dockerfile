@@ -105,8 +105,13 @@ RUN rm /etc/nginx/conf.d/default.conf
 RUN addgroup -g 1001 -S appuser && \
     adduser -S appuser -u 1001 -G appuser
 
-# Set proper permissions
+# Set proper permissions for all files including logo.png
 RUN chown -R appuser:appuser /usr/share/nginx/html && \
+    chmod -R 755 /usr/share/nginx/html && \
+    chmod 644 /usr/share/nginx/html/*.png && \
+    chmod 644 /usr/share/nginx/html/*.html && \
+    chmod 644 /usr/share/nginx/html/*.css && \
+    chmod 644 /usr/share/nginx/html/*.json && \
     chown -R appuser:appuser /var/cache/nginx && \
     chown -R appuser:appuser /etc/nginx/conf.d && \
     touch /var/run/nginx.pid && \

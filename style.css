@@ -423,12 +423,12 @@
     bottom: 2vh; /* Bottom content moved up slightly to maintain spacing */
     left: 0;
     right: 0;
-    height: 30vh; /* Reduced height slightly to accommodate moved elements */
+    height: 25vh; /* Further reduced height to prevent overlap */
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: space-between; /* Changed from center to space-between for better spacing */
     align-items: center;
-    padding: 2rem;
+    padding: 1.5rem;
     z-index: 11;
 }
 
