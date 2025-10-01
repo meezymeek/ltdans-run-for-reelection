@@ -380,7 +380,7 @@
     z-index: 20;
     width: clamp(16rem, 40vw, 32rem);
     height: auto;
-    opacity: 0;
+    opacity: 1; /* Temporarily visible to test file loading */
     image-rendering: pixelated;
     image-rendering: -moz-crisp-edges;
     image-rendering: crisp-edges;
