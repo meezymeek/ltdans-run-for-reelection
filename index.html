@@ -50,7 +50,7 @@
         <canvas id="characterPreview" width="800" height="360"></canvas>
         <div class="loading-content">
             <!-- Presents sequence - appears first -->
-            <img src="logo.png" alt="Company Logo" class="company-logo">
+            <img src="logo.png" alt="Company Logo" class="company-logo" onerror="console.error('Logo failed to load:', this.src); this.style.border='2px solid red';" onload="console.log('Logo loaded successfully:', this.src);">
             <div class="presents-text">PRESENTS...</div>
             
             <h1 class="title-elevated">
@@ -225,13 +225,11 @@
     
     <!-- Debug Script - Test if JavaScript works at all -->
     <script>
-        console.log('DEBUG: Basic JavaScript is working on Railway');
-        console.log('DEBUG: Location:', window.location.href);
-        console.log('DEBUG: User Agent:', navigator.userAgent);
+        // Debug statements removed for production
         
         // Test module loading
         document.addEventListener('DOMContentLoaded', () => {
-            console.log('DEBUG: DOM loaded, about to load ES6 module');
+            // DOM loaded, loading ES6 module
         });
     </script>
     
@@ -241,11 +239,11 @@
     <!-- Fallback error handling -->
     <script>
         window.addEventListener('error', (e) => {
-            console.error('DEBUG: Global error:', e.error, e.filename, e.lineno);
+            // Production error handling - logging removed
         });
         
         window.addEventListener('unhandledrejection', (e) => {
-            console.error('DEBUG: Unhandled promise rejection:', e.reason);
+            // Production promise rejection handling - logging removed
         });
     </script>
 </body>
