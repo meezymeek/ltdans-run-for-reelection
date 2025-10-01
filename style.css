@@ -374,7 +374,7 @@
 
 .company-logo {
     position: absolute;
-    top: 1vh; /* Logo at the top */
+    top: 4vh; /* Logo moved down to 4vh for better breathing room */
     left: 50%;
     transform: translateX(-50%) scale(0.8);
     z-index: 20;
@@ -388,7 +388,7 @@
 
 .presents-text {
     position: absolute;
-    top: 10vh; /* Presents text below logo */
+    top: 14vh; /* Presents text moved down proportionally */
     left: 50%;
     transform: translateX(-50%) translateY(-30px);
     z-index: 20;
@@ -403,7 +403,7 @@
 
 .title-elevated {
     position: absolute;
-    top: 20vh; /* Moved down 5% */
+    top: 25vh; /* Title moved down proportionally */
     left: 50%;
     transform: translateX(-50%);
     z-index: 15;
@@ -412,7 +412,7 @@
 
 .loading-bar-container {
     position: absolute;
-    top: 55vh; /* Moved down 5% from center */
+    top: 58vh; /* Loading bar moved down slightly */
     left: 50%;
     transform: translateX(-50%);
     z-index: 12;
@@ -420,10 +420,10 @@
 
 .bottom-content {
     position: absolute;
-    bottom: 0vh; /* Moved down 5% closer to bottom */
+    bottom: 2vh; /* Bottom content moved up slightly to maintain spacing */
     left: 0;
     right: 0;
-    height: 33vh; /* Bottom 1/3rd of screen */
+    height: 30vh; /* Reduced height slightly to accommodate moved elements */
     display: flex;
     flex-direction: column;
     justify-content: center;
