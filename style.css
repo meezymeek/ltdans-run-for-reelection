@@ -436,9 +436,11 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
     gap: 1rem;
     width: 100%; /* Ensure full width usage */
     max-width: none; /* Remove any width constraints */
+    text-align: center;
 }
 
 .click-to-start-message p {
@@ -482,10 +484,13 @@
     font-size: clamp(0.7rem, 2.5vw, 0.85rem);
     color: #aaaaaa;
     font-style: italic;
-    margin: 0.5rem auto;
     text-align: center;
-    width: 90vw;
-    max-width: 500px;
+    position: absolute;
+    left: 50%;
+    bottom: 1rem;
+    transform: translateX(-50%);
+    width: 88vw;
+    max-width: 450px;
     min-width: 280px;
     line-height: 1.3;
     padding: 1rem;
@@ -494,6 +499,7 @@
     border-radius: 8px;
     box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
     box-sizing: border-box;
+    z-index: 15;
 }
 
 @keyframes glow-pulse {
