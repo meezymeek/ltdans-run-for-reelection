@@ -109,7 +109,6 @@ export class RerunGame {
         this.scoreSubmissionForm = document.getElementById('scoreSubmissionForm');
         this.playerNameInput = document.getElementById('playerNameInput');
         this.submitScoreButton = document.getElementById('submitScoreButton');
-        this.skipSubmissionButton = document.getElementById('skipSubmissionButton');
         this.scoreResult = document.getElementById('scoreResult');
         
         // Game timing
@@ -678,7 +677,6 @@ export class RerunGame {
         this.refreshLeaderboardButton.addEventListener('click', () => this.refreshCurrentView());
         
         this.submitScoreButton.addEventListener('click', () => this.submitScore());
-        this.skipSubmissionButton.addEventListener('click', () => this.skipScoreSubmission());
         
         this.playerNameInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
@@ -1545,14 +1543,6 @@ export class RerunGame {
             // Next microtask: avoid racing layout
             setTimeout(() => this.forceRemeasure(), 0);
         }
-    }
-    
-    skipScoreSubmission() {
-        this.scoreSubmissionForm.classList.add('hidden');
-        this.scoreResult.classList.add('hidden');
-        
-        this.playerNameInput?.blur?.();
-        setTimeout(() => this.forceRemeasure(), 0);
     }
     
     showSubmissionResult(message, isError) {

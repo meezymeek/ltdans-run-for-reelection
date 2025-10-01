@@ -1464,6 +1464,43 @@ button:active {
     }
 }
 
+/* Re-Run Campaign Button - Green styling to match register to vote button */
+#restartButton {
+    background: linear-gradient(135deg, #2E8B57 0%, #3CB371 100%) !important;
+    color: #fff !important;
+    border: var(--px-border-1) solid var(--px-border) !important;
+    border-radius: 0 !important;
+    font-size: 1rem !important;
+    padding: 14px 20px !important;
+    width: var(--btn-width) !important;
+    font-family: var(--font-pixel) !important;
+    font-weight: bold !important;
+    letter-spacing: 0.04em;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.8) !important;
+    box-shadow: var(--px-shadow-offset) var(--px-shadow-offset) 0 var(--px-shadow) !important;
+    transition: var(--transition) !important;
+    cursor: pointer;
+    min-width: 48px;
+    animation: civicGlow 3s ease-in-out infinite alternate;
+}
+
+#restartButton:hover {
+    background: linear-gradient(135deg, #3CB371 0%, #90EE90 100%) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: calc(var(--px-shadow-offset) + 2px) calc(var(--px-shadow-offset) + 2px) 0 var(--px-shadow) !important;
+}
+
+#restartButton:active {
+    background: linear-gradient(135deg, #228B22 0%, #2E8B57 100%) !important;
+    transform: translateY(2px) !important;
+    box-shadow: 2px 2px 0 var(--px-shadow) !important;
+}
+
+#restartButton:focus {
+    outline: 2px solid var(--color-accent) !important;
+    outline-offset: 2px;
+}
+
 .game-over-buttons {
     display: flex;
     flex-direction: column;
