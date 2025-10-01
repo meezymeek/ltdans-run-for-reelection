@@ -142,6 +142,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             clickToStartContent.classList.remove('hidden');
             // Loading bar stays visible always
             
+            // Show disclaimer after a much longer delay to be the absolute final element
+            setTimeout(() => {
+                const disclaimerBox = document.querySelector('.disclaimer-box');
+                if (disclaimerBox) {
+                    disclaimerBox.classList.remove('hidden-disclaimer');
+                    disclaimerBox.classList.add('animate-disclaimer-enter');
+                    console.log('Disclaimer animation started');
+                }
+            }, 6500); // Show disclaimer 6.5 seconds after content appears - absolute final element
+            
             // Update character preview with loaded assets (preserve animation state)
             initializeCharacterPreview(loadedAssets, animationState);
             
@@ -296,6 +306,12 @@ function setupInitialHiddenStates() {
     if (clickToStartHint) {
         clickToStartHint.classList.add('hidden-right');
     }
+    
+    // Disclaimer box - hide initially for unique animation
+    const disclaimerBox = document.querySelector('.disclaimer-box');
+    if (disclaimerBox) {
+        disclaimerBox.classList.add('hidden-disclaimer');
+    }
 }
 
 // Add Skip Hint Element and Double-Tap Functionality
@@ -409,6 +425,14 @@ function showAllElementsImmediately() {
         clickToStartHint.style.transform = 'translateX(0)';
     }
     
+    // Disclaimer box - show immediately when skipped
+    const disclaimerBox = document.querySelector('.disclaimer-box');
+    if (disclaimerBox) {
+        disclaimerBox.classList.remove('hidden-disclaimer');
+        disclaimerBox.style.opacity = '1';
+        disclaimerBox.style.transform = 'translateY(0)';
+    }
+    
     // Force character to center position if entrance was in progress
     if (window.characterAnimationState) {
         window.characterAnimationState.characterEntering = false;
@@ -427,7 +451,7 @@ function startAnimationSequence(animationState) {
         { time: 6000, action: () => showLoadingBar() }, // Loading bar
         { time: 6300, action: () => showBottomElements() }, // Bottom elements
         { time: 6700, action: () => showBottomText() }, // Additional bottom text
-        { time: 7000, action: () => finishAnimationSequence(animationState) } // Finish
+        { time: 7000, action: () => finishAnimationSequence(animationState) } // Finish animation sequence
     ];
     
     timeline.forEach(({ time, action }) => {
@@ -553,6 +577,15 @@ function showBottomText() {
         element.classList.remove('hidden-fade');
         element.classList.add('animate-fade-in');
     });
+}
+
+function showDisclaimer() {
+    console.log('Showing disclaimer...');
+    const disclaimerBox = document.querySelector('.disclaimer-box');
+    if (disclaimerBox) {
+        disclaimerBox.classList.remove('hidden-disclaimer');
+        disclaimerBox.classList.add('animate-disclaimer-enter');
+    }
 }
 
 function finishAnimationSequence(animationState) {
