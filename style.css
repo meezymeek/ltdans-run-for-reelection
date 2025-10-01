@@ -373,11 +373,11 @@
 }
 
 .company-logo {
-    position: absolute;
+    position: fixed; /* Changed from absolute to fixed for viewport positioning */
     top: 4vh; /* Logo moved down to 4vh for better breathing room */
     left: 50%;
     transform: translateX(-50%) scale(0.8);
-    z-index: 20;
+    z-index: 30; /* Increased z-index to ensure it's above everything */
     width: clamp(16rem, 40vw, 32rem);
     height: auto;
     opacity: 1; /* Temporarily visible to test file loading */
