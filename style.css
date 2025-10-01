@@ -428,7 +428,7 @@
     flex-direction: column;
     justify-content: space-between; /* Changed from center to space-between for better spacing */
     align-items: center;
-    padding: 1.5rem;
+    padding: 0.5rem; /* Reduced padding to allow more width for disclaimer */
     z-index: 11;
 }
 
@@ -437,6 +437,8 @@
     flex-direction: column;
     align-items: center;
     gap: 1rem;
+    width: 100%; /* Ensure full width usage */
+    max-width: none; /* Remove any width constraints */
 }
 
 .click-to-start-message p {
@@ -477,19 +479,20 @@
 }
 
 .click-to-start-hint {
-    font-size: clamp(0.75rem, 2.8vw, 0.9rem);
+    font-size: clamp(0.7rem, 2.5vw, 0.85rem);
     color: #aaaaaa;
     font-style: italic;
-    margin: 1rem auto 2rem auto;
+    margin: 0.5rem auto 0.5rem auto;
     text-align: center;
-    max-width: 85vw;
+    max-width: 95vw;
     width: 100%;
-    line-height: 1.4;
-    padding: 1rem;
-    background: rgba(0, 0, 0, 0.3);
+    line-height: 1.3;
+    padding: 0.8rem;
+    background: rgba(0, 0, 0, 0.4);
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 8px;
     box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
+    box-sizing: border-box;
 }
 
 @keyframes glow-pulse {
