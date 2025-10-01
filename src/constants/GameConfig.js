@@ -68,7 +68,7 @@ export const PLAYER_CONFIG = {
     // Dimensions (percentages - adjusted to 70% scale for proper sizing)
     widthPercent: 0.0467,     // 4.67% of screen width (was 6.67% * 0.7)
     heightPercent: 0.07,      // 7% of screen height (was 10% * 0.7)
-    startXPercent: 0.06,      // 6% from left edge (unchanged)
+    startXPercent: 0.1,      // 9% from left edge (moved 3% to the right)
     
     // Animation speeds
     animationSpeed: 0.15,
