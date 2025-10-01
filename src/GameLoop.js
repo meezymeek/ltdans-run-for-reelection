@@ -203,9 +203,17 @@ export class GameLoop {
                         const points = basePoints * multiplier;
                         game.score += points;
                         GameLogic.updateScore(game);
-                        const displayText = game.player.isTrainMode ? `+${points} (2X!)` : `+${points}`;
-                        GameLogic.addPopup(game, displayText,
-                                      game.player.x + game.player.width/2 + 50, game.player.y - 20);
+                        
+                        // Show two-line popup for political obstacles that were avoided
+                        if (obstacle.politicalWord) {
+                            GameLogic.addObstacleAvoidedPopup(game, obstacle.politicalWord,
+                                                            game.canvas.width / 2, game.canvas.height * 0.9);
+                        } else {
+                            // Fallback for non-political obstacles
+                            const displayText = game.player.isTrainMode ? `+${points} (2X!)` : `+${points}`;
+                            GameLogic.addPopup(game, displayText,
+                                          game.player.x + game.player.width/2 + 50, game.player.y - 20);
+                        }
                         game.soundManager.playPointTall();
                     } else {
                         const basePoints = game.config.lowPoints;
@@ -219,7 +227,38 @@ export class GameLoop {
                         game.soundManager.playPointLow();
                     }
                 } else if (game.gameState === 'tutorial') {
-                    // In tutorial mode, notify tutorial manager
+                    // In tutorial mode, award points and show popup like normal gameplay
+                    if (obstacle.type === 'tall') {
+                        const basePoints = game.config.tallPoints;
+                        const multiplier = game.player.isTrainMode ? 2 : 1;
+                        const points = basePoints * multiplier;
+                        game.score += points;
+                        GameLogic.updateScore(game);
+                        
+                        // Show two-line popup for political obstacles that were avoided (in tutorial too)
+                        if (obstacle.politicalWord) {
+                            GameLogic.addObstacleAvoidedPopup(game, obstacle.politicalWord,
+                                                            game.canvas.width / 2, game.canvas.height * 0.9);
+                        } else {
+                            // Fallback for non-political obstacles
+                            const displayText = game.player.isTrainMode ? `+${points} (2X!)` : `+${points}`;
+                            GameLogic.addPopup(game, displayText,
+                                          game.player.x + game.player.width/2 + 50, game.player.y - 20);
+                        }
+                        game.soundManager.playPointTall();
+                    } else {
+                        const basePoints = game.config.lowPoints;
+                        const multiplier = game.player.isTrainMode ? 2 : 1;
+                        const points = basePoints * multiplier;
+                        game.score += points;
+                        GameLogic.updateScore(game);
+                        const displayText = game.player.isTrainMode ? `+${points} (2X!)` : `+${points}`;
+                        GameLogic.addPopup(game, displayText,
+                                      game.player.x + game.player.width/2 + 50, game.player.y - 20);
+                        game.soundManager.playPointLow();
+                    }
+                    
+                    // Also notify tutorial manager for progression tracking
                     if (game.tutorialManager) {
                         game.tutorialManager.handleObstacleCleared();
                     }
@@ -352,7 +391,7 @@ export class GameLoop {
                 // Visual feedback - check if parachute was actually given
                 const parachuteGiven = game.player.hasParachute && game.player.parachuteTimeLeft > 0;
                 if (parachuteGiven) {
-                    GameLogic.addPopup(game, "PARACHUTE!", game.canvas.width / 2, game.canvas.height * 0.9, {icon: '🪂', duration: 2550});
+                    GameLogic.addPopup(game, "CORPORATE AIRLIFT!", game.canvas.width / 2, game.canvas.height * 0.9, {icon: '🪂', duration: 2550});
                     // Activate tap overlay when parachute is given
                     game.parachuteTapOverlay.activate(
                         game.player.x + game.player.width / 2,
@@ -817,7 +856,31 @@ export class GameLoop {
     static selectObstacleVariant(type, game) {
         console.log('selectObstacleVariant called for type:', type, 'obstacleSkinConfig:', !!game.obstacleSkinConfig);
         
-        // Use obstacle skin config if available
+        // For tall obstacles, use dynamic political words if available
+        if (type === 'tall' && game.politicalWords && game.politicalWords.length > 0) {
+            const randomWord = game.getRandomPoliticalWord();
+            console.log('Using dynamic political word for tall obstacle:', randomWord);
+            
+            // Create dynamic skin configuration for this word
+            const dynamicSkinConfig = {
+                name: `Political: ${randomWord}`,
+                imagePath: null,
+                color: "#ffffff",
+                animationType: "none",
+                renderType: "pillar",
+                textConfig: {
+                    text: randomWord,
+                    textColor: "#000000",
+                    fontSize: "auto",
+                    rotation: -90,
+                    fontFamily: "Tiny5"
+                }
+            };
+            
+            return { variant: 'political', skinConfig: dynamicSkinConfig };
+        }
+        
+        // Use obstacle skin config if available (for low obstacles or fallback)
         const obstacleSkinConfig = game.obstacleSkinConfig;
         if (!obstacleSkinConfig || !obstacleSkinConfig.spawnWeights || !obstacleSkinConfig.spawnWeights[type]) {
             console.log('No skin config found, falling back to default');

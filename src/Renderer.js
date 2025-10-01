@@ -58,22 +58,6 @@ export class Renderer {
         
         // Draw all background layers in depth order (back to front)
         if (game.backgroundLayers) {
-            // 1. Buildings (hidden for clean Halloween aesthetic)
-            // ctx.fillStyle = 'rgba(20, 15, 30, 0.8)'; // Dark silhouettes
-            // for (let building of game.backgroundLayers.buildings) {
-            //     // Draw building as simple rectangle with occasional windows
-            //     ctx.fillRect(building.x, building.y, building.width, building.height);
-            //     
-            //     // Add a few lit windows randomly
-            //     if (Math.random() > 0.7) {
-            //         ctx.fillStyle = 'rgba(255, 255, 150, 0.6)';
-            //         const windowX = building.x + building.width * 0.3;
-            //         const windowY = building.y + building.height * 0.2;
-            //         ctx.fillRect(windowX, windowY, 8, 8);
-            //         ctx.fillStyle = 'rgba(20, 15, 30, 0.8)';
-            //     }
-            // }
-            
             // 2. Tombstones and crosses (mid-ground)
             ctx.fillStyle = 'rgba(40, 30, 50, 0.9)';
             for (let tombstone of game.backgroundLayers.tombstones) {
@@ -165,17 +149,6 @@ export class Renderer {
                 ctx.fillStyle = cloud.color;
                 ctx.fillRect(cloud.x, cloud.y, cloud.width, cloud.height);
             }
-            
-            // 5. Background fog (temporarily disabled)
-            // for (let fog of game.backgroundLayers.fog) {
-            //     if (fog.layer === 'background') {
-            //         ctx.save();
-            //         ctx.filter = 'blur(4px)'; // Add blur effect
-            //         ctx.fillStyle = fog.color;
-            //         ctx.fillRect(fog.x, fog.y, fog.width, fog.height);
-            //         ctx.restore();
-            //     }
-            // }
         }
         
         // Keep compatibility with old background elements (now just clouds)
@@ -287,19 +260,6 @@ export class Renderer {
             obstacle.render(ctx);
         }
         
-        // Draw foreground fog (temporarily disabled)
-        // if (game.backgroundLayers) {
-        //     for (let fog of game.backgroundLayers.fog) {
-        //         if (fog.layer === 'foreground') {
-        //             ctx.save();
-        //             ctx.filter = 'blur(4px)'; // Add blur effect
-        //             ctx.fillStyle = fog.color;
-        //             ctx.fillRect(fog.x, fog.y, fog.width, fog.height);
-        //             ctx.restore();
-        //         }
-        //     }
-        // }
-        
         // Debug: draw hitboxes
         if (game.debugHitboxes && game.gameState === 'playing') {
             this.drawDebugHitboxes(game);
@@ -328,90 +288,111 @@ export class Renderer {
             this.renderPauseArrow(game);
         }
         
-        // Draw popups LAST (on top of everything)
-        this.renderPopups(game);
+        // Draw regular popups first
+        this.renderRegularPopups(game);
+        
+        // Draw priority popups LAST (on top of everything including other popups)
+        this.renderPriorityPopups(game);
     }
     
-    static renderScoreUI(game) {
-        // Only render score UI during gameplay
-        if (game.gameState !== 'playing' && game.gameState !== 'paused') return;
-        
+    static renderRegularPopups(game) {
+        const ctx = game.ctx;
+        for (const p of game.popups) {
+            // Skip priority messages - they'll be rendered separately
+            if (p.isPriority) continue;
+            
+            ctx.save();
+            ctx.globalAlpha = p.alpha;
+            ctx.translate(p.x, p.y);
+            ctx.scale(p.scale, p.scale);
+            
+            if (p.isMultiLine && p.lines) {
+                // Render multi-line popup
+                let currentY = -15; // Start above center for first line
+                
+                for (let i = 0; i < p.lines.length; i++) {
+                    const line = p.lines[i];
+                    const fontWeight = line.bold ? 'bold' : 'normal';
+                    
+                    ctx.font = `${fontWeight} ${line.fontSize}px Tiny5`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.lineWidth = 3;
+                    ctx.strokeStyle = '#000000';
+                    ctx.shadowColor = 'rgba(0,0,0,0.8)';
+                    ctx.shadowBlur = 4;
+                    
+                    // Draw text shadow
+                    ctx.strokeText(line.text, 0, currentY);
+                    
+                    // Draw main text
+                    ctx.fillStyle = line.color;
+                    ctx.fillText(line.text, 0, currentY);
+                    
+                    // Move down for next line (spacing based on font size)
+                    currentY += line.fontSize + 5;
+                }
+            } else {
+                // Original single-line rendering
+                ctx.font = 'bold 28px Tiny5';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.lineWidth = 4;
+                ctx.strokeStyle = '#ffd700';
+                ctx.shadowColor = 'rgba(0,0,0,0.6)';
+                ctx.shadowBlur = 6;
+                const content = (p.icon ? (p.icon + ' ') : '') + p.text;
+                ctx.strokeText(content, 0, 0);
+                ctx.fillStyle = '#ffffff';
+                ctx.fillText(content, 0, 0);
+            }
+            
+            ctx.restore();
+        }
+    }
+    
+    static renderPriorityPopups(game) {
         const ctx = game.ctx;
         
-        // Save context for score UI rendering
-        ctx.save();
-        
-        // Center positions on screen
-        const centerX = game.canvas.width / 2;
-        const topY = 40;
-        
-        // Draw "VOTES" label with block black shadow (bigger and yellow)
-        ctx.font = 'bold 32px Tiny5';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        // Black shadow offset
-        ctx.fillStyle = '#000000';
-        ctx.fillText('VOTES', centerX + 3, topY + 3);
-        // Yellow text on top
-        ctx.fillStyle = '#ffd700';
-        ctx.fillText('VOTES', centerX, topY);
-        
-        // Calculate dynamic font size based on score digit count
-        const scoreString = game.score.toString();
-        const digitCount = scoreString.length;
-        let baseFontSize = 80;
-        let scaleFactor = 1.0;
-        
-        // Adjust font size based on digit count
-        if (digitCount <= 4) {
-            scaleFactor = 1.0; // 4 digits at current size is max comfortable
-        } else if (digitCount === 5) {
-            scaleFactor = 0.85; // 15% smaller for 5 digits
-        } else if (digitCount === 6) {
-            scaleFactor = 0.70; // 30% smaller for 6 digits
-        } else {
-            scaleFactor = 0.60; // 40% smaller for 7+ digits
-        }
-        
-        const adjustedFontSize = Math.floor(baseFontSize * scaleFactor);
-        
-        // Draw score number with block black shadow (centered, dynamically sized)
-        ctx.font = `bold ${adjustedFontSize}px Tiny5`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'top'; // Use top baseline for consistent positioning
-        // Black shadow offset (scale shadow with font size)
-        const shadowOffset = Math.max(2, Math.floor(4 * scaleFactor));
-        // Fixed Y position for consistent placement regardless of font size
-        const scoreY = topY + 45; // Consistent top position for score text
-        ctx.fillStyle = '#000000';
-        ctx.fillText(scoreString, centerX + shadowOffset, scoreY + shadowOffset);
-        // White text on top
-        ctx.fillStyle = '#ffffff';
-        ctx.fillText(scoreString, centerX, scoreY);
-        
-        // Add milestone animation effect (centered)
-        if (game.score > 0 && game.score % 100 === 0) {
-            const time = Date.now() % 600;
-            if (time < 300) {
-                // Pulse effect around the score
-                const scale = 1 + (Math.sin(time / 300 * Math.PI) * 0.15);
-                ctx.save();
-                ctx.translate(centerX, topY + 60);
-                ctx.scale(scale, scale);
-                ctx.strokeStyle = '#ffd700';
-                ctx.lineWidth = 3;
-                ctx.globalAlpha = 0.6;
-                ctx.shadowColor = 'rgba(255, 215, 0, 0.4)';
-                ctx.shadowBlur = 8;
-                // Draw a circle around the score instead of rectangle
-                ctx.beginPath();
-                ctx.arc(0, 0, 80, 0, Math.PI * 2);
-                ctx.stroke();
-                ctx.restore();
+        // Find priority messages (obstacle avoidance) and render them on top
+        for (const p of game.popups) {
+            if (!p.isPriority) continue;
+            
+            ctx.save();
+            ctx.globalAlpha = p.alpha;
+            ctx.translate(p.x, p.y);
+            ctx.scale(p.scale, p.scale);
+            
+            if (p.isMultiLine && p.lines) {
+                // Render large multi-line priority popup
+                let currentY = -35; // Start higher for larger text
+                
+                for (let i = 0; i < p.lines.length; i++) {
+                    const line = p.lines[i];
+                    const fontWeight = line.bold ? 'bold' : 'normal';
+                    
+                    ctx.font = `${fontWeight} ${line.fontSize}px Tiny5`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.lineWidth = 5; // Much thicker outline for priority
+                    ctx.strokeStyle = '#000000';
+                    ctx.shadowColor = 'rgba(0,0,0,0.9)';
+                    ctx.shadowBlur = 12; // Much more prominent shadow
+                    
+                    // Draw thick text shadow for high visibility
+                    ctx.strokeText(line.text, 0, currentY);
+                    
+                    // Draw main text
+                    ctx.fillStyle = line.color;
+                    ctx.fillText(line.text, 0, currentY);
+                    
+                    // Move down for next line (spacing based on font size)
+                    currentY += line.fontSize + 10; // Extra spacing for large text
+                }
             }
+            
+            ctx.restore();
         }
-        
-        ctx.restore();
     }
     
     static drawArticulatedPlayer(game) {
@@ -1045,37 +1026,6 @@ export class Renderer {
         ctx.restore();
     }
     
-    static drawTronTrail(game) {
-        const ctx = game.ctx;
-        
-        ctx.save();
-        
-        // Simple TRON-style trail: just a line from start to current position
-        const currentX = game.player.x + game.player.width / 2;
-        const currentY = game.player.y + game.player.height / 2;
-        
-        // Main trail line (dark red)
-        ctx.strokeStyle = '#8B0000';
-        ctx.lineWidth = 8;
-        ctx.lineCap = 'butt';
-        
-        ctx.beginPath();
-        ctx.moveTo(game.player.trailStartX, game.player.trailStartY);
-        ctx.lineTo(currentX, currentY);
-        ctx.stroke();
-        
-        // Inner highlight line (gold)
-        ctx.strokeStyle = '#FFD700';
-        ctx.lineWidth = 4;
-        
-        ctx.beginPath();
-        ctx.moveTo(game.player.trailStartX, game.player.trailStartY);
-        ctx.lineTo(currentX, currentY);
-        ctx.stroke();
-        
-        ctx.restore();
-    }
-    
     static drawTrailSegments(game) {
         const ctx = game.ctx;
         
@@ -1329,27 +1279,5 @@ export class Renderer {
         ctx.fillText('Pause to return', labelX, labelY);
         
         ctx.restore();
-    }
-    
-    static renderPopups(game) {
-        const ctx = game.ctx;
-        for (const p of game.popups) {
-            ctx.save();
-            ctx.globalAlpha = p.alpha;
-            ctx.translate(p.x, p.y);
-            ctx.scale(p.scale, p.scale);
-            ctx.font = 'bold 28px Tiny5';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.lineWidth = 4;
-            ctx.strokeStyle = '#ffd700';
-            ctx.shadowColor = 'rgba(0,0,0,0.6)';
-            ctx.shadowBlur = 6;
-            const content = (p.icon ? (p.icon + ' ') : '') + p.text;
-            ctx.strokeText(content, 0, 0);
-            ctx.fillStyle = '#ffffff';
-            ctx.fillText(content, 0, 0);
-            ctx.restore();
-        }
     }
 }

@@ -253,6 +253,16 @@ export class GameLogic {
         game.finalScoreElement.textContent = game.score;
         this.updateHUDVisibility(game);
         
+        // Display random political end message
+        const politicalMessageElement = document.getElementById('politicalEndMessage');
+        if (politicalMessageElement) {
+            const message = game.getRandomPoliticalEndMessage();
+            console.log('Setting political end message:', message);
+            politicalMessageElement.textContent = message;
+        } else {
+            console.error('Could not find politicalEndMessage element');
+        }
+        
         // Reset screen shake effects to ensure clean transition
         game.screenShake = 0;
         game.screenShakeIntensity = 0;
@@ -318,6 +328,7 @@ export class GameLogic {
         const now = performance.now();
         game.popups.push({
             text,
+            lines: opts.lines || null, // Support for multi-line text
             icon: opts.icon || null,
             x, y,
             vx: (Math.random() - 0.5) * 0.25,
@@ -325,9 +336,68 @@ export class GameLogic {
             start: now,
             life: opts.duration || 850, // Allow custom duration, default to 850ms
             scale: 0.6,
-            alpha: 1
+            alpha: 1,
+            isMultiLine: opts.isMultiLine || false
         });
         if (game.popups.length > 20) game.popups.shift();
+    }
+    
+    // Create a two-line popup for obstacle avoidance
+    static addObstacleAvoidedPopup(game, politicalWord, x, y) {
+        const now = performance.now();
+        
+        // Clear existing popups to ensure this message takes priority
+        game.popups.length = 0;
+        
+        // Calculate dynamic font size for political word based on text length and screen width
+        const politicalWordFontSize = this.calculateDynamicFontSize(game, politicalWord.toUpperCase());
+        
+        game.popups.push({
+            text: null, // Use lines instead
+            lines: [
+                { text: "YOU AVOIDED", fontSize: 28, color: "#ffffff" }, // Keep consistent
+                { text: politicalWord.toUpperCase(), fontSize: politicalWordFontSize, color: "#ffd700", bold: true } // Dynamic size
+            ],
+            icon: null,
+            x, y,
+            vx: (Math.random() - 0.5) * 0.25,
+            vy: -0.6,
+            start: now,
+            life: 2400, // Double duration - was 1200, now 2400ms
+            scale: 0.6,
+            alpha: 1,
+            isMultiLine: true,
+            isPriority: true // Mark as priority message
+        });
+    }
+    
+    // Calculate dynamic font size for political words to fit screen width
+    static calculateDynamicFontSize(game, text) {
+        // Use a temporary canvas context to measure text width
+        const tempCanvas = document.createElement('canvas');
+        const tempCtx = tempCanvas.getContext('2d');
+        
+        // Maximum width should be 90% of screen width for comfortable reading
+        const maxWidth = game.canvas.width * 0.9;
+        
+        // Start with ideal large size and work down
+        let fontSize = 48; // Ideal size
+        const minFontSize = 24; // Minimum readable size
+        
+        // Test decreasing font sizes until text fits
+        while (fontSize >= minFontSize) {
+            tempCtx.font = `bold ${fontSize}px Tiny5`;
+            const textWidth = tempCtx.measureText(text).width;
+            
+            if (textWidth <= maxWidth) {
+                break; // Found a size that fits
+            }
+            
+            fontSize -= 2; // Decrease by 2px steps
+        }
+        
+        // Ensure we don't go below minimum
+        return Math.max(fontSize, minFontSize);
     }
     
     static checkForHighScore(game) {

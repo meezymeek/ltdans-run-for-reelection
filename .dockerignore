@@ -1,0 +1,51 @@
+# Development files
+node_modules/
+npm-debug.log*
+.npm
+.nyc_output
+
+# Git
+.git/
+.gitignore
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Documentation and development files
+README.md
+docs/
+*.md
+test-*.html
+generate_*.html
+generate_*.js
+create_placeholder_skins.html
+
+# Build artifacts and temporary files
+dist/
+build/
+coverage/
+.cache/
+
+# Docker files (prevent recursive copying)
+Dockerfile*
+docker-compose*.yml
+.dockerignore

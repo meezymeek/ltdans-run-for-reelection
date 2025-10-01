@@ -20,8 +20,8 @@ export class TutorialManager {
             {
                 id: 'basic_jump',
                 title: 'Basic Jumping',
-                instruction: 'Welcome! Tap anywhere to jump over obstacles!',
-                baseInstruction: 'Welcome! Tap anywhere to jump!',
+                instruction: 'Welcome! You are a career politician attempoting to avoid any obstacle in your way to victory! Tap anywhere to jump!',
+                baseInstruction: 'Welcome! You are a career politician attempoting to avoid any obstacle in your way to victory! Tap anywhere to jump!',
                 entities: [], // No entities for basic jumping
                 waitForAction: 'jump_multiple',
                 spawnContinuous: false,
@@ -29,9 +29,9 @@ export class TutorialManager {
             },
             {
                 id: 'low_obstacles',
-                title: 'Low Obstacles',
-                instruction: 'These are low obstacles. Jump over them to avoid crashing!',
-                baseInstruction: 'These are low obstacles. Jump over them to avoid crashing!',
+                title: 'Suggestion Boxes',
+                instruction: 'These are Suggestion Boxes. Jump over them to avoid crashing out!',
+                baseInstruction: 'These are Suggestion Boxes. Jump over them to avoid crashing out!',
                 entities: [{ type: 'low_obstacle', delay: 2000 }],
                 waitForAction: 'clear_obstacles',
                 spawnContinuous: true,
@@ -40,9 +40,9 @@ export class TutorialManager {
             },
             {
                 id: 'tall_obstacles',
-                title: 'Tall Obstacles',
-                instruction: 'Tall obstacles need higher jumps! Jump earlier and higher!',
-                baseInstruction: 'Tall obstacles need higher jumps! Jump earlier and higher!',
+                title: 'Pillars of Decency',
+                instruction: 'Avoid Decency at all cost! Time these jumps carefully!',
+                baseInstruction: 'Avoid Decency at all cost! Time these jumps carefully!',
                 entities: [{ type: 'tall_obstacle', delay: 2000 }],
                 waitForAction: 'clear_obstacles',
                 spawnContinuous: true,
@@ -52,8 +52,8 @@ export class TutorialManager {
             {
                 id: 'bribes',
                 title: 'Collecting Bribes',
-                instruction: 'Collect golden $ bribes for bonus votes! Jump to reach them!',
-                baseInstruction: 'Collect golden $ bribes for bonus votes! Jump to reach them!',
+                instruction: 'Collect bribes for bonus votes! This is MUCH easier than earning votes!',
+                baseInstruction: 'Collect bribes for bonus votes! This is MUCH easier than earning votes!',
                 entities: [{ type: 'bribe', delay: 2000, height: 'low' }],
                 waitForAction: 'collect_bribes',
                 spawnContinuous: true,
@@ -62,9 +62,9 @@ export class TutorialManager {
             },
             {
                 id: 'constituents',
-                title: 'Constituents',
-                instruction: 'Constituents cost -25 votes if stomped, but launch you super high!',
-                baseInstruction: 'Red constituents cost -25 votes if stomped, but launch you super high!',
+                title: 'Crush Constituents',
+                instruction: 'Crushing a constituent by jumping on their head will cost you -25 votes. Surely its worth it for the extra help!',
+                baseInstruction: 'Crushing a constituent by jumping on their head will cost you -25 votes. Surely its worth it for the extra help!',
                 entities: [{ type: 'constituent', delay: 2000 }],
                 waitForAction: 'encounter_constituent',
                 spawnContinuous: false,
@@ -74,9 +74,9 @@ export class TutorialManager {
             },
             {
                 id: 'parachute',
-                title: 'Parachute System',
-                instruction: 'When you jump high, you get a parachute! TAP repeatedly to stay airborne!',
-                baseInstruction: 'Stomp constituents to get parachutes! Stay airborne for 3 seconds!',
+                title: 'Corporate Airlift',
+                instruction: 'Crushing Constituents will earn you a Corproate Airlift! TAP repeatedly to stay airborne!',
+                baseInstruction: 'Crushing Constituents will earn you a Corproate Airlift! TAP repeatedly to stay airborne for 3 seconds!',
                 entities: [{ type: 'constituent', delay: 2000 }],
                 waitForAction: 'stay_airborne',
                 spawnContinuous: true,
@@ -86,8 +86,8 @@ export class TutorialManager {
             {
                 id: 'gerrymander_express',
                 title: 'Gerrymander Express',
-                instruction: 'Stomp constituent for parachute, then collect the ticket token high in the air!',
-                baseInstruction: 'Stomp constituent for parachute, then collect the ticket token high in the air!',
+                instruction: 'Crush constituent for a COrporate Airlift, then collect a ticket to for the Gerrymander Express!',
+                baseInstruction: 'Crush constituent for a Corporate Airlift then collect a ticket to for the Gerrymander Express!',
                 entities: [
                     { type: 'constituent', delay: 1500 },
                     { type: 'gerrymander_express', delay: 3000 }
@@ -796,9 +796,33 @@ export class TutorialManager {
         return 15 * 2 + 20 + 20 + (lines * 18);
     }
     
-    // Select obstacle variant based on spawn weights (copied from GameLoop)
+    // Select obstacle variant based on spawn weights (updated to use dynamic political words)
     selectObstacleVariant(type) {
-        // Use obstacle skin config if available
+        // For tall obstacles, use dynamic political words if available (same as main game)
+        if (type === 'tall' && this.game.politicalWords && this.game.politicalWords.length > 0) {
+            const randomWord = this.game.getRandomPoliticalWord();
+            console.log('Using dynamic political word for tutorial tall obstacle:', randomWord);
+            
+            // Create dynamic skin configuration for this word
+            const dynamicSkinConfig = {
+                name: `Political: ${randomWord}`,
+                imagePath: null,
+                color: "#ffffff",
+                animationType: "none",
+                renderType: "pillar",
+                textConfig: {
+                    text: randomWord,
+                    textColor: "#000000",
+                    fontSize: "auto",
+                    rotation: -90,
+                    fontFamily: "Tiny5"
+                }
+            };
+            
+            return { variant: 'political', skinConfig: dynamicSkinConfig };
+        }
+        
+        // Use obstacle skin config if available (for low obstacles or fallback)
         const obstacleSkinConfig = this.game.obstacleSkinConfig;
         if (!obstacleSkinConfig || !obstacleSkinConfig.spawnWeights || !obstacleSkinConfig.spawnWeights[type]) {
             // Fallback to default

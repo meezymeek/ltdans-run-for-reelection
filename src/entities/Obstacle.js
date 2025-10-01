@@ -37,6 +37,9 @@ export class Obstacle {
             VISUAL_CONFIG.obstacleColors.tall : 
             VISUAL_CONFIG.obstacleColors.low);
         
+        // Store political word for text-based obstacles
+        this.politicalWord = skinConfig?.textConfig?.text || null;
+        
         // Animation properties (base class has none, but children can override)
         this.animationType = skinConfig?.animationType || 'none';
         this.animationTime = 0;
@@ -145,8 +148,14 @@ export class Obstacle {
                 ctx.fillRect(-this.width/2 + 5, -this.height/2 + 5, this.width - 10, 3);
             }
         } else {
-            // Normal rendering - use current position (which may be animated)
-            if (this.skinImage && this.skinImage.complete) {
+            // Normal rendering - check for pillar, text, or image
+            if (this.skinConfig && this.skinConfig.renderType === 'pillar') {
+                // Render architectural pillar
+                this.renderPillarObstacle(ctx);
+            } else if (this.skinConfig && this.skinConfig.renderType === 'text') {
+                // Render text-based obstacle
+                this.renderTextObstacle(ctx);
+            } else if (this.skinImage && this.skinImage.complete) {
                 // Draw skin image
                 ctx.drawImage(
                     this.skinImage,
@@ -167,6 +176,126 @@ export class Obstacle {
         }
         
         ctx.restore();
+    }
+    
+    // Render architectural pillar obstacle
+    renderPillarObstacle(ctx) {
+        // Define pillar colors - classical marble/stone appearance
+        const baseColor = '#E8E8E8';      // Light grey marble
+        const shadowColor = '#A8A8A8';    // Darker grey for shadows
+        const highlightColor = '#F8F8F8'; // Near white for highlights
+        const capColor = '#D0D0D0';       // Medium grey for capital/base
+        
+        // Pillar proportions
+        const capHeight = this.height * 0.08; // Top and bottom caps (8% each)
+        const shaftHeight = this.height * 0.84; // Main shaft (84%)
+        const shaftInset = this.width * 0.1; // Slight taper inward
+        
+        // Draw base (bottom cap)
+        ctx.fillStyle = capColor;
+        ctx.fillRect(this.x, this.y + this.height - capHeight, this.width, capHeight);
+        
+        // Draw base highlight
+        ctx.fillStyle = highlightColor;
+        ctx.fillRect(this.x, this.y + this.height - capHeight, this.width, 2);
+        
+        // Draw main pillar shaft
+        ctx.fillStyle = baseColor;
+        ctx.fillRect(
+            this.x + shaftInset, 
+            this.y + capHeight, 
+            this.width - (shaftInset * 2), 
+            shaftHeight
+        );
+        
+        // Draw shaft left highlight (simulating light from left)
+        ctx.fillStyle = highlightColor;
+        ctx.fillRect(
+            this.x + shaftInset, 
+            this.y + capHeight, 
+            3, 
+            shaftHeight
+        );
+        
+        // Draw shaft right shadow (simulating shadow on right side)
+        ctx.fillStyle = shadowColor;
+        ctx.fillRect(
+            this.x + this.width - shaftInset - 3, 
+            this.y + capHeight, 
+            3, 
+            shaftHeight
+        );
+        
+        // Draw capital (top cap)
+        ctx.fillStyle = capColor;
+        ctx.fillRect(this.x, this.y, this.width, capHeight);
+        
+        // Draw capital shadow (bottom edge)
+        ctx.fillStyle = shadowColor;
+        ctx.fillRect(this.x, this.y + capHeight - 2, this.width, 2);
+        
+        // Add subtle vertical shading lines for texture
+        ctx.fillStyle = 'rgba(160, 160, 160, 0.3)';
+        for (let i = 1; i < 4; i++) {
+            const lineX = this.x + shaftInset + (this.width - (shaftInset * 2)) * (i / 4);
+            ctx.fillRect(lineX, this.y + capHeight, 1, shaftHeight);
+        }
+    }
+    
+    // Render text-based obstacle
+    renderTextObstacle(ctx) {
+        const textConfig = this.skinConfig.textConfig;
+        
+        // Draw background rectangle
+        ctx.fillStyle = this.color;
+        ctx.fillRect(this.x, this.y, this.width, this.height);
+        
+        // Save context for text rendering
+        ctx.save();
+        
+        // Move to center of obstacle for rotation
+        const centerX = this.x + this.width / 2;
+        const centerY = this.y + this.height / 2;
+        ctx.translate(centerX, centerY);
+        
+        // Apply rotation if specified
+        if (textConfig.rotation) {
+            ctx.rotate(textConfig.rotation * Math.PI / 180);
+        }
+        
+        // Calculate font size to fit the text in the obstacle
+        const text = textConfig.text || 'TEXT';
+        const fontFamily = textConfig.fontFamily || 'Arial';
+        let fontSize = this.calculateFontSize(ctx, text, this.width, this.height, fontFamily);
+        
+        // Set font and text properties
+        ctx.font = `bold ${fontSize}px ${fontFamily}`;
+        ctx.fillStyle = textConfig.textColor || '#000000';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        
+        // Draw the text
+        ctx.fillText(text, 0, 0);
+        
+        ctx.restore();
+    }
+    
+    // Calculate font size to fit text within dimensions
+    calculateFontSize(ctx, text, maxWidth, maxHeight, fontFamily) {
+        let fontSize = 12; // Start larger
+        let textWidth, textHeight;
+        
+        // Try increasing font sizes until we find the largest that fits
+        do {
+            fontSize += 3; // Bigger increments
+            ctx.font = `bold ${fontSize}px ${fontFamily}`;
+            const metrics = ctx.measureText(text);
+            textWidth = metrics.width;
+            textHeight = fontSize; // Approximate height
+        } while (textWidth < maxWidth * 0.95 && textHeight < maxHeight * 0.95 && fontSize < 80); // More aggressive fitting
+        
+        // Back off by one step to ensure it fits
+        return Math.max(12, fontSize - 3);
     }
     
     checkCollision(player) {
@@ -246,9 +375,10 @@ export class GhostObstacle extends AnimatedObstacle {
     }
     
     applyAnimation() {
-        // Calculate bobbing motion - only upward from ground position
-        // Use Math.abs(Math.sin()) to ensure only positive values (upward motion)
-        const bobAmount = Math.abs(Math.sin(this.animationTime * this.bobSpeed + this.bobOffset)) * this.bobHeight;
+        // Calculate bobbing motion - oscillate around base position but never below ground
+        const sineValue = Math.sin(this.animationTime * this.bobSpeed + this.bobOffset);
+        // Transform sine wave from [-1,1] to [0,1] for upward-only motion from base position
+        const bobAmount = (sineValue + 1) * 0.5 * this.bobHeight;
         
         // Convert pixel-based bob amount to percentage for our coordinate system
         const bobAmountPercent = bobAmount / this.canvas.height;

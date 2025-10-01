@@ -7,15 +7,18 @@
         "color": "#8B4513",
         "animationType": "none"
       },
-      "ghost": {
-        "name": "Ghost",
-        "imagePath": "skins/obstacles/tall obstacles/tall1.png",
+      "accountability": {
+        "name": "Accountability",
+        "imagePath": null,
         "color": "#ffffff",
-        "animationType": "bob",
-        "animationConfig": {
-          "bobHeight": 3,
-          "bobSpeed": 0.008,
-          "bobOffset": 0
+        "animationType": "none",
+        "renderType": "text",
+        "textConfig": {
+          "text": "Accountability",
+          "textColor": "#000000",
+          "fontSize": "auto",
+          "rotation": -90,
+          "fontFamily": "Tiny5"
         }
       }
     },
@@ -31,7 +34,7 @@
   "spawnWeights": {
     "tall": {
       "default": 0,
-      "ghost": 100
+      "accountability": 100
     },
     "low": {
       "default": 100

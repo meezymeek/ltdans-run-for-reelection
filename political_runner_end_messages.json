@@ -1,0 +1,158 @@
+[
+  {
+    "id": "msg_01",
+    "text": "Game over, candidate. Try another campaign cycle."
+  },
+  {
+    "id": "msg_02",
+    "text": "Better luck in the next election year."
+  },
+  {
+    "id": "msg_03",
+    "text": "The polls have closed… but not in your favor."
+  },
+  {
+    "id": "msg_04",
+    "text": "Your opponent kissed more babies."
+  },
+  {
+    "id": "msg_05",
+    "text": "You’ve reached term limits… of stamina."
+  },
+  {
+    "id": "msg_06",
+    "text": "You’ve dropped out to spend more time with your family."
+  },
+  {
+    "id": "msg_07",
+    "text": "Your staff quit mid-race."
+  },
+  {
+    "id": "msg_08",
+    "text": "Your slogan didn’t stick this time."
+  },
+  {
+    "id": "msg_09",
+    "text": "Scandal fatigue got you this time."
+  },
+  {
+    "id": "msg_10",
+    "text": "Lobbyists pulled the plug."
+  },
+  {
+    "id": "msg_11",
+    "text": "Your campaign funds dried up."
+  },
+  {
+    "id": "msg_12",
+    "text": "You lost the debate… and the race."
+  },
+  {
+    "id": "msg_13",
+    "text": "You’ve been redistricted out of existence."
+  },
+  {
+    "id": "msg_14",
+    "text": "Your campaign promises expired mid-stride."
+  },
+  {
+    "id": "msg_15",
+    "text": "No matter how far you run, the finish line keeps moving."
+  },
+  {
+    "id": "msg_16",
+    "text": "Democracy has left the chat."
+  },
+  {
+    "id": "msg_17",
+    "text": "Your approval rating just tanked."
+  },
+  {
+    "id": "msg_18",
+    "text": "The race is rigged, and you’re not the favorite."
+  },
+  {
+    "id": "msg_19",
+    "text": "You filibustered yourself out of the game."
+  },
+  {
+    "id": "msg_20",
+    "text": "The voters ran faster than you."
+  },
+  {
+    "id": "msg_21",
+    "text": "PAC money only carried you so far."
+  },
+  {
+    "id": "msg_22",
+    "text": "Your donors cashed out — and so did you."
+  },
+  {
+    "id": "msg_23",
+    "text": "The swamp doesn’t drain itself."
+  },
+  {
+    "id": "msg_24",
+    "text": "The lobbyists thank you for your service."
+  },
+  {
+    "id": "msg_25",
+    "text": "The lobbyists found a shinier puppet."
+  },
+  {
+    "id": "msg_26",
+    "text": "Money talked. Voters walked."
+  },
+  {
+    "id": "msg_27",
+    "text": "You were out-bribed at the finish line."
+  },
+  {
+    "id": "msg_28",
+    "text": "Your district finally realized you never lived there."
+  },
+  {
+    "id": "msg_29",
+    "text": "Your constituents voted… with their feet."
+  },
+  {
+    "id": "msg_30",
+    "text": "You ignored the town hall once too often."
+  },
+  {
+    "id": "msg_31",
+    "text": "The people wanted change. You gave them pocket change."
+  },
+  {
+    "id": "msg_32",
+    "text": "Even your base stopped holding their noses."
+  },
+  {
+    "id": "msg_33",
+    "text": "Scandal fatigue isn’t a platform."
+  },
+  {
+    "id": "msg_34",
+    "text": "You drowned in a swamp of your own making."
+  },
+  {
+    "id": "msg_35",
+    "text": "The slime trail you left was too slippery to run on."
+  },
+  {
+    "id": "msg_36",
+    "text": "You couldn’t filibuster your way out of corruption charges."
+  },
+  {
+    "id": "msg_37",
+    "text": "Turns out Bought & Sold wasn’t a great campaign brand."
+  },
+  {
+    "id": "msg_38",
+    "text": "Your approval rating was negative before you fell."
+  },
+  {
+    "id": "msg_39",
+    "text": "Congratulations, you successfully represented… nobody."
+  }
+]
