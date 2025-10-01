@@ -386,6 +386,27 @@
     image-rendering: crisp-edges;
 }
 
+/* Mobile-specific logo positioning */
+@media (max-width: 768px) {
+    .company-logo {
+        top: max(4vh, 40px); /* Ensure minimum distance from top on mobile */
+        left: 50%;
+        transform: translateX(-50%) scale(0.7); /* Slightly smaller on mobile */
+        z-index: 30000; /* Even higher z-index for mobile */
+        width: clamp(12rem, 35vw, 24rem); /* Adjusted size for mobile */
+        position: fixed !important; /* Force fixed positioning on mobile */
+    }
+}
+
+/* Very small mobile screens */
+@media (max-width: 480px) {
+    .company-logo {
+        top: max(6vh, 50px); /* More space from top on small screens */
+        transform: translateX(-50%) scale(0.6); /* Even smaller on tiny screens */
+        width: clamp(10rem, 30vw, 20rem); /* Smaller width for tiny screens */
+    }
+}
+
 .presents-text {
     position: absolute;
     top: 19vh; /* Presents text moved down even further for optimal logo spacing */
