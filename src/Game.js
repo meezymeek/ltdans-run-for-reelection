@@ -7,6 +7,8 @@ import { OrientationManager } from './managers/OrientationManager.js';
 import { TouchFeedbackManager } from './managers/TouchFeedbackManager.js';
 import { TutorialManager } from './managers/TutorialManager.js';
 import { ParachuteTapOverlay } from './managers/ParachuteTapOverlay.js';
+import { DeviceManager } from './managers/DeviceManager.js';
+import { FirstTimePlayerManager } from './managers/FirstTimePlayerManager.js';
 import { GAME_CONFIG } from './constants/GameConfig.js';
 import { Player } from './entities/Player.js';
 import { Obstacle } from './entities/Obstacle.js';
@@ -45,6 +47,10 @@ export class RerunGame {
         this.leaderboard = new LeaderboardManager();
         this.tutorialManager = new TutorialManager(this);
         this.parachuteTapOverlay = new ParachuteTapOverlay();
+        
+        // Initialize device and first-time player management
+        this.deviceManager = new DeviceManager();
+        this.firstTimePlayerManager = new FirstTimePlayerManager(this);
         
         // Initialize game systems (GameLoop and Renderer use static methods)
         this.gameLogic = new GameLogic(this);
@@ -1220,6 +1226,11 @@ export class RerunGame {
         
         this.soundManager.playMusic('game');
         this.updateScore();
+        
+        // Track that player has started a game
+        if (this.deviceManager) {
+            this.deviceManager.incrementGamesPlayed();
+        }
     }
     
     startTutorial() {
@@ -1338,6 +1349,35 @@ export class RerunGame {
         if (this.soundInitialized) {
             this.soundManager.stopMusic();
             this.soundManager.playMusic('menu');
+        }
+        
+        // Check if we should show first-time player suggestion
+        if (this.firstTimePlayerManager) {
+            console.log('Checking for first-time player suggestion...');
+            console.log('Game state:', this.gameState);
+            console.log('Start screen visible:', !this.startScreen.classList.contains('hidden'));
+            this.firstTimePlayerManager.checkAndShowSuggestion();
+        }
+        
+        // Expose testing functions to global window for console testing
+        if (window.gameInstance === this) {
+            window.testTutorialSuggestion = () => {
+                if (this.firstTimePlayerManager) {
+                    this.firstTimePlayerManager.forceShowSuggestion();
+                } else {
+                    console.log('FirstTimePlayerManager not available');
+                }
+            };
+            window.resetTutorialSuggestion = () => {
+                if (this.firstTimePlayerManager) {
+                    this.firstTimePlayerManager.reset();
+                } else {
+                    console.log('FirstTimePlayerManager not available');
+                }
+            };
+            console.log('Tutorial suggestion testing functions exposed:');
+            console.log('- testTutorialSuggestion() - Force show the suggestion');
+            console.log('- resetTutorialSuggestion() - Reset and allow showing again');
         }
     }
     
@@ -1552,7 +1592,8 @@ export class RerunGame {
         this.submitScoreButton.textContent = 'Submitting...';
 
         try {
-            const result = await this.leaderboard.submitScore(playerName, this.score, gameDuration);
+            const deviceId = this.deviceManager ? this.deviceManager.getDeviceId() : null;
+            const result = await this.leaderboard.submitScore(playerName, this.score, gameDuration, deviceId);
             
             if (result) {
                 const message = `

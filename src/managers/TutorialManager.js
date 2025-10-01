@@ -765,6 +765,11 @@ export class TutorialManager {
     }
     
     endTutorial() {
+        // Mark tutorial as completed if it was finished (not skipped)
+        if (this.tutorialComplete && this.game.deviceManager) {
+            this.game.deviceManager.markTutorialCompleted();
+        }
+        
         // Clean up dialog element
         if (this.dialogElement) {
             this.dialogElement.remove();

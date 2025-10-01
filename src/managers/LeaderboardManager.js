@@ -7,21 +7,29 @@ export class LeaderboardManager {
         this.currentView = 'global';
     }
 
-    async submitScore(playerName, score, gameDuration) {
+    async submitScore(playerName, score, gameDuration, deviceId = null) {
         if (this.isSubmitting) return null;
         
         try {
             this.isSubmitting = true;
+            
+            const requestBody = {
+                playerName: playerName.trim(),
+                score: Math.floor(score),
+                gameDuration: Math.floor(gameDuration)
+            };
+            
+            // Include device ID if provided
+            if (deviceId) {
+                requestBody.deviceId = deviceId;
+            }
+            
             const response = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.submitScore}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    playerName: playerName.trim(),
-                    score: Math.floor(score),
-                    gameDuration: Math.floor(gameDuration)
-                })
+                body: JSON.stringify(requestBody)
             });
 
             const data = await response.json();
