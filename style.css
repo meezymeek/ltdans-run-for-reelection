@@ -1468,12 +1468,14 @@ button:active {
 
 .leaderboard-content {
     min-height: 200px;
-    max-height: 45vh;
-    overflow-y: auto;
+    max-height: none; /* Remove height restriction */
+    overflow-y: visible; /* Remove scrolling */
     background: rgba(255, 255, 255, 0.05);
     border-radius: 10px;
     padding: 0.8rem;
     margin-bottom: 1rem;
+    display: flex;
+    flex-direction: column;
 }
 
 .leaderboard-table {
@@ -1485,9 +1487,9 @@ button:active {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0.8rem 0;
+    padding: clamp(0.3rem, 1.5vh, 0.8rem) 0; /* Dynamic padding based on viewport height */
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    font-size: clamp(0.8rem, 3vw, 0.9rem);
+    font-size: clamp(0.6rem, 2vh, 0.9rem); /* Scale font based on viewport height */
 }
 
 .leaderboard-entry:last-child {
@@ -1518,9 +1520,9 @@ button:active {
 }
 
 .leaderboard-date {
-    font-size: 0.7em;
+    font-size: clamp(0.5rem, 1.4vh, 0.7rem); /* Scale with viewport height */
     color: #aaa;
-    min-width: 80px;
+    min-width: clamp(60px, 15vw, 80px); /* Responsive width */
     text-align: right;
     margin-left: 0.5rem;
 }
@@ -1619,9 +1621,11 @@ button:active {
 /* Mobile optimizations for leaderboard screen */
 #leaderboardScreen {
     max-width: min(400px, 95vw);
-    max-height: 85vh;
+    max-height: 95vh; /* Increased to use more viewport */
     padding: 1rem 1.5rem;
-    overflow-y: auto;
+    overflow-y: visible; /* Remove scrolling */
+    display: flex;
+    flex-direction: column;
 }
 
 #leaderboardScreen h2 {
@@ -1639,8 +1643,8 @@ button:active {
 }
 
 #leaderboardScreen .leaderboard-content {
-    max-height: 40vh;
-    min-height: 180px;
+    flex: 1; /* Allow content to expand within available space */
+    min-height: auto; /* Remove minimum height restriction */
     padding: 0.6rem;
     margin-bottom: 0.8rem;
 }
@@ -1694,8 +1698,8 @@ button:active {
     }
     
     #leaderboardScreen .leaderboard-content {
-        max-height: 35vh;
-        min-height: 150px;
+        flex: 1; /* Allow content to expand within available space */
+        min-height: auto; /* Remove minimum height restriction */
     }
     
     #leaderboardScreen .leaderboard-entry {
@@ -2237,10 +2241,8 @@ button:focus {
     opacity: 1;
 }
 
-/* Force scrollbar to always show on scrollable containers */
-.leaderboard-content,
-#pauseScreen,
-#leaderboardScreen {
+/* Force scrollbar to always show on scrollable containers - except leaderboard content */
+#pauseScreen {
     overflow-y: scroll !important;
 }
 
