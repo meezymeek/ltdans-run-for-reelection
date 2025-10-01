@@ -7,8 +7,8 @@ LABEL version="1.0"
 LABEL description="Frontend static files for Lt Dan's Run for Reelection game"
 
 # Force complete rebuild with timestamp
-ENV REBUILD_TIME=2025-01-23-2002
-ARG CACHEBUST=1
+ENV REBUILD_TIME=2025-10-01-1311
+ARG CACHEBUST=2
 
 # Create nginx directories
 RUN mkdir -p /var/cache/nginx/client_temp /var/cache/nginx/proxy_temp \
