@@ -101,8 +101,8 @@ export class TutorialManager {
             {
                 id: 'burn_one',
                 title: 'Burn One Power-Up',
-                instruction: 'Collect the floating green leaf for 10 seconds of moon gravity and slow motion!',
-                baseInstruction: 'Collect the floating green leaf for 10 seconds of moon gravity and slow motion!',
+                instruction: 'Collect the floating green leaf for 10 seconds of moon gravity and slow motion! Juump again in mid-air to double jump!',
+                baseInstruction: 'Collect the floating green leaf for 10 seconds of moon gravity and slow motion! Juump again in mid-air to double jump!',
                 entities: [{ type: 'burn_one', delay: 2000 }],
                 waitForAction: 'collect_burn_one',
                 spawnContinuous: false,
