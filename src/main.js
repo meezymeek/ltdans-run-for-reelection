@@ -364,12 +364,18 @@ function addSkipHint(container, animationState) {
 
 // Show All Elements Immediately (Skip Function)
 function showAllElementsImmediately() {
-    // Presents elements - use proper centered transforms
-    const companyLogo = document.querySelector('.company-logo');
+    // Presents elements - handle both image and fallback logo
+    const logoImage = document.querySelector('.company-logo:not(.logo-fallback)');
+    const logoFallback = document.querySelector('.company-logo.logo-fallback');
     const presentsText = document.querySelector('.presents-text');
-    if (companyLogo) {
-        companyLogo.style.opacity = '1';
-        companyLogo.style.transform = 'translateX(-50%) scale(1)';
+    
+    if (logoImage) {
+        logoImage.style.opacity = '1';
+        logoImage.style.transform = 'translateX(-50%) scale(1)';
+    }
+    if (logoFallback && logoFallback.style.display !== 'none') {
+        logoFallback.style.opacity = '1';
+        logoFallback.style.transform = 'translateX(-50%) scale(1)';
     }
     if (presentsText) {
         presentsText.style.opacity = '1';
@@ -465,10 +471,15 @@ function startAnimationSequence(animationState) {
 
 // Animation Sequence Functions
 function showLogo() {
-    // Showing logo
-    const companyLogo = document.querySelector('.company-logo');
-    if (companyLogo) {
-        companyLogo.classList.add('animate-logo-fade-in');
+    // Showing logo - handle both image and fallback text
+    const logoImage = document.querySelector('.company-logo:not(.logo-fallback)');
+    const logoFallback = document.querySelector('.company-logo.logo-fallback');
+    
+    if (logoImage) {
+        logoImage.classList.add('animate-logo-fade-in');
+    }
+    if (logoFallback && logoFallback.style.display !== 'none') {
+        logoFallback.classList.add('animate-logo-fade-in');
     }
 }
 
