@@ -205,7 +205,7 @@ export class Player {
             // Track parachute acquisition for Gerrymander Express spawn requirements (campaign mode only)
             if (game && game.gameState === 'playing') {
                 game.parachuteActivationCount++;
-                console.log(`Parachute acquired! Count: ${game.parachuteActivationCount}`);
+                // Parachute acquired, incrementing activation count
             }
             
             // Notify tutorial manager of parachute deployment

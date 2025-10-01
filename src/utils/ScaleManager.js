@@ -38,7 +38,7 @@ export class ScaleManager {
     // Global zoom control methods
     setGlobalZoom(zoom) {
         this.globalZoom = Math.max(0.1, Math.min(3.0, zoom)); // Clamp between 10% and 300%
-        console.log(`Global zoom set to: ${(this.globalZoom * 100).toFixed(1)}%`);
+        // Global zoom set
     }
     
     getGlobalZoom() {

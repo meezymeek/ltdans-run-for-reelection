@@ -158,7 +158,7 @@ export class GameLoop {
         // Low obstacle spawn (fixed interval)
         if (canSpawn && game.gameFrame % game.config.obstacleSpawnRate === 0) {
             const { variant, skinConfig } = this.selectObstacleVariant('low', game);
-            console.log('Spawning low obstacle - variant:', variant, 'skinConfig:', !!skinConfig);
+            // Spawning low obstacle with variant
             const obstacle = createObstacleWithVariant('low', game.canvas, game.player.groundY, game.config.obstacleSpeed, variant, skinConfig);
             
             // Set skin image if available
@@ -172,12 +172,12 @@ export class GameLoop {
         game.tallSpawnCounter++;
         if (canSpawn && game.tallSpawnCounter >= game.nextTallSpawn && this.canSpawnEntity(game)) {
             const { variant, skinConfig } = this.selectObstacleVariant('tall', game);
-            console.log('Spawning tall obstacle - variant:', variant, 'skinConfig:', !!skinConfig, 'obstacleSkinConfig available:', !!game.obstacleSkinConfig);
+            // Spawning tall obstacle with variant
             const obstacle = createObstacleWithVariant('tall', game.canvas, game.player.groundY, game.config.obstacleSpeed, variant, skinConfig);
             
             // Set skin image if available
             this.applySkinToObstacle(obstacle, game);
-            console.log('Tall obstacle created - constructor:', obstacle.constructor.name, 'variant:', obstacle.variant, 'skinImage:', !!obstacle.skinImage);
+            // Tall obstacle created with variant configuration
             
             game.obstacles.push(obstacle);
             game.tallSpawnCounter = 0;
@@ -854,12 +854,12 @@ export class GameLoop {
     
     // Select obstacle variant based on spawn weights
     static selectObstacleVariant(type, game) {
-        console.log('selectObstacleVariant called for type:', type, 'obstacleSkinConfig:', !!game.obstacleSkinConfig);
+        // Selecting obstacle variant for spawning
         
         // For tall obstacles, use dynamic political words if available
         if (type === 'tall' && game.politicalWords && game.politicalWords.length > 0) {
             const randomWord = game.getRandomPoliticalWord();
-            console.log('Using dynamic political word for tall obstacle:', randomWord);
+            // Using dynamic political word for tall obstacle
             
             // Create dynamic skin configuration for this word
             const dynamicSkinConfig = {
@@ -883,28 +883,28 @@ export class GameLoop {
         // Use obstacle skin config if available (for low obstacles or fallback)
         const obstacleSkinConfig = game.obstacleSkinConfig;
         if (!obstacleSkinConfig || !obstacleSkinConfig.spawnWeights || !obstacleSkinConfig.spawnWeights[type]) {
-            console.log('No skin config found, falling back to default');
+            // No skin config found, falling back to default
             // Fallback to default
             return { variant: 'default', skinConfig: null };
         }
         
         const weights = obstacleSkinConfig.spawnWeights[type];
         const variants = Object.keys(weights);
-        console.log('Available variants for', type, ':', variants, 'weights:', weights);
+        // Available variants for obstacle type
         
         // Calculate total weight
         const totalWeight = Object.values(weights).reduce((sum, weight) => sum + weight, 0);
-        console.log('Total weight:', totalWeight);
+        // Calculated total weight for variant selection
         
         // Select random variant based on weights
         let random = Math.random() * totalWeight;
-        console.log('Random value:', random);
+        // Generated random value for variant selection
         for (const variant of variants) {
             random -= weights[variant];
-            console.log('Testing variant:', variant, 'remaining random:', random);
+        // Testing variant for selection
             if (random <= 0) {
                 const skinConfig = obstacleSkinConfig.skins[type][variant];
-                console.log('Selected variant:', variant, 'skinConfig:', skinConfig);
+                // Selected variant for obstacle
                 return { variant, skinConfig };
             }
         }
@@ -912,29 +912,29 @@ export class GameLoop {
         // Fallback to first variant
         const fallbackVariant = variants[0];
         const skinConfig = obstacleSkinConfig.skins[type][fallbackVariant];
-        console.log('Fallback to variant:', fallbackVariant);
+        // Using fallback variant
         return { variant: fallbackVariant, skinConfig };
     }
     
     // Apply skin image to obstacle if available
     static applySkinToObstacle(obstacle, game) {
-        console.log('applySkinToObstacle called for:', obstacle.variant, 'loadedObstacleSkins available:', !!game.loadedObstacleSkins);
+        // Applying skin to obstacle if available
         
         if (!game.loadedObstacleSkins || !obstacle.variant || obstacle.variant === 'default') {
-            console.log('No skin needed for obstacle variant:', obstacle.variant);
+            // No skin needed for obstacle variant
             return; // No skin needed for default obstacles
         }
         
         // Find matching skin in loaded assets
         const skinName = `${obstacle.type}_${obstacle.variant}`;
-        console.log('Looking for skin:', skinName, 'in loaded skins:', game.loadedObstacleSkins.length);
+        // Looking for matching skin in loaded assets
         const loadedSkin = game.loadedObstacleSkins.find(skin => skin.name === skinName);
         
         if (loadedSkin && loadedSkin.image && loadedSkin.loaded) {
-            console.log('Setting skin image for obstacle:', skinName);
+            // Setting skin image for obstacle
             obstacle.setSkinImage(loadedSkin.image);
         } else {
-            console.log('Could not find loaded skin for:', skinName);
+            // Could not find loaded skin, using fallback rendering
         }
     }
     

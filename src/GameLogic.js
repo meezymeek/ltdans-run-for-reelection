@@ -169,18 +169,18 @@ export class GameLogic {
             if (data.leaderboard && data.leaderboard.length >= 5) {
                 // Set threshold to the 5th place score
                 game.top5Threshold = data.leaderboard[4].score;
-                console.log('Top 5 threshold set to:', game.top5Threshold);
+                // Top 5 threshold set
             } else if (data.leaderboard && data.leaderboard.length > 0) {
                 // If less than 5 scores, any score beats the leaderboard
                 game.top5Threshold = 0;
-                console.log('Less than 5 scores on leaderboard, threshold set to 0');
+                // Less than 5 scores on leaderboard, threshold set to 0
             } else {
                 // Empty leaderboard, use default
                 game.top5Threshold = 100;
-                console.log('Empty leaderboard, using default threshold of 100');
+                // Empty leaderboard, using default threshold of 100
             }
         } catch (error) {
-            console.log('Could not fetch leaderboard, using default threshold');
+            // Could not fetch leaderboard, using default threshold
             game.top5Threshold = 100;
         }
         
@@ -257,10 +257,10 @@ export class GameLogic {
         const politicalMessageElement = document.getElementById('politicalEndMessage');
         if (politicalMessageElement) {
             const message = game.getRandomPoliticalEndMessage();
-            console.log('Setting political end message:', message);
+            // Setting political end message
             politicalMessageElement.textContent = message;
         } else {
-            console.error('Could not find politicalEndMessage element');
+            // Could not find politicalEndMessage element
         }
         
         // Reset screen shake effects to ensure clean transition
@@ -276,14 +276,14 @@ export class GameLogic {
         
         // If player achieved top 5, play victory fanfare on top
         if (game.score > game.top5Threshold) {
-            console.log(`Score ${game.score} beats top 5 threshold of ${game.top5Threshold}! Playing victory fanfare.`);
+            // Score beats top 5 threshold! Playing victory fanfare
             game.soundManager.playEffect('victory-fanfare');
             
             // Add a special popup for top 5 achievement
             this.addPopup(game, "TOP 5!", game.canvas.width / 2, game.canvas.height * 0.9, {icon: '🏆', duration: 3000});
         } else {
             // Player didn't make top 5, play fail sound
-            console.log(`Score ${game.score} didn't beat top 5 threshold of ${game.top5Threshold}. Playing fail sound.`);
+            // Score didn't beat top 5 threshold. Playing fail sound
             game.soundManager.playEffect('fail');
         }
         

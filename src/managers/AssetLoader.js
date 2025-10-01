@@ -102,7 +102,7 @@ export class AssetLoader {
         
         await this.initializeAssetLists();
         
-        console.log(`Starting to load ${this.totalAssets} assets...`);
+        // Starting asset loading process
         
         // Load all asset categories in parallel
         const loadPromises = [
@@ -121,7 +121,7 @@ export class AssetLoader {
             this.onProgress(100, this.totalAssets, this.totalAssets);
         }
         
-        console.log(`Asset loading complete. Loaded ${this.loadedAssets}/${this.totalAssets} assets.`);
+        // Asset loading complete
         
         if (this.onComplete) {
             this.onComplete(this.loadedContent);
@@ -183,7 +183,7 @@ export class AssetLoader {
                     audio.load();
                 });
                 
-                console.log(`Loaded ${type} '${name}' as ${format.toUpperCase()}`);
+                // Successfully loaded audio file
                 break; // Success, stop trying other formats
                 
             } catch (error) {
@@ -193,7 +193,7 @@ export class AssetLoader {
         }
         
         if (!loaded) {
-            console.warn(`Failed to load ${type} '${name}' in any format`);
+            // Failed to load audio file in any format - will use fallback
             this.updateProgress(); // Still count as "processed"
         }
     }
@@ -246,7 +246,7 @@ export class AssetLoader {
                 }
             }
             
-            console.log(`Found ${this.assets.images.obstacles.length} obstacle skins to load`);
+            // Found obstacle skins to load
             
         } catch (error) {
             console.warn('Could not load obstacle skins config:', error.message);
@@ -271,7 +271,7 @@ export class AssetLoader {
                         loaded: true
                     });
                     this.updateProgress();
-                    console.log(`Loaded obstacle skin: ${obstacleInfo.name}`);
+                    // Loaded obstacle skin successfully
                     resolve();
                 };
                 
@@ -295,7 +295,7 @@ export class AssetLoader {
                         loaded: true
                     });
                     this.updateProgress();
-                    console.log(`Loaded obstacle skin: ${obstacleInfo.name}`);
+                    // Loaded obstacle skin successfully
                     resolve();
                 };
                 
@@ -303,7 +303,7 @@ export class AssetLoader {
             });
             
         } catch (error) {
-            console.warn(`Failed to load obstacle ${obstacleInfo.name}:`, error.message);
+            // Failed to load obstacle skin
             this.updateProgress(); // Still count as processed
         }
     }
@@ -318,7 +318,7 @@ export class AssetLoader {
                 img.onload = () => {
                     this.loadedContent.images.skins[partName] = img;
                     this.updateProgress();
-                    console.log(`Loaded skin: ${partName}`);
+                    // Loaded skin successfully
                     resolve();
                 };
                 
@@ -335,7 +335,7 @@ export class AssetLoader {
                     clearTimeout(timeout);
                     this.loadedContent.images.skins[partName] = img;
                     this.updateProgress();
-                    console.log(`Loaded skin: ${partName}`);
+                    // Loaded skin successfully
                     resolve();
                 };
                 
@@ -343,7 +343,7 @@ export class AssetLoader {
             });
             
         } catch (error) {
-            console.warn(`Failed to load skin ${partName}:`, error.message);
+            // Failed to load skin
             this.updateProgress(); // Still count as processed
         }
     }
@@ -363,7 +363,7 @@ export class AssetLoader {
                         loaded: true
                     });
                     this.updateProgress();
-                    console.log(`Loaded parachute: ${skinName}`);
+                    // Loaded parachute successfully
                     resolve();
                 };
                 
@@ -384,7 +384,7 @@ export class AssetLoader {
                         loaded: true
                     });
                     this.updateProgress();
-                    console.log(`Loaded parachute: ${skinName}`);
+                    // Loaded parachute successfully
                     resolve();
                 };
                 
@@ -392,7 +392,7 @@ export class AssetLoader {
             });
             
         } catch (error) {
-            console.warn(`Failed to load parachute ${filename}:`, error.message);
+            // Failed to load parachute
             this.updateProgress(); // Still count as processed
         }
     }
@@ -406,7 +406,7 @@ export class AssetLoader {
                 img.onload = () => {
                     this.loadedContent.images.powerups[name] = img;
                     this.updateProgress();
-                    console.log(`Loaded power-up: ${name}`);
+                    // Loaded power-up successfully
                     resolve();
                 };
                 
@@ -423,7 +423,7 @@ export class AssetLoader {
                     clearTimeout(timeout);
                     this.loadedContent.images.powerups[name] = img;
                     this.updateProgress();
-                    console.log(`Loaded power-up: ${name}`);
+                    // Loaded power-up successfully
                     resolve();
                 };
                 
@@ -431,7 +431,7 @@ export class AssetLoader {
             });
             
         } catch (error) {
-            console.warn(`Failed to load power-up ${name}:`, error.message);
+            // Failed to load power-up
             this.updateProgress(); // Still count as processed
         }
     }
@@ -443,9 +443,9 @@ export class AssetLoader {
                 // Check if font is loaded by creating a test element
                 await this.checkFontLoaded(fontName);
                 this.loadedContent.fonts.push(fontName);
-                console.log(`Font ${fontName} is loaded`);
+                // Font loaded successfully
             } catch (error) {
-                console.warn(`Font ${fontName} may not be loaded:`, error.message);
+                // Font may not be loaded
             }
             this.updateProgress();
         }

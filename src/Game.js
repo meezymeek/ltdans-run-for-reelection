@@ -211,25 +211,25 @@ export class RerunGame {
     setPreloadedAssets(loadedAssets) {
         this.preloadedAssets = loadedAssets;
         this.assets = loadedAssets; // Also store as assets for easier access
-        console.log('Game received pre-loaded assets:', loadedAssets);
+        // Game received pre-loaded assets
         
         // Use pre-loaded skin images if available
         if (loadedAssets.images && loadedAssets.images.skins) {
             this.skinImages = { ...loadedAssets.images.skins };
             this.skinsLoaded = true;
-            console.log('Using pre-loaded skin images');
+            // Using pre-loaded skin images
         }
         
         // Use pre-loaded parachute images if available
         if (loadedAssets.images && loadedAssets.images.parachutes) {
             this.loadedParachuteSkins = [...loadedAssets.images.parachutes];
-            console.log('Using pre-loaded parachute skins');
+            // Using pre-loaded parachute skins
         }
         
         // Use pre-loaded obstacle images if available
         if (loadedAssets.images && loadedAssets.images.obstacles) {
             this.loadedObstacleSkins = [...loadedAssets.images.obstacles];
-            console.log('Using pre-loaded obstacle skins:', this.loadedObstacleSkins.length);
+            // Using pre-loaded obstacle skins
         }
         
         // Load obstacle skin configuration
@@ -329,13 +329,7 @@ export class RerunGame {
         
         if (this._debugViewport) {
             const vv = window.visualViewport;
-            console.log('[Viewport]', {
-                inner: [window.innerWidth, window.innerHeight],
-                vv: vv ? [vv.width, vv.height] : null,
-                canvasCSS: [this.canvas.style.width, this.canvas.style.height],
-                canvasPx: [this.canvas.width, this.canvas.height],
-                dpr: window.devicePixelRatio
-            });
+            // Viewport information logged for debugging (removed for production)
         }
     }
 
@@ -360,10 +354,10 @@ export class RerunGame {
         bodyParts.forEach(part => {
             const img = new Image();
             img.onload = () => {
-                console.log(`Loaded skin: ${part}`);
+                // Skin loaded successfully
             };
             img.onerror = () => {
-                console.log(`Failed to load skin: ${part}, using fallback`);
+                // Failed to load skin, using fallback
             };
             
             img.src = `skins/${this.currentSkin}/${part}.png`;
@@ -372,7 +366,7 @@ export class RerunGame {
         
         setTimeout(() => {
             this.skinsLoaded = true;
-            console.log('All skins loaded');
+            // All skins loaded
         }, 100);
         
         this.loadParachuteSkins();
@@ -386,7 +380,7 @@ export class RerunGame {
             'parachute_spacex.png'
         ];
         
-        console.log(`Attempting to load ${parachuteSkinFiles.length} parachute skins`);
+        // Attempting to load parachute skins
         
         let loadedCount = 0;
         parachuteSkinFiles.forEach(filename => {
@@ -394,7 +388,7 @@ export class RerunGame {
             const skinName = filename.replace('parachute_', '').replace('.png', '');
             
             img.onload = () => {
-                console.log(`Loaded parachute skin: ${skinName}`);
+                // Loaded parachute skin successfully
                 this.loadedParachuteSkins.push({
                     name: skinName,
                     image: img,
@@ -408,7 +402,7 @@ export class RerunGame {
             };
             
             img.onerror = () => {
-                console.log(`Failed to load parachute skin: ${filename}`);
+                // Failed to load parachute skin
                 loadedCount++;
                 
                 if (loadedCount >= parachuteSkinFiles.length) {
@@ -426,14 +420,14 @@ export class RerunGame {
     
     checkParachuteSkinsFallback() {
         if (this.loadedParachuteSkins.length === 0) {
-            console.log('No parachute skins loaded, using fallback colors');
+            // No parachute skins loaded, using fallback colors
             this.loadedParachuteSkins = [
                 { name: 'red', color: '#FF6B6B', loaded: false },
                 { name: 'blue', color: '#6B8FFF', loaded: false },
                 { name: 'green', color: '#6BFF8F', loaded: false }
             ];
         } else {
-            console.log(`Successfully loaded ${this.loadedParachuteSkins.length} parachute skins`);
+            // Successfully loaded parachute skins
         }
     }
     
@@ -442,7 +436,7 @@ export class RerunGame {
         try {
             const response = await fetch('skins/obstacles/obstacle-skins.json');
             this.obstacleSkinConfig = await response.json();
-            console.log('Loaded obstacle skin configuration:', this.obstacleSkinConfig);
+            // Loaded obstacle skin configuration
         } catch (error) {
             console.warn('Could not load obstacle skins config:', error.message);
             // Fallback configuration
@@ -467,7 +461,7 @@ export class RerunGame {
         try {
             const response = await fetch('src/entities/political_obstacles.json');
             this.politicalWords = await response.json();
-            console.log(`Loaded ${this.politicalWords.length} political words for obstacles`);
+            // Loaded political words for obstacles
         } catch (error) {
             console.warn('Could not load political words:', error.message);
             // Fallback words
@@ -475,7 +469,7 @@ export class RerunGame {
                 'Accountability', 'Transparency', 'Integrity', 'Ethics', 'Justice',
                 'Responsibility', 'Honesty', 'Truth', 'Fairness', 'Democracy'
             ];
-            console.log('Using fallback political words');
+            // Using fallback political words
         }
     }
     
@@ -493,7 +487,7 @@ export class RerunGame {
         try {
             const response = await fetch('political_runner_end_messages.json');
             this.politicalEndMessages = await response.json();
-            console.log(`Loaded ${this.politicalEndMessages.length} political end messages`);
+            // Loaded political end messages
         } catch (error) {
             console.warn('Could not load political end messages:', error.message);
             // Fallback messages
@@ -502,13 +496,13 @@ export class RerunGame {
                 { id: "fallback_02", text: "Better luck in the next election year." },
                 { id: "fallback_03", text: "The polls have closed… but not in your favor." }
             ];
-            console.log('Using fallback political end messages');
+            // Using fallback political end messages
         }
     }
     
     // Get a random political end message
     getRandomPoliticalEndMessage() {
-        console.log('Getting random political message. Available messages:', this.politicalEndMessages.length);
+        // Getting random political message
         
         // Always use fallback messages if the main ones aren't loaded
         const fallbackMessages = [
@@ -525,14 +519,14 @@ export class RerunGame {
         ];
         
         if (this.politicalEndMessages.length === 0) {
-            console.log('No political messages loaded, using fallback');
+            // No political messages loaded, using fallback
             const randomIndex = Math.floor(Math.random() * fallbackMessages.length);
             return fallbackMessages[randomIndex];
         }
         
         const randomIndex = Math.floor(Math.random() * this.politicalEndMessages.length);
         const selectedMessage = this.politicalEndMessages[randomIndex];
-        console.log('Selected message:', selectedMessage);
+        // Selected message for game over screen
         
         return selectedMessage.text;
     }
@@ -570,7 +564,7 @@ export class RerunGame {
             if (!this.soundInitialized) {
                 await this.soundManager.initialize();
                 this.soundInitialized = true;
-                console.log('Sound initialized, game state:', this.gameState);
+                // Sound initialized
                 if (this.gameState === 'start') {
                     this.soundManager.playMusic('menu');
                 }
@@ -1183,12 +1177,12 @@ export class RerunGame {
             const data = await this.leaderboard.getGlobalLeaderboard(5);
             if (data.leaderboard && data.leaderboard.length >= 5) {
                 this.top5Threshold = data.leaderboard[4].score;
-                console.log('Top 5 threshold set to:', this.top5Threshold);
+                // Top 5 threshold set
             } else {
                 this.top5Threshold = data.leaderboard?.length > 0 ? 0 : 100;
             }
         } catch (error) {
-            console.log('Could not fetch leaderboard, using default threshold');
+            // Could not fetch leaderboard, using default threshold
             this.top5Threshold = 100;
         }
         

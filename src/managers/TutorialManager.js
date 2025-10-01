@@ -165,7 +165,7 @@ export class TutorialManager {
     }
     
     startTutorial() {
-        console.log('Starting tutorial');
+        // Starting tutorial
         this.isActive = true;
         this.currentSection = 0;
         this.tutorialComplete = false;
@@ -195,7 +195,7 @@ export class TutorialManager {
     
     startCurrentSection() {
         const section = this.sections[this.currentSection];
-        console.log(`Starting tutorial section: ${section.id}`);
+        // Starting tutorial section
         
         this.resetSectionState();
         this.sectionStartTime = Date.now();
@@ -668,7 +668,7 @@ export class TutorialManager {
         this.game.nextBribePattern = 50; // Spawn pattern soon
         this.game.lastSpawnDistance = this.game.minSpawnGap; // Allow immediate spawning
         
-        console.log('Regular spawning enabled for train mode demonstration - all entities ready');
+        // Regular spawning enabled for train mode demonstration - all entities ready
     }
     
     completeSection() {
@@ -693,14 +693,14 @@ export class TutorialManager {
     }
     
     completeTutorial() {
-        console.log('Tutorial completed!');
+        // Tutorial completed
         this.isActive = false;
         this.tutorialComplete = true;
         this.endTutorial();
     }
     
     skipTutorial() {
-        console.log('Tutorial skipped');
+        // Tutorial skipped
         this.isActive = false;
         this.hideDialog();
         this.endTutorial();
@@ -801,7 +801,7 @@ export class TutorialManager {
         // For tall obstacles, use dynamic political words if available (same as main game)
         if (type === 'tall' && this.game.politicalWords && this.game.politicalWords.length > 0) {
             const randomWord = this.game.getRandomPoliticalWord();
-            console.log('Using dynamic political word for tutorial tall obstacle:', randomWord);
+            // Using dynamic political word for tutorial tall obstacle
             
             // Create dynamic skin configuration for this word
             const dynamicSkinConfig = {

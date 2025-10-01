@@ -127,12 +127,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Progress callback
     const onProgress = (percentage, loaded, total) => {
         actualProgress = percentage;
-        console.log(`Actual loading progress: ${percentage}% (${loaded}/${total})`);
+        // Loading progress tracking removed for production
     };
     
     // Completion callback
     const onComplete = (loadedAssets) => {
-        console.log('All assets loaded:', loadedAssets);
+        // Asset loading complete - debug logging removed
         
         // Small delay to show completion
         setTimeout(() => {
@@ -148,7 +148,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (disclaimerBox) {
                     disclaimerBox.classList.remove('hidden-disclaimer');
                     disclaimerBox.classList.add('animate-disclaimer-enter');
-                    console.log('Disclaimer animation started');
+                    // Disclaimer animation started
                 }
             }, 6500); // Show disclaimer 6.5 seconds after content appears - absolute final element
             
@@ -179,7 +179,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         
                         // Initialize audio system (requires user interaction)
                         if (window.gameInstance && window.gameInstance.soundManager) {
-                            console.log('Initializing audio context and preparing sounds...');
+                            // Initializing audio context and preparing sounds
                             
                             // Initialize audio context
                             await window.gameInstance.soundManager.initialize();
@@ -196,11 +196,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 testAudio.volume = 0;
                                 await testAudio.play();
                             } catch (e) {
-                                console.log('Test audio failed, but proceeding anyway');
+                                // Test audio failed, but proceeding anyway
                             }
                             
                             window.gameInstance.soundInitialized = true;
-                            console.log('Audio system fully initialized and ready');
+                            // Audio system fully initialized and ready
                             
                             // Wait a moment for everything to settle
                             await new Promise(resolve => setTimeout(resolve, 300));
@@ -211,7 +211,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             
                             // Start menu music since we're on start screen - should play immediately now
                             if (window.gameInstance.gameState === 'start') {
-                                console.log('Starting menu music...');
+                                // Starting menu music
                                 window.gameInstance.soundManager.playMusic('menu');
                             }
                         }
@@ -327,7 +327,7 @@ function addSkipHint(container, animationState) {
     
     const handleSkip = () => {
         if (animationState.isPlaying && !animationState.isSkipped) {
-            console.log('Animation sequence skipped!');
+            // Animation sequence skipped
             animationState.isSkipped = true;
             animationState.isPlaying = false;
             skipHint.classList.add('hidden');
@@ -465,7 +465,7 @@ function startAnimationSequence(animationState) {
 
 // Animation Sequence Functions
 function showLogo() {
-    console.log('Showing logo...');
+    // Showing logo
     const companyLogo = document.querySelector('.company-logo');
     if (companyLogo) {
         companyLogo.classList.add('animate-logo-fade-in');
@@ -473,7 +473,7 @@ function showLogo() {
 }
 
 function showPresentsText() {
-    console.log('Showing presents text...');
+    // Showing presents text
     const presentsText = document.querySelector('.presents-text');
     if (presentsText) {
         presentsText.classList.add('animate-presents-slide-in');
@@ -481,26 +481,25 @@ function showPresentsText() {
 }
 
 function startCloudsEntrance() {
-    console.log('Starting clouds entrance...');
-    // Clouds will start moving in naturally from right side
+    // Starting clouds entrance - clouds will start moving in naturally from right side
     // Character animation will handle cloud positioning
 }
 
 function startCharacterEntrance(animationState) {
-    console.log('Starting character entrance...');
+    // Starting character entrance
     animationState.characterEntering = true;
     // Character will move in from left side (handled in character animation)
 }
 
 function showTitleElements() {
-    console.log('Showing title elements...');
+    // Showing title elements
     
     // Show main title immediately
     const titleMain = document.querySelector('.title-main');
     if (titleMain) {
         titleMain.classList.remove('title-main-hidden');
         titleMain.classList.add('animate-title-main-enter');
-        console.log('Main title animation started');
+        // Main title animation started
     }
     
     // Show subtitle 500ms later
@@ -509,13 +508,13 @@ function showTitleElements() {
         if (titleSub) {
             titleSub.classList.remove('title-sub-hidden');
             titleSub.classList.add('animate-title-sub-enter');
-            console.log('Subtitle animation started (500ms delay)');
+            // Subtitle animation started (500ms delay)
         }
     }, 500);
 }
 
 function showLoadingBar() {
-    console.log('Showing loading bar...');
+    // Showing loading bar
     const loadingBarContainer = document.getElementById('loadingBarContainer');
     if (loadingBarContainer) {
         loadingBarContainer.classList.remove('hidden-above');
@@ -553,8 +552,7 @@ function showLoadingBar() {
 }
 
 function showBottomElements() {
-    console.log('Showing bottom elements...');
-    // START button from left
+    // Showing bottom elements - START button from left
     const clickToStartContent = document.getElementById('clickToStartContent');
     if (clickToStartContent) {
         clickToStartContent.classList.remove('hidden-left');
@@ -570,7 +568,7 @@ function showBottomElements() {
 }
 
 function showBottomText() {
-    console.log('Showing bottom text...');
+    // Showing bottom text
     // Any additional bottom text elements can fade in here
     const additionalElements = document.querySelectorAll('.hidden-fade');
     additionalElements.forEach(element => {
@@ -580,7 +578,7 @@ function showBottomText() {
 }
 
 function showDisclaimer() {
-    console.log('Showing disclaimer...');
+    // Showing disclaimer
     const disclaimerBox = document.querySelector('.disclaimer-box');
     if (disclaimerBox) {
         disclaimerBox.classList.remove('hidden-disclaimer');
@@ -589,7 +587,7 @@ function showDisclaimer() {
 }
 
 function finishAnimationSequence(animationState) {
-    console.log('Animation sequence complete!');
+    // Animation sequence complete
     animationState.isPlaying = false;
     animationState.characterEntering = false;
     
@@ -602,9 +600,8 @@ function finishAnimationSequence(animationState) {
 
 // Start Fall-Off Sequence (All Elements Fall Simultaneously)
 function startFallOffSequence() {
-    console.log('Starting fall-off sequence...');
+    // Starting fall-off sequence - all elements fall at the same time (like gravity affects everything)
     
-    // All elements fall at the same time (like gravity affects everything)
     const fallOffElements = [
         { element: '.bottom-content', animation: 'animate-fall-off-left' },
         { element: '.loading-bar-container', animation: 'animate-fall-off' },
@@ -619,7 +616,7 @@ function startFallOffSequence() {
         const el = document.querySelector(element);
         if (el) {
             el.classList.add(animation);
-            console.log(`Element ${element} falling off simultaneously...`);
+            // Element falling off simultaneously
         }
     });
 }
@@ -705,12 +702,12 @@ async function initializeCharacterPreview(loadedAssets, animationState = null) {
     
     // Load skin images if available
     const skinImages = {};
-    console.log('CharacterPreview: loadedAssets =', loadedAssets);
+    // Loading character preview assets
     
     // Try to get from loaded assets first
     if (loadedAssets && loadedAssets.images && loadedAssets.images.skins) {
         const skins = loadedAssets.images.skins;
-        console.log('CharacterPreview: Available skins =', Object.keys(skins));
+        // Using available skins from loaded assets
         
         skinImages.head = skins.head;
         skinImages['head-open-mouth'] = skins['head-open-mouth'];
@@ -720,38 +717,38 @@ async function initializeCharacterPreview(loadedAssets, animationState = null) {
         skinImages.upper_arm = skins.upper_arm;
         skinImages.forearm = skins.forearm;
         
-        // Check which images are actually loaded
+        // Check which images are actually loaded (production logging removed)
         Object.keys(skinImages).forEach(key => {
             if (skinImages[key]) {
-                console.log(`CharacterPreview: ${key} loaded, complete: ${skinImages[key].complete}`);
+                // Skin loaded and ready
             } else {
-                console.log(`CharacterPreview: ${key} is missing`);
+                // Skin missing, will use fallback
             }
         });
     } else {
-        console.log('CharacterPreview: No skin assets found in loadedAssets');
+        // No skin assets found in loadedAssets, using fallback
     }
     
     // Fallback: Load skin images directly if not found in assets
     if (!skinImages.head) {
-        console.log('CharacterPreview: Loading skin images directly...');
+        // Loading skin images directly as fallback
         const skinParts = ['head', 'head-open-mouth', 'torso', 'thigh', 'shin', 'upper_arm', 'forearm'];
         
         for (const part of skinParts) {
             const img = new Image();
             img.src = `skins/default/${part}.png`;
             img.onload = () => {
-                console.log(`CharacterPreview: Direct loaded ${part}`);
+                // Direct skin loaded successfully
             };
             img.onerror = () => {
-                console.log(`CharacterPreview: Failed to load ${part}`);
+                // Failed to load skin, will use fallback rendering
             };
             skinImages[part] = img;
         }
         
         // Wait a bit for images to load
         setTimeout(() => {
-            console.log('CharacterPreview: Images should be loaded now');
+            // Images should be loaded now
         }, 100);
     }
     

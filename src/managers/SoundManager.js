@@ -105,7 +105,7 @@ export class SoundManager {
     // Method to receive pre-loaded audio from AssetLoader
     setPreloadedAudio(preloadedAudio) {
         this.preloadedAudio = preloadedAudio;
-        console.log('SoundManager received pre-loaded audio:', preloadedAudio);
+        // SoundManager received pre-loaded audio
         
         // Copy pre-loaded sounds to our loaded sounds and configure them
         if (preloadedAudio.music) {
@@ -131,12 +131,12 @@ export class SoundManager {
             }
         }
         
-        console.log('Pre-loaded audio integrated and configured for immediate playback');
+        // Pre-loaded audio integrated and configured for immediate playback
     }
     
     // Enhanced audio preparation after user interaction
     async prepareAudioForPlayback() {
-        console.log('Preparing audio for immediate playback...');
+        // Preparing audio for immediate playback
         
         // Ensure all audio elements are properly configured
         for (const [name, audio] of Object.entries(this.loadedSounds.music)) {
@@ -147,9 +147,9 @@ export class SoundManager {
             // Try to load the audio data
             try {
                 audio.load();
-                console.log(`Music '${name}' prepared for playback`);
+                // Music prepared for playback
             } catch (e) {
-                console.warn(`Could not prepare music '${name}':`, e);
+                // Could not prepare music
             }
         }
         
@@ -161,9 +161,9 @@ export class SoundManager {
             // Try to load the audio data
             try {
                 audio.load();
-                console.log(`Effect '${name}' prepared for playback`);
+                // Effect prepared for playback
             } catch (e) {
-                console.warn(`Could not prepare effect '${name}':`, e);
+                // Could not prepare effect
             }
         }
         
@@ -180,7 +180,7 @@ export class SoundManager {
             }
         }
         
-        console.log('Audio preparation complete - ready for immediate playback');
+        // Audio preparation complete - ready for immediate playback
     }
     
     // Setup page visibility API to pause audio when page is hidden
@@ -308,7 +308,7 @@ export class SoundManager {
             await this.loadAllSounds();
             
             this.initialized = true;
-            console.log('SoundManager initialized successfully');
+            // SoundManager initialized successfully
         } catch (error) {
             console.error('Failed to initialize SoundManager:', error);
             this.initialized = false;
@@ -319,7 +319,7 @@ export class SoundManager {
     async loadAllSounds() {
         // Skip loading if we already have pre-loaded audio
         if (this.preloadedAudio) {
-            console.log('Using pre-loaded audio, skipping individual sound loading');
+            // Using pre-loaded audio, skipping individual sound loading
             return;
         }
         
@@ -344,7 +344,7 @@ export class SoundManager {
         await Promise.allSettled(soundPromises);
         this.isLoading = false;
         
-        console.log(`Loaded ${this.soundsLoaded}/${this.totalSoundsToLoad} sounds`);
+        // Audio loading complete
     }
     
     // Load a single sound file with multi-format support
@@ -403,17 +403,17 @@ export class SoundManager {
                     this.createAudioPool(name, audio);
                 }
                 
-                console.log(`Successfully loaded ${type} '${name}' as ${format.toUpperCase()}`);
+                // Successfully loaded audio file
                 break; // Stop trying other formats
                 
             } catch (error) {
                 // This format didn't work, try the next one
-                console.log(`Could not load ${fullPath}, trying other formats...`);
+                // Could not load format, trying other formats
             }
         }
         
         if (!audioLoaded) {
-            console.warn(`Failed to load ${type} '${name}' in any format (tried: ${this.supportedFormats.join(', ')}). Will use fallback sound.`);
+            // Failed to load audio in any format, will use fallback sound
         }
         
         this.soundsLoaded++;
@@ -541,7 +541,7 @@ export class SoundManager {
         const music = this.loadedSounds.music[musicName];
         
         if (!music) {
-            console.warn(`Music '${musicName}' not loaded`);
+            // Music not loaded
             return;
         }
         

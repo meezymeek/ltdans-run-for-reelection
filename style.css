@@ -373,38 +373,17 @@
 }
 
 .company-logo {
-    position: fixed; /* Changed from absolute to fixed for viewport positioning */
+    position: absolute;
     top: 4vh; /* Logo moved down to 4vh for better breathing room */
     left: 50%;
     transform: translateX(-50%) scale(0.8);
-    z-index: 30; /* Increased z-index to ensure it's above everything */
+    z-index: 20;
     width: clamp(16rem, 40vw, 32rem);
     height: auto;
-    opacity: 1; /* Temporarily visible to test file loading */
+    opacity: 0;
     image-rendering: pixelated;
     image-rendering: -moz-crisp-edges;
     image-rendering: crisp-edges;
-}
-
-/* Mobile-specific logo positioning */
-@media (max-width: 768px) {
-    .company-logo {
-        top: max(4vh, 40px); /* Ensure minimum distance from top on mobile */
-        left: 50%;
-        transform: translateX(-50%) scale(0.7); /* Slightly smaller on mobile */
-        z-index: 30000; /* Even higher z-index for mobile */
-        width: clamp(12rem, 35vw, 24rem); /* Adjusted size for mobile */
-        position: fixed !important; /* Force fixed positioning on mobile */
-    }
-}
-
-/* Very small mobile screens */
-@media (max-width: 480px) {
-    .company-logo {
-        top: max(6vh, 50px); /* More space from top on small screens */
-        transform: translateX(-50%) scale(0.6); /* Even smaller on tiny screens */
-        width: clamp(10rem, 30vw, 20rem); /* Smaller width for tiny screens */
-    }
 }
 
 .presents-text {

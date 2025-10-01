@@ -50,7 +50,7 @@
         <canvas id="characterPreview" width="800" height="360"></canvas>
         <div class="loading-content">
             <!-- Presents sequence - appears first -->
-            <img src="./logo.png" alt="Company Logo" class="company-logo" onerror="console.error('Logo failed to load:', this.src);" onload="console.log('Logo loaded successfully:', this.src);">
+            <img src="logo.png" alt="Company Logo" class="company-logo" onerror="console.error('Logo failed to load:', this.src); this.style.border='2px solid red';" onload="console.log('Logo loaded successfully:', this.src);">
             <div class="presents-text">PRESENTS...</div>
             
             <h1 class="title-elevated">
