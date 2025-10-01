@@ -494,6 +494,10 @@
     border-radius: 8px;
     box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
     box-sizing: border-box;
+    position: relative;
+    left: 50%;
+    transform: translateX(-50%);
+    align-self: center;
 }
 
 @keyframes glow-pulse {
