@@ -1599,7 +1599,7 @@ export class RerunGame {
             if (this.score > 0 && this.score % 100 === 0) {
                 this.animateScoreBadge();
                 this.soundManager.playMilestone();
-                GameLogic.addPopup(this, "MILESTONE!", this.canvas.width / 2, this.canvas.height * 0.9, {icon: '🎯', duration: 2100});
+                // Note: Milestone popup message removed per user request
             }
         }
         
