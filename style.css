@@ -1684,28 +1684,22 @@ button:active {
     margin-left: 0.5rem;
 }
 
-/* Top 3 special styling - ONLY for Global Top 100, NOT for Recent Scores */
-.leaderboard-content[data-tab="global"] .leaderboard-entry:nth-child(1) .leaderboard-rank,
-.leaderboard-content.global-tab .leaderboard-entry:nth-child(1) .leaderboard-rank { 
-    color: #FFD700; 
+/* Top 3 special styling - ONLY for actual Global Top 3 (page 1 only) */
+.leaderboard-entry.top-1 .leaderboard-rank { 
+    color: #FFD700; /* Gold for 1st place */
 }
 
-.leaderboard-content[data-tab="global"] .leaderboard-entry:nth-child(2) .leaderboard-rank,
-.leaderboard-content.global-tab .leaderboard-entry:nth-child(2) .leaderboard-rank { 
-    color: #C0C0C0; 
+.leaderboard-entry.top-2 .leaderboard-rank { 
+    color: #C0C0C0; /* Silver for 2nd place */
 }
 
-.leaderboard-content[data-tab="global"] .leaderboard-entry:nth-child(3) .leaderboard-rank,
-.leaderboard-content.global-tab .leaderboard-entry:nth-child(3) .leaderboard-rank { 
-    color: #CD7F32; 
+.leaderboard-entry.top-3 .leaderboard-rank { 
+    color: #CD7F32; /* Bronze for 3rd place */
 }
 
-.leaderboard-content[data-tab="global"] .leaderboard-entry:nth-child(1) .leaderboard-name,
-.leaderboard-content[data-tab="global"] .leaderboard-entry:nth-child(2) .leaderboard-name,
-.leaderboard-content[data-tab="global"] .leaderboard-entry:nth-child(3) .leaderboard-name,
-.leaderboard-content.global-tab .leaderboard-entry:nth-child(1) .leaderboard-name,
-.leaderboard-content.global-tab .leaderboard-entry:nth-child(2) .leaderboard-name,
-.leaderboard-content.global-tab .leaderboard-entry:nth-child(3) .leaderboard-name {
+.leaderboard-entry.top-1 .leaderboard-name,
+.leaderboard-entry.top-2 .leaderboard-name,
+.leaderboard-entry.top-3 .leaderboard-name {
     font-weight: bold;
 }
 

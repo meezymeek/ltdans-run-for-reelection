@@ -1419,15 +1419,23 @@ export class RerunGame {
             // Show medals ONLY in Global Top 100 for ranks 1, 2, 3
             // Use actualIndex instead of rankDisplay for more reliable medal assignment
             let medal = '';
+            let specialClass = '';
             if (this.leaderboard.currentView === 'global' && currentPage === 1) {
-                // Only show medals on the first page (where top 3 would be)
-                if (actualIndex === 0) medal = '🥇'; // Rank #1
-                else if (actualIndex === 1) medal = '🥈'; // Rank #2  
-                else if (actualIndex === 2) medal = '🥉'; // Rank #3
+                // Only show medals and special colors on the first page (where top 3 would be)
+                if (actualIndex === 0) {
+                    medal = '🥇'; // Rank #1
+                    specialClass = 'top-1';
+                } else if (actualIndex === 1) {
+                    medal = '🥈'; // Rank #2
+                    specialClass = 'top-2';
+                } else if (actualIndex === 2) {
+                    medal = '🥉'; // Rank #3
+                    specialClass = 'top-3';
+                }
             }
             
             html += `
-                <div class="leaderboard-entry">
+                <div class="leaderboard-entry ${specialClass}">
                     <span class="leaderboard-rank">${medal}${medal ? ' ' : ''}#${rankDisplay}</span>
                     <span class="leaderboard-name">${this.escapeHtml(entry.player_name || entry.playerName)}</span>
                     <span class="leaderboard-score">${this.leaderboard.formatScore(entry.score)}</span>
