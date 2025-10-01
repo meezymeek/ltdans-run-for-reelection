@@ -50,7 +50,7 @@
         <canvas id="characterPreview" width="800" height="360"></canvas>
         <div class="loading-content">
             <!-- Presents sequence - appears first -->
-            <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABSsAAAG/CAYAAACwioJjAAAACXBIWXMAABYlAAAWJQFJUiTwAAAt/UlEQVR4nO3de9ytc53/8fv+7fbezrZTlPOhKSk2ITmMQ0rnUpqIUmoMEiaFDponDDrI0EFKopFkHHKZBRppUTDFo5FiRDmxnYrPtwz1/MD/G3G97X3tf11qftfbz+efrcT+u67vve91rrfuz1+PxGR0bGxsBAAAAAOi3/9fvAwAAAAAAjIwYVgIAAAAARRhWAgAAAAAlGFYCAAAAACUYVgIAAAAAJRhWAgAAAAAlGFYCAAAAACUYVgIAAAAAJRhWAgAAAAAlGFYCAAAAACUYVgIAAAAAJRhWAgAAAAAlGFYCAAAAACUYVgIAAAAAJRhWAgAAAAAlGFYCAAAAACUYVgIAAAAAJRhWAgAAAAAlGFYCAAAAACUYVgIAAAAAJRhhWAgAAAAAlGFYCAAAAACUYVgIAAAAAJTyr6xuMjo52fYsJoW8T+sUdnWPYTQ39ttDv7egcAAAAADzF2NhYv4/QGp+sBAAAAABKMKwEAAAAAEowrAQAAAAASjCsBAAAAABKMKwEAAAAAErofBt4D8wJfbfQ" alt="Company Logo" class="company-logo" onload="console.log('Logo loaded successfully via data URI');">
+            <img src="./logo.png" alt="Company Logo" class="company-logo" onerror="console.error('Logo failed to load:', this.src);" onload="console.log('Logo loaded successfully:', this.src);">
             <div class="presents-text">PRESENTS...</div>
             
             <h1 class="title-elevated">
